@@ -1,0 +1,289 @@
+<p class="kicker learn">Part II · module 7 · build · 40–60 minutes</p>
+<h1><span class="num">07 ·</span> Index — how search gets fast</h1>
+<p class="hook">This module opens up <code>db.add()</code>, both halves of it.
+Something was constructed when that line ran. It took time, and it takes up room. This
+module is about what it is.</p>
+
+<h2 id="what">What an index is, and why every search engine has one</h2>
+
+<p>There are two ways to answer the question "which of these
+{{ 07-index.n_passages | int }} passages mention the word <code>block</code>". The
+obvious way is to read all of them, every time someone asks. The other way is to do
+that reading once, in advance, and write down the answer for every word at the same
+time, in a table that maps each word to the list of passages containing it. After that,
+answering the question means looking up one entry in a table.</p>
+
+<p>That table is called an <span class="term">inverted index</span>, and the list of
+passages under each word is called a <span class="term">posting list</span>. The name
+"inverted" describes the flip it performs: documents are stored as "this document
+contains these words", and the index turns that around into "this word appears in these
+documents", which is the direction questions actually come from. It is the same move
+the filesystem made in module 1, where bookkeeping written in advance made a name cheap
+to resolve. Here, bookkeeping written in advance makes a word cheap to find.</p>
+
+<p>Your pipeline's <code>db.add()</code> built a second structure too: an array of
+module 6's vectors, arranged so that a query vector can be compared against all of
+them. In this module you build both structures yourself, measure what they cost to
+build and to hold, and measure what they give back per query.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Find every passage containing the word <code>block</code> among
+  {{ 07-index.n_passages | int }} passages by reading all of them. That takes
+  {{ 07-index.scan.block.seconds | time }}.</p>
+  <p>Ask the same question of an index and the answer comes back in
+  {{ 07-index.lookup.block.seconds | time }}.</p>
+  <p>Nothing about the corpus changed. What exactly did the index precompute, and what
+  did precomputing it cost?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/07-index/starter.py</code>. It has four <code>TODO</code>s, and
+you are building both of the structures <code>db.add()</code> builds.</p>
+
+<figure>
+  <div class="code"><pre>pip install numpy
+python data/fetch.py --only msmarco
+python exercises/07-index/starter.py --scale small
+python exercises/07-index/verify.py</pre></div>
+</figure>
+
+<div class="aside">
+  <span class="aside-label">about this corpus</span>
+  Every retrieval module from here on runs on a deliberately built corpus: every
+  passage a human judged for relevance, plus a random sample of the rest up to the
+  size you asked for. Taking the first 100,000 lines of MS MARCO instead would leave
+  only 32 of its 6,980 judged queries with their answer in the corpus, and module 8
+  would have nothing to measure. The construction is in
+  <code>exercises/common.py</code>, function <code>eval_corpus</code>.
+</div>
+
+<p>The first three TODOs build the inverted index: tokenize each passage, add its id to
+the posting list of every word it contains, and answer queries by lookup. The fourth
+builds the other structure, brute-force nearest neighbour over module 6's vectors:
+score the query against every vector and keep the best ten.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>The scan pays per corpus, the index pays per question</h3>
+
+<figure>
+{{ chart:index-scan-vs-lookup }}
+<figcaption>finding <code>block</code> in {{ 07-index.n_passages | int }} passages.
+note the axis: without a logarithmic scale the third bar would be invisible</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/07-index/solution.py at
+  {{ 07-index.n_passages | int }} passages; lookups timed over
+  {{ 07-index.lookup_reps | int }} repetitions, because one is below the clock's
+  resolution</caption>
+  <thead><tr><th>word</th><th class="num">hits</th><th class="num">scan</th>
+    <th class="num">index lookup</th><th class="num">faster by</th></tr></thead>
+  <tbody>
+    <tr><td><code>manhattan</code></td>
+      <td class="num">{{ 07-index.scan.manhattan.hits | int }}</td>
+      <td class="num">{{ 07-index.scan.manhattan.seconds | time }}</td>
+      <td class="num">{{ 07-index.lookup.manhattan.seconds | time }}</td>
+      <td class="num">{{ 07-index.lookup.manhattan.speedup | x0 }}</td></tr>
+    <tr><td><code>block</code></td>
+      <td class="num">{{ 07-index.scan.block.hits | int }}</td>
+      <td class="num">{{ 07-index.scan.block.seconds | time }}</td>
+      <td class="num">{{ 07-index.lookup.block.seconds | time }}</td>
+      <td class="num">{{ 07-index.lookup.block.speedup | x0 }}</td></tr>
+    <tr><td><code>photosynthesis</code></td>
+      <td class="num">{{ 07-index.scan.photosynthesis.hits | int }}</td>
+      <td class="num">{{ 07-index.scan.photosynthesis.seconds | time }}</td>
+      <td class="num">{{ 07-index.lookup.photosynthesis.seconds | time }}</td>
+      <td class="num">{{ 07-index.lookup.photosynthesis.speedup | x0 }}</td></tr>
+    <tr><td><code>the</code></td>
+      <td class="num">{{ 07-index.scan.the.hits | int }}</td>
+      <td class="num">{{ 07-index.scan.the.seconds | time }}</td>
+      <td class="num">{{ 07-index.lookup.the.seconds | time }}</td>
+      <td class="num">{{ 07-index.lookup.the.speedup | x0 }}</td></tr>
+    <tr><td><code>zyzzyva</code></td>
+      <td class="num">{{ 07-index.scan.zyzzyva.hits | int }}</td>
+      <td class="num">{{ 07-index.scan.zyzzyva.seconds | time }}</td>
+      <td class="num">{{ 07-index.lookup.zyzzyva.seconds | time }}</td>
+      <td class="num">{{ 07-index.lookup.zyzzyva.speedup | x0 }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Two things in that table are worth more than the headline ratio.</p>
+
+<p><strong>The scan costs the same whatever you ask.</strong> A word in 87,000 passages
+and a word in none both take about
+{{ 07-index.scan.zyzzyva.seconds | time }}, because the work is reading the corpus, not
+finding the answer. The index costs about
+{{ 07-index.lookup.the.seconds | time }} either way for the opposite reason: it is one
+table lookup, and the table does not care what is in the bucket.</p>
+
+<p><strong>And the fast scan answers a different question.</strong> Searching for
+<code>block</code> as a substring, which is what <code>grep</code> does, runs in
+{{ 07-index.scan_substring.block.seconds | time }} instead of
+{{ 07-index.scan.block.seconds | time }}, and returns
+{{ 07-index.scan_substring.block.hits | int }} passages rather than
+{{ 07-index.scan.block.hits | int }}. The extra ones contain
+<em>blockchain</em>, <em>roadblocks</em>, and <em>blocked</em>. Ten times quicker, and
+not the same query.</p>
+
+<h3>What the index cost to build and to hold</h3>
+
+<figure>
+{{ chart:index-size }}
+<figcaption>memory held by each structure, for the same
+{{ 07-index.n_passages | int }} passages</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>structure</th><th class="num">build time</th><th class="num">size</th>
+    <th class="num">× the text</th><th class="num">per query</th></tr></thead>
+  <tbody>
+    <tr><td>corpus text itself</td><td class="num">—</td>
+      <td class="num">{{ 07-index.corpus_bytes | bytes }}</td>
+      <td class="num">1.00×</td><td class="num">—</td></tr>
+    <tr class="win"><td>inverted index</td>
+      <td class="num">{{ 07-index.inverted.build_seconds | time }}</td>
+      <td class="num">{{ 07-index.inverted.size_bytes | bytes }}</td>
+      <td class="num">{{ 07-index.inverted.size_vs_corpus | x }}</td>
+      <td class="num">{{ 07-index.lookup.block.seconds | time }}</td></tr>
+    <tr><td>vectors, brute force</td>
+      <td class="num">none</td>
+      <td class="num">{{ 07-index.vectors.bytes | bytes }}</td>
+      <td class="num">{{ 07-index.vectors.bytes_vs_corpus | x }}</td>
+      <td class="num">{{ 07-index.brute_force.median_seconds | time }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The inverted index holds {{ 07-index.inverted.vocabulary | int }} distinct words and
+{{ 07-index.inverted.postings | int }} postings, which is
+{{ 07-index.inverted.postings_per_passage | 1f }} per passage, and it occupies
+{{ 07-index.inverted.size_vs_corpus | x }} the text it indexes.</p>
+
+<p>The vectors take {{ 07-index.vectors.bytes | bytes }}, which is
+{{ 07-index.vectors.bytes_vs_corpus | x }} the text, and they cost nothing to "build"
+because there is no structure, only an array. Every query pays instead:
+{{ 07-index.brute_force.multiplications_per_query | int }} multiply-adds, every time,
+for a median of {{ 07-index.brute_force.median_seconds | time }}.</p>
+
+<p>At this scale that is completely fine, and it is worth saying so plainly. A
+{{ 07-index.brute_force.median_seconds | time }} query is a fast query. Nothing here
+needs fixing yet. Module 12 is where it stops being fine.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>An index is <strong>arrangement</strong>. That is the whole definition. You do work
+in advance to put things where a question can find them, and in exchange the question
+gets cheap.</p>
+
+<p>Follow where the work went. Building the inverted index took
+{{ 07-index.inverted.build_seconds | time }}. It tokenized every passage, which is
+exactly what the scan does, but it did so once instead of once per query, and then it
+wrote the answer down in a shape a lookup can reach directly. The scan repeats that
+work on every question. The index did it once and kept the result. The
+{{ 07-index.lookup.block.speedup | x0 }} is not cleverness. It is the scan's work,
+moved to a moment when nobody was waiting.</p>
+
+<p>Which is why the cost shows up in three places, and you measured all three:</p>
+
+<ul>
+  <li><strong>Time, paid once.</strong> {{ 07-index.inverted.build_seconds | time }}
+  before any query can run.</li>
+  <li><strong>Memory, paid continuously.</strong>
+  {{ 07-index.inverted.size_bytes | bytes }}, which is more than the corpus itself,
+  held for as long as you want fast answers.</li>
+  <li><strong>Currency, paid on every change.</strong> The index describes the corpus
+  as it was when you built it. A new document does not appear in any posting list until
+  something puts it there, and that is module 10's entire subject.</li>
+</ul>
+
+<h3>The two structures answer different questions</h3>
+
+<p>Look at what the two structures actually organise, because they are not two
+implementations of one idea.</p>
+
+<p>The inverted index maps <em>words to locations</em>. It answers "which documents
+contain this token" exactly, and it can answer nothing about a word it has never seen.
+Ask it for <code>zyzzyva</code> and it says {{ 07-index.scan.zyzzyva.hits | int }},
+correctly and instantly.</p>
+
+<p>The vector array arranges <em>points for distance</em>. It answers "which documents
+are nearest this one" approximately in meaning and exactly in arithmetic, and it always
+returns ten things. There is no such thing as no match, because every point has
+neighbours. Ask it for nonsense and you get the ten nearest pieces of nonsense.</p>
+
+<p>Those are different failure modes, and neither is a defect. A word index cannot find
+a paraphrase, and a vector index cannot tell you that a term is absent. Module 15 fuses
+them precisely because their weaknesses do not overlap.</p>
+
+<h3>What <code>db.add()</code> was doing</h3>
+
+<p>Now go back to Part 0's line. <code>db.add(ids=…, embeddings=…, documents=…)</code>
+built exactly these two things: somewhere to look up documents, and an arrangement of
+points for distance search. It chose the arrangement, the distance measure, the memory
+layout, and how much accuracy to trade for speed, silently, on your behalf, with
+defaults that are somebody's answers to questions you can now ask.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>db.add()</code> has no magic left in it. It is a
+table of words to locations, and an array of points. <strong>Backward:</strong> module
+1's filesystem keeps bookkeeping so that a name becomes cheap to resolve. This module
+keeps bookkeeping so that a word becomes cheap to find. It is the same move, at a
+larger radius.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Here the second half is the whole module, and you have the invoice:
+{{ 07-index.inverted.build_seconds | time }} and
+{{ 07-index.inverted.size_bytes | bytes }}, in exchange for
+{{ 07-index.lookup.block.speedup | x0 }}.</p>
+
+<p>Ahead: module 8 asks which ten of the matches to return. Module 9 asks what happens
+when {{ 07-index.inverted.size_bytes | bytes }} becomes more memory than you have.
+Module 12 asks what the vector side costs at a million.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Manning, Raghavan &amp; Schütze,
+  <span class="title">Introduction to Information Retrieval</span>, chapters
+  1–2.</strong> The inverted index from first principles, and the tokenization
+  decisions that go with it. Expect chapter 2 to spend a surprising amount of time on
+  what counts as a word, and expect to recognise your own <code>tokenize</code> in
+  it.</p>
+
+  <ol>
+    <li>The scan took about the same time for a word in
+    {{ 07-index.scan.the.hits | int }} passages and a word in
+    {{ 07-index.scan.zyzzyva.hits | int }}. Why? And why doesn't the index?</li>
+    <li>Your index is {{ 07-index.inverted.size_vs_corpus | x }} the size of the text
+    it indexes. Name two things you could store less of, and what each would cost
+    you.</li>
+    <li>A new document arrives. What has to happen before a search can find it, and
+    what does that suggest about indexing a corpus that changes every minute?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your lookup time is reported as 0, you timed one lookup. A single dict access
+    is faster than the clock can resolve. Time
+    {{ 07-index.lookup_reps | int }} of them and divide, which is what the solution
+    does.</p>
+    <p>If your index is much smaller than
+    {{ 07-index.inverted.size_vs_corpus | x }} the corpus, check whether you are
+    storing each passage id once per <em>occurrence</em> rather than once per
+    <em>document</em>. Using a set per document before extending the posting list is
+    the fix, and it is why the TODO says each id appears once.</p>
+    <p>If your speedups are far below {{ 07-index.lookup.block.speedup | x0 }}, your
+    scan may be using a substring search rather than tokenizing. That is a fair thing
+    to do, and it is roughly ten times quicker. It also answers a different question,
+    as the <code>block</code> row shows.</p>
+  </div>
+</div>

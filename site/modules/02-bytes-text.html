@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · How text becomes bytes — Beneath the Pipeline</title>
+<meta name="description" content="Eight bytes. Word, number, colour, or four notes of audio?">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead"><div class="masthead-inner"><div class="brandrow"><a class="brand" href="../index.html"><b>Beneath the Pipeline</b> &nbsp;/&nbsp; part i · the floor</a><span class="progress-label">02 / 15</span></div><nav class="strip" aria-label="the pipeline"><a class="stage" href="04-load.html" title="load() — built in module 4; stressed in module 9"><span class="n">04·09</span>load</a><a class="stage" href="05-parse.html" title="parse() — built in module 5; stressed in module 13"><span class="n">05·13</span>parse</a><a class="stage" href="06-chunk-embed.html" title="chunk() — built in module 6"><span class="n">06</span>chunk</a><a class="stage" href="06-chunk-embed.html" title="embed() — built in module 6; stressed in module 12"><span class="n">06·12</span>embed</a><a class="stage" href="07-index.html" title="index() — built in module 7; stressed in module 9, 10, 12"><span class="n">07·09·10·12</span>index</a><a class="stage" href="08-retrieve.html" title="retrieve() — built in module 8; stressed in module 11, 14"><span class="n">08·11·14</span>retrieve</a></nav><div class="lane2"><span class="spacer"></span><a class="branch" href="14-what-vectors-cant-answer.html" title="module 14 — the structured path">14 · structured</a></div></div></header><div class="wrap"><div class="layout"><div class="gutter" aria-hidden="true"><div class="marks"><div>0000</div><div>0010</div><div>0020</div><div>0030</div><div>0040</div><div>0050</div><div>0060</div><div>0070</div><div>0080</div><div>0090</div><div>00a0</div><div>00b0</div><div>00c0</div><div>00d0</div><div>00e0</div><div>00f0</div><div>0100</div><div>0110</div><div>0120</div><div>0130</div><div>0140</div><div>0150</div><div>0160</div><div>0170</div><div>0180</div><div>0190</div><div>01a0</div><div>01b0</div><div>01c0</div><div>01d0</div><div>01e0</div><div>01f0</div><div>0200</div><div>0210</div><div>0220</div><div>0230</div><div>0240</div><div>0250</div><div>0260</div><div>0270</div><div>0280</div><div>0290</div><div>02a0</div><div>02b0</div><div>02c0</div><div>02d0</div><div>02e0</div><div>02f0</div><div>0300</div><div>0310</div><div>0320</div><div>0330</div><div>0340</div><div>0350</div><div>0360</div><div>0370</div><div>0380</div><div>0390</div><div>03a0</div><div>03b0</div><div>03c0</div><div>03d0</div><div>03e0</div><div>03f0</div><div>0400</div><div>0410</div><div>0420</div><div>0430</div><div>0440</div><div>0450</div><div>0460</div><div>0470</div><div>0480</div><div>0490</div><div>04a0</div><div>04b0</div><div>04c0</div><div>04d0</div><div>04e0</div><div>04f0</div><div>0500</div><div>0510</div><div>0520</div><div>0530</div><div>0540</div><div>0550</div><div>0560</div><div>0570</div><div>0580</div><div>0590</div><div>05a0</div><div>05b0</div><div>05c0</div><div>05d0</div><div>05e0</div><div>05f0</div><div>0600</div><div>0610</div><div>0620</div><div>0630</div><div>0640</div><div>0650</div><div>0660</div><div>0670</div><div>0680</div><div>0690</div><div>06a0</div><div>06b0</div><div>06c0</div><div>06d0</div><div>06e0</div><div>06f0</div><div>0700</div><div>0710</div><div>0720</div><div>0730</div><div>0740</div><div>0750</div><div>0760</div><div>0770</div><div>0780</div><div>0790</div><div>07a0</div><div>07b0</div><div>07c0</div><div>07d0</div><div>07e0</div><div>07f0</div><div>0800</div><div>0810</div><div>0820</div><div>0830</div><div>0840</div><div>0850</div><div>0860</div><div>0870</div><div>0880</div><div>0890</div><div>08a0</div><div>08b0</div><div>08c0</div><div>08d0</div><div>08e0</div><div>08f0</div><div>0900</div><div>0910</div><div>0920</div><div>0930</div><div>0940</div><div>0950</div><div>0960</div><div>0970</div><div>0980</div><div>0990</div><div>09a0</div><div>09b0</div><div>09c0</div><div>09d0</div><div>09e0</div><div>09f0</div><div>0a00</div><div>0a10</div><div>0a20</div><div>0a30</div><div>0a40</div><div>0a50</div><div>0a60</div><div>0a70</div><div>0a80</div><div>0a90</div><div>0aa0</div><div>0ab0</div><div>0ac0</div><div>0ad0</div><div>0ae0</div><div>0af0</div><div>0b00</div><div>0b10</div><div>0b20</div><div>0b30</div><div>0b40</div><div>0b50</div><div>0b60</div><div>0b70</div><div>0b80</div><div>0b90</div><div>0ba0</div><div>0bb0</div><div>0bc0</div><div>0bd0</div><div>0be0</div><div>0bf0</div><div>0c00</div><div>0c10</div><div>0c20</div><div>0c30</div><div>0c40</div><div>0c50</div><div>0c60</div><div>0c70</div><div>0c80</div><div>0c90</div><div>0ca0</div><div>0cb0</div><div>0cc0</div><div>0cd0</div><div>0ce0</div><div>0cf0</div><div>0d00</div><div>0d10</div><div>0d20</div><div>0d30</div><div>0d40</div><div>0d50</div><div>0d60</div><div>0d70</div><div>0d80</div><div>0d90</div><div>0da0</div><div>0db0</div><div>0dc0</div><div>0dd0</div><div>0de0</div><div>0df0</div><div>0e00</div><div>0e10</div><div>0e20</div><div>0e30</div><div>0e40</div><div>0e50</div><div>0e60</div><div>0e70</div><div>0e80</div><div>0e90</div><div>0ea0</div><div>0eb0</div><div>0ec0</div><div>0ed0</div><div>0ee0</div><div>0ef0</div><div>0f00</div><div>0f10</div><div>0f20</div><div>0f30</div><div>0f40</div><div>0f50</div><div>0f60</div><div>0f70</div><div>0f80</div><div>0f90</div><div>0fa0</div><div>0fb0</div><div>0fc0</div><div>0fd0</div><div>0fe0</div><div>0ff0</div><div>1000</div><div>1010</div><div>1020</div><div>1030</div><div>1040</div><div>1050</div><div>1060</div><div>1070</div><div>1080</div><div>1090</div><div>10a0</div><div>10b0</div><div>10c0</div><div>10d0</div><div>10e0</div><div>10f0</div><div>1100</div><div>1110</div><div>1120</div><div>1130</div><div>1140</div><div>1150</div><div>1160</div><div>1170</div><div>1180</div><div>1190</div><div>11a0</div><div>11b0</div><div>11c0</div><div>11d0</div><div>11e0</div><div>11f0</div><div>1200</div><div>1210</div><div>1220</div><div>1230</div><div>1240</div><div>1250</div><div>1260</div><div>1270</div><div>1280</div><div>1290</div><div>12a0</div><div>12b0</div><div>12c0</div><div>12d0</div><div>12e0</div><div>12f0</div><div>1300</div><div>1310</div><div>1320</div><div>1330</div><div>1340</div><div>1350</div><div>1360</div><div>1370</div><div>1380</div><div>1390</div><div>13a0</div><div>13b0</div><div>13c0</div><div>13d0</div><div>13e0</div><div>13f0</div><div>1400</div><div>1410</div><div>1420</div><div>1430</div><div>1440</div><div>1450</div><div>1460</div><div>1470</div><div>1480</div><div>1490</div><div>14a0</div><div>14b0</div><div>14c0</div><div>14d0</div><div>14e0</div><div>14f0</div><div>1500</div><div>1510</div><div>1520</div><div>1530</div><div>1540</div><div>1550</div><div>1560</div><div>1570</div><div>1580</div><div>1590</div><div>15a0</div><div>15b0</div><div>15c0</div><div>15d0</div><div>15e0</div><div>15f0</div><div>1600</div><div>1610</div><div>1620</div><div>1630</div><div>1640</div><div>1650</div><div>1660</div><div>1670</div><div>1680</div><div>1690</div><div>16a0</div><div>16b0</div><div>16c0</div><div>16d0</div><div>16e0</div><div>16f0</div><div>1700</div><div>1710</div><div>1720</div><div>1730</div><div>1740</div><div>1750</div><div>1760</div><div>1770</div><div>1780</div><div>1790</div><div>17a0</div><div>17b0</div><div>17c0</div><div>17d0</div><div>17e0</div><div>17f0</div><div>1800</div><div>1810</div><div>1820</div><div>1830</div><div>1840</div><div>1850</div><div>1860</div><div>1870</div><div>1880</div><div>1890</div><div>18a0</div><div>18b0</div><div>18c0</div><div>18d0</div><div>18e0</div><div>18f0</div><div>1900</div><div>1910</div><div>1920</div><div>1930</div><div>1940</div><div>1950</div><div>1960</div><div>1970</div><div>1980</div><div>1990</div><div>19a0</div><div>19b0</div><div>19c0</div><div>19d0</div><div>19e0</div><div>19f0</div><div>1a00</div><div>1a10</div><div>1a20</div><div>1a30</div><div>1a40</div><div>1a50</div><div>1a60</div><div>1a70</div><div>1a80</div><div>1a90</div><div>1aa0</div><div>1ab0</div><div>1ac0</div><div>1ad0</div><div>1ae0</div><div>1af0</div><div>1b00</div><div>1b10</div><div>1b20</div><div>1b30</div><div>1b40</div><div>1b50</div><div>1b60</div><div>1b70</div><div>1b80</div><div>1b90</div><div>1ba0</div><div>1bb0</div><div>1bc0</div><div>1bd0</div><div>1be0</div><div>1bf0</div><div>1c00</div><div>1c10</div><div>1c20</div><div>1c30</div><div>1c40</div><div>1c50</div><div>1c60</div><div>1c70</div><div>1c80</div><div>1c90</div><div>1ca0</div><div>1cb0</div><div>1cc0</div><div>1cd0</div><div>1ce0</div><div>1cf0</div><div>1d00</div><div>1d10</div><div>1d20</div><div>1d30</div><div>1d40</div><div>1d50</div><div>1d60</div><div>1d70</div><div>1d80</div><div>1d90</div><div>1da0</div><div>1db0</div><div>1dc0</div><div>1dd0</div><div>1de0</div><div>1df0</div><div>1e00</div><div>1e10</div><div>1e20</div><div>1e30</div><div>1e40</div><div>1e50</div><div>1e60</div><div>1e70</div><div>1e80</div><div>1e90</div><div>1ea0</div><div>1eb0</div><div>1ec0</div><div>1ed0</div><div>1ee0</div><div>1ef0</div><div>1f00</div><div>1f10</div><div>1f20</div><div>1f30</div><div>1f40</div><div>1f50</div><div>1f60</div><div>1f70</div><div>1f80</div><div>1f90</div><div>1fa0</div><div>1fb0</div><div>1fc0</div><div>1fd0</div><div>1fe0</div><div>1ff0</div><div>2000</div><div>2010</div><div>2020</div><div>2030</div><div>2040</div><div>2050</div><div>2060</div><div>2070</div><div>2080</div><div>2090</div><div>20a0</div><div>20b0</div><div>20c0</div><div>20d0</div><div>20e0</div><div>20f0</div><div>2100</div><div>2110</div><div>2120</div><div>2130</div><div>2140</div><div>2150</div><div>2160</div><div>2170</div><div>2180</div><div>2190</div><div>21a0</div><div>21b0</div><div>21c0</div><div>21d0</div><div>21e0</div><div>21f0</div><div>2200</div><div>2210</div><div>2220</div><div>2230</div><div>2240</div><div>2250</div><div>2260</div><div>2270</div><div>2280</div><div>2290</div><div>22a0</div><div>22b0</div><div>22c0</div><div>22d0</div><div>22e0</div><div>22f0</div><div>2300</div><div>2310</div><div>2320</div><div>2330</div><div>2340</div><div>2350</div><div>2360</div><div>2370</div><div>2380</div><div>2390</div><div>23a0</div><div>23b0</div><div>23c0</div><div>23d0</div><div>23e0</div><div>23f0</div><div>2400</div><div>2410</div><div>2420</div><div>2430</div><div>2440</div><div>2450</div><div>2460</div><div>2470</div><div>2480</div><div>2490</div><div>24a0</div><div>24b0</div><div>24c0</div><div>24d0</div><div>24e0</div><div>24f0</div><div>2500</div><div>2510</div><div>2520</div><div>2530</div><div>2540</div><div>2550</div><div>2560</div><div>2570</div><div>2580</div><div>2590</div><div>25a0</div><div>25b0</div><div>25c0</div><div>25d0</div><div>25e0</div><div>25f0</div><div>2600</div><div>2610</div><div>2620</div><div>2630</div><div>2640</div><div>2650</div><div>2660</div><div>2670</div><div>2680</div><div>2690</div><div>26a0</div><div>26b0</div><div>26c0</div><div>26d0</div><div>26e0</div><div>26f0</div><div>2700</div><div>2710</div><div>2720</div><div>2730</div><div>2740</div><div>2750</div><div>2760</div><div>2770</div><div>2780</div><div>2790</div><div>27a0</div><div>27b0</div><div>27c0</div><div>27d0</div><div>27e0</div><div>27f0</div><div>2800</div><div>2810</div><div>2820</div><div>2830</div><div>2840</div><div>2850</div><div>2860</div><div>2870</div><div>2880</div><div>2890</div><div>28a0</div><div>28b0</div><div>28c0</div><div>28d0</div><div>28e0</div><div>28f0</div><div>2900</div><div>2910</div><div>2920</div><div>2930</div><div>2940</div><div>2950</div><div>2960</div><div>2970</div><div>2980</div><div>2990</div><div>29a0</div><div>29b0</div><div>29c0</div><div>29d0</div><div>29e0</div><div>29f0</div><div>2a00</div><div>2a10</div><div>2a20</div><div>2a30</div><div>2a40</div><div>2a50</div><div>2a60</div><div>2a70</div><div>2a80</div><div>2a90</div><div>2aa0</div><div>2ab0</div><div>2ac0</div><div>2ad0</div><div>2ae0</div><div>2af0</div><div>2b00</div><div>2b10</div><div>2b20</div><div>2b30</div><div>2b40</div><div>2b50</div><div>2b60</div><div>2b70</div><div>2b80</div><div>2b90</div><div>2ba0</div><div>2bb0</div><div>2bc0</div><div>2bd0</div><div>2be0</div><div>2bf0</div><div>2c00</div><div>2c10</div><div>2c20</div><div>2c30</div><div>2c40</div><div>2c50</div><div>2c60</div><div>2c70</div><div>2c80</div><div>2c90</div><div>2ca0</div><div>2cb0</div><div>2cc0</div><div>2cd0</div><div>2ce0</div><div>2cf0</div><div>2d00</div><div>2d10</div><div>2d20</div><div>2d30</div><div>2d40</div><div>2d50</div><div>2d60</div><div>2d70</div><div>2d80</div><div>2d90</div><div>2da0</div><div>2db0</div><div>2dc0</div><div>2dd0</div><div>2de0</div><div>2df0</div><div>2e00</div><div>2e10</div><div>2e20</div><div>2e30</div><div>2e40</div><div>2e50</div><div>2e60</div><div>2e70</div><div>2e80</div><div>2e90</div><div>2ea0</div><div>2eb0</div><div>2ec0</div><div>2ed0</div><div>2ee0</div><div>2ef0</div><div>2f00</div><div>2f10</div><div>2f20</div><div>2f30</div><div>2f40</div><div>2f50</div><div>2f60</div><div>2f70</div><div>2f80</div><div>2f90</div><div>2fa0</div><div>2fb0</div><div>2fc0</div><div>2fd0</div><div>2fe0</div><div>2ff0</div><div>3000</div><div>3010</div><div>3020</div><div>3030</div><div>3040</div><div>3050</div><div>3060</div><div>3070</div><div>3080</div><div>3090</div><div>30a0</div><div>30b0</div><div>30c0</div><div>30d0</div><div>30e0</div><div>30f0</div><div>3100</div><div>3110</div><div>3120</div><div>3130</div><div>3140</div><div>3150</div><div>3160</div><div>3170</div><div>3180</div><div>3190</div><div>31a0</div><div>31b0</div><div>31c0</div><div>31d0</div><div>31e0</div><div>31f0</div><div>3200</div><div>3210</div><div>3220</div><div>3230</div><div>3240</div><div>3250</div><div>3260</div><div>3270</div><div>3280</div><div>3290</div><div>32a0</div><div>32b0</div><div>32c0</div><div>32d0</div><div>32e0</div><div>32f0</div><div>3300</div><div>3310</div><div>3320</div><div>3330</div><div>3340</div><div>3350</div><div>3360</div><div>3370</div><div>3380</div><div>3390</div><div>33a0</div><div>33b0</div><div>33c0</div><div>33d0</div><div>33e0</div><div>33f0</div><div>3400</div><div>3410</div><div>3420</div><div>3430</div><div>3440</div><div>3450</div><div>3460</div><div>3470</div><div>3480</div><div>3490</div><div>34a0</div><div>34b0</div><div>34c0</div><div>34d0</div><div>34e0</div><div>34f0</div><div>3500</div><div>3510</div><div>3520</div><div>3530</div><div>3540</div><div>3550</div><div>3560</div><div>3570</div><div>3580</div><div>3590</div><div>35a0</div><div>35b0</div><div>35c0</div><div>35d0</div><div>35e0</div><div>35f0</div><div>3600</div><div>3610</div><div>3620</div><div>3630</div><div>3640</div><div>3650</div><div>3660</div><div>3670</div><div>3680</div><div>3690</div><div>36a0</div><div>36b0</div><div>36c0</div><div>36d0</div><div>36e0</div><div>36f0</div><div>3700</div><div>3710</div><div>3720</div><div>3730</div><div>3740</div><div>3750</div><div>3760</div><div>3770</div><div>3780</div><div>3790</div><div>37a0</div><div>37b0</div><div>37c0</div><div>37d0</div><div>37e0</div><div>37f0</div><div>3800</div><div>3810</div><div>3820</div><div>3830</div></div></div><main class="col"><p class="kicker learn">Part I · module 2 · investigate · 15–25 minutes · nothing to install</p>
+<h1><span class="num">02 ·</span> How text becomes bytes</h1>
+<p class="hook">This module sits two floors under <code>loader.load()</code>, and
+directly under every string your pipeline touches. Module 1 said a file is a record and
+a list of blocks. This module asks what is <em>in</em> the blocks.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>You think in text. The disk stores bytes. Something has to bridge the two, and the
+bridge is not a mechanism. It is an agreement: a table, written down decades ago, that
+pairs each character with a number. Your pipeline crosses this bridge on its very first
+line, when <code>loader.load()</code> turns bytes from disk into a string, and it
+crosses back every time anything gets saved.</p>
+
+<p>The reason to spend a module here is that the bridge can be crossed wrongly, and
+when it is, nothing crashes. The text that comes out is quietly different from the text
+that went in, and every later stage, chunking, embedding, retrieval, inherits the
+damage without knowing. By the end of this module you will be able to look at any file
+and say exactly which agreement its bytes are written under, and you will know what
+happens when a reader applies the wrong one.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Here are eight bytes, exactly as they might sit on your disk:</p>
+  <p style="font-family:var(--mono);font-size:1.05rem;letter-spacing:.08em">
+  48 65
+  6c 6c
+  6f 21
+  00 2a</p>
+  <p>Are they a word, a number, a colour, or four notes of audio? Study them as long as
+  you like. The question has no answer, and the reason it has no answer is the whole
+  subject of this module.</p>
+</div>
+
+<h2 id="mental-model">The mental model: meaning lives outside the bytes</h2>
+
+<p>A byte is eight switches. Each switch is on or off, so a byte has
+256 possible settings and no more. That is the entire
+content of a byte. It is not a number, not a letter, not a colour. It is one of
+256 states.</p>
+
+<p>So where does meaning come from? It comes from outside. Meaning is an agreement
+between whoever wrote the bytes and whoever reads them. The writer picks a scheme, the
+reader applies the same scheme, and text appears. Apply a different scheme and
+different text appears, from the same bytes, and nothing anywhere will complain.</p>
+
+<p>Here are those same eight bytes from the puzzle, read four ways:</p>
+
+<div class="table-wrap">
+<table>
+  <caption>one row of bytes, four conventions — measured by the exercise</caption>
+  <thead><tr><th>read them as</th><th>and you get</th></tr></thead>
+  <tbody>
+    <tr><td>text, one byte per letter</td>
+        <td class="num">Hello!\x00*</td></tr>
+    <tr><td>two whole numbers, low byte first</td>
+        <td class="num">1,819,043,144 and 704,651,631</td></tr>
+    <tr><td>two whole numbers, high byte first</td>
+        <td class="num">1,214,606,444 and 1,864,433,706</td></tr>
+    <tr><td>one decimal number</td>
+        <td class="num">2.1978711810724756e-106</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>All four are correct readings. None of them is <em>the</em> reading. The bytes do
+not know.</p>
+
+<h3>The first agreement: ASCII, where 65 means A</h3>
+
+<p>Somebody had to go first. In the 1960s a committee wrote down a table pairing
+numbers with characters: 65 means <code>A</code>, 66 means <code>B</code>, 32 means a
+space, and 10 means "start a new line". That table is called
+<span class="term">ASCII</span>, and it covers 128 of a byte's
+256 settings, which is enough for English, digits, and
+punctuation, and nothing else.</p>
+
+<p>There is no reason 65 had to mean <code>A</code>. It means <code>A</code> because
+enough people agreed to act as though it does. In bits, the byte your keyboard sends
+for <code>A</code> is <code>01000001</code>. Nothing about
+that pattern is letter-shaped.</p>
+
+<h3>The second agreement: UTF-8, for every other character on Earth</h3>
+
+<p>The world has more than 128 characters in it. It has well over a hundred thousand.
+That is a problem, because a byte holds 256 values, and
+no arrangement of 256 values holds a hundred thousand
+characters.</p>
+
+<p>The solution was to stop using one byte per character.
+<span class="term">Unicode</span> gives every character a number. The letter
+<code>é</code> is U+00E9, and a brick emoji is
+U+1F9F1. Then <span class="term">UTF-8</span> is a
+scheme for writing those numbers as bytes. Characters that were in ASCII still take one
+byte and keep their old values, which is why UTF-8 could take over the world without
+breaking anything. Everything else takes two, three, or four bytes, and the leading
+bits of the first byte tell a reader how many to expect.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/02-bytes-text/investigate.py</caption>
+  <thead><tr><th>character</th><th>Unicode number</th><th class="num">bytes</th><th>the bytes</th></tr></thead>
+  <tbody>
+    <tr><td>A &nbsp; <span style="color:var(--ink-3)">LATIN CAPITAL LETTER A</span></td>
+        <td class="num">U+0041</td>
+        <td class="num">1</td>
+        <td class="num">41</td></tr>
+    <tr><td>é &nbsp; <span style="color:var(--ink-3)">LATIN SMALL LETTER E WITH ACUTE</span></td>
+        <td class="num">U+00E9</td>
+        <td class="num">2</td>
+        <td class="num">c3 a9</td></tr>
+    <tr><td>→ &nbsp; <span style="color:var(--ink-3)">RIGHTWARDS ARROW</span></td>
+        <td class="num">U+2192</td>
+        <td class="num">3</td>
+        <td class="num">e2 86 92</td></tr>
+    <tr><td>🧱 &nbsp; <span style="color:var(--ink-3)">BRICK</span></td>
+        <td class="num">U+1F9F1</td>
+        <td class="num">4</td>
+        <td class="num">f0 9f a7 b1</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Why "the length of a string" is three different numbers</h3>
+
+<p>Once characters take a variable number of bytes, "how long is this text" splits into
+several questions with different answers.</p>
+
+<p>The word <code>café</code> is
+4 characters and
+5 bytes, because the accented letter takes two.
+Ask Python for its length and you get 4. Ask for
+the length of its bytes and you get 5. Both
+answers are right. They answer different questions.</p>
+
+<p>And there is a third number. An astronaut emoji is one thing on your screen. It is
+3 Unicode characters, a woman, an invisible
+joiner, and a rocket, and it is
+11 bytes. One glyph,
+3 characters,
+11 bytes. Three numbers, three questions, and
+a chunking function that cuts at "500 characters" is quietly picking one of them.</p>
+
+<h3>A file format is this same agreement, grown large</h3>
+
+<p>Now scale the idea up, because this is the sentence the parsing modules stand on.
+UTF-8 is an agreement about how to read a run of bytes as characters. A file format is
+an agreement about how to read a whole file. It is the same idea, with more of it.</p>
+
+<p>A PNG opens with eight fixed bytes that announce what it is, and the specification
+says exactly how to walk the rest: a length, a four-letter chunk name, the chunk's
+contents, a checksum, repeat. A PDF opens with <code>%PDF-</code> and a version number,
+and the PDF specification's rules tell a reader how to walk its objects.</p>
+
+<p>All files are bytes. What makes a PDF a PDF is that the writer and the reader honour
+the same contract. There is no PDF-ness in the storage. There is a document that
+follows the rules, and there are programs that know the rules.</p>
+
+<p>Hold onto the second half of that. If a format's rules record what you need, a
+parser reads it and you get your data. If the rules record something <em>else</em>,
+say, where to put ink on a page rather than what the words are, then a parser must
+guess, and no amount of careful reading recovers what was never written down. That is
+module 5, and module 13 is the full account of why the guessing is hard.</p>
+
+<h2 id="do">Investigate it yourself</h2>
+
+<p>Run everything at once, which also records the numbers on this page:</p>
+
+<figure>
+  <div class="code"><pre>python exercises/02-bytes-text/investigate.py</pre></div>
+</figure>
+
+<p>Or work by hand. On macOS and most Linux systems <code>xxd</code> is present, and
+where it is not, <code>hexdump -C</code> prints the same three columns.</p>
+
+<h3>1 · Look at text as bytes</h3>
+
+<div class="dual">
+  <div class="term-block">
+    <div class="term-head">with xxd</div>
+<pre><span class="prompt">$</span> printf 'Hello, floor.\n' > plain.txt
+<span class="prompt">$</span> xxd plain.txt</pre>
+  </div>
+  <div class="term-block">
+    <div class="term-head">with hexdump</div>
+<pre><span class="prompt">$</span> printf 'Hello, floor.\n' > plain.txt
+<span class="prompt">$</span> hexdump -C plain.txt</pre>
+  </div>
+</div>
+
+<p>You get three columns: where you are in the file, the bytes in hexadecimal, and the
+same bytes shown as characters where a character exists. Find <code>48</code> and check
+it against an ASCII table. It is 72, and 72 means <code>H</code>.</p>
+
+<h3>2 · Watch one character take several bytes</h3>
+
+<figure>
+  <div class="code"><pre><span class="c-kw">for</span> ch <span class="c-kw">in</span> <span class="c-st">"A"</span>, <span class="c-st">"é"</span>, <span class="c-st">"→"</span>, <span class="c-st">"🧱"</span>:
+    print(ch, len(ch), len(ch.encode(<span class="c-st">"utf-8"</span>)), ch.encode(<span class="c-st">"utf-8"</span>).hex(<span class="c-st">" "</span>))
+
+print(len(<span class="c-st">"café"</span>), len(<span class="c-st">"café"</span>.encode()))</pre></div>
+  <figcaption>python3 — no imports needed</figcaption>
+</figure>
+
+<h3>3 · Break the agreement, in one line</h3>
+
+<figure>
+  <div class="code"><pre>raw = <span class="c-st">"café"</span>.encode(<span class="c-st">"utf-8"</span>)
+print(raw.decode(<span class="c-st">"utf-8"</span>))     <span class="c-cm"># the agreement honoured</span>
+print(raw.decode(<span class="c-st">"latin-1"</span>))   <span class="c-cm"># the same bytes, a different agreement</span></pre></div>
+</figure>
+
+<h3>4 · Read a format announcing itself</h3>
+
+<figure>
+  <div class="code"><pre>xxd -l 32 one.png                       <span class="c-cm"># hexdump -C -n 32 one.png</span>
+xxd -l 32 pipeline/sample_pdfs/gen-clean-1col.pdf
+file notes.txt                          <span class="c-cm"># the renamed PNG from module 1</span></pre></div>
+</figure>
+
+<h2 id="observe">What you should see</h2>
+
+<p>Here are the PNG's first bytes, from the exercise. The highlighted eight are the
+signature, and every PNG in the world starts with exactly these:</p>
+
+<figure>
+<div class="hex"><span class="off">00000000</span>  <span class="hl">89</span> <span class="hl">50</span> <span class="hl">4e</span> <span class="hl">47</span> <span class="hl">0d</span> <span class="hl">0a</span> <span class="hl">1a</span> <span class="hl">0a</span>  00 00 00 0d 49 48 44 52   |.PNG........IHDR|
+<span class="off">00000010</span>  00 00 00 01 00 00 00 01  08 06 00 00 00 1f 15 c4   |................|</div>
+<figcaption>the first 32 bytes of a one-pixel PNG.
+after the signature comes a length, then <code>IHDR</code>, the first chunk's name,
+readable in the right-hand column</figcaption>
+</figure>
+
+<p>And here is a PDF, whose agreement announces itself in ASCII you can read
+directly:</p>
+
+<figure>
+<div class="hex"><span class="off">00000000</span>  <span class="hl">25</span> <span class="hl">50</span> <span class="hl">44</span> <span class="hl">46</span> <span class="hl">2d</span> <span class="hl">31</span> <span class="hl">2e</span> <span class="hl">34</span>  0a 25 93 8c 8b 9e 20 52   |%PDF-1.4.%.... R|
+<span class="off">00000010</span>  65 70 6f 72 74 4c 61 62  20 47 65 6e 65 72 61 74   |eportLab Generat|</div>
+<figcaption>pipeline/sample_pdfs/gen-clean-1col.pdf — the same file the Part 0
+pipeline opened</figcaption>
+</figure>
+
+<p>Three things to have seen:</p>
+
+<ul>
+  <li><strong>One character is not one byte.</strong> <code>A</code> took
+  1, <code>é</code> took
+  2, the arrow took
+  3, and the brick took
+  4. The ratio between characters and bytes is
+  not fixed, and it depends on what language your documents are in.</li>
+  <li><strong>The same bytes produced two different texts.</strong>
+  <code>63 61
+  66 c3
+  a9</code> read as UTF-8 is
+  <code>café</code>. Read as Latin-1 it is
+  <code>cafÃ©</code>. There was no error and no
+  warning. The second reader honoured a different agreement and got different
+  words.</li>
+  <li><strong>Sometimes it fails loudly instead.</strong> Bytes written under Latin-1
+  and read as UTF-8 give:
+  <code style="color:var(--break)">&#x27;utf-8&#x27; codec can&#x27;t decode byte 0xe9 in position 3: invalid continuation byte</code>. That error
+  is not a corrupt file. It is two conventions disagreeing.</li>
+</ul>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Start from the failure, because it is the clearest case. The byte
+<code>e9</code> is a perfectly good byte. Under Latin-1 it means <code>é</code>. Under
+UTF-8 it is the first byte of a two-byte sequence, and the rules say the next byte must
+begin with a particular bit pattern. It did not. So the decoder stopped, because it
+could tell that the agreement it was told to apply is not the agreement the bytes were
+written under.</p>
+
+<p>Contrast that with the pair that did not fail. <code>c3 a9</code> under UTF-8 is one
+character, <code>é</code>. Under Latin-1, each byte is its own character,
+<code>Ã</code> and <code>©</code>. Both readings are internally consistent, so nothing
+raised an error, and you got
+<code>cafÃ©</code>. This is the mojibake you have
+seen on badly configured web pages your whole life, and now you know exactly what it
+is: two programs holding different agreements about the same bytes.</p>
+
+<p>This is also why "what encoding is this file in" is a question the file usually
+cannot answer. The encoding is not stored in the bytes. It is what you have to know
+<em>before</em> the bytes mean anything. Some formats solve this by writing the
+agreement down inside the file. HTML has a charset declaration, and XML has one in its
+first line. Plain text has nowhere to put it, so programs guess, and their guesses are
+where a corpus quietly acquires
+<code>cafÃ©</code> in it.</p>
+
+<p>Now the signatures. A PNG starts with
+<code>89 50
+4e 47</code> and four
+more bytes. Those four spell <code>PNG</code> in ASCII, preceded by a byte chosen
+deliberately to be invalid in most text encodings, so that a program treating a PNG as
+text fails early and loudly rather than quietly. The convention is designed to be
+detectable.</p>
+
+<p>That is how <code>file</code> works, and it is why it did not care about the
+<code>.txt</code> extension in module 1. It holds a table of known openings, reads the
+first bytes, and reports the first agreement that matches:
+<code>notes.txt: PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced</code>.</p>
+
+<p>Which brings the module to its point. Every stage of your pipeline is one of these
+agreements, applied. <code>loader.load()</code> decodes bytes to text under an assumed
+encoding. <code>parse()</code> reads a document under the PDF specification's rules.
+Even <code>embed()</code> is an agreement, a learned one instead of a standardised one,
+which is why module 6 introduces it as the same idea with the table filled in by data
+rather than by a committee.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>loader.load()</code> hands you a string, and that
+string exists only because someone chose an encoding on your behalf. When it chooses
+wrong, your corpus fills with <code>cafÃ©</code> and
+every downstream stage inherits it. <strong>Backward:</strong> module 1 showed that the
+disk has no opinion about what a file is. This module says why it does not need one.
+The opinion lives in the bytes, as a convention two programs share.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>This module is the first half of that sentence, stated as plainly as the site ever
+states it. Module 3 does the same for numbers, and then module 6 fuses them: text in,
+numbers out, an agreement at each end.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Bryant &amp; O'Hallaron, <span class="title">Computer
+  Systems: A Programmer's Perspective</span>, chapter 2, opening sections.</strong>
+  Read the first pages on information as bits and bytes. Expect it to make the same
+  argument more formally, and to set up module 3's half, where numbers get the same
+  treatment.</p>
+
+  <p class="book"><strong>The Unicode Consortium's own
+  <span class="title">"What is Unicode?"</span> introduction.</strong> Two pages.
+  Expect the reason UTF-8 won: it kept ASCII's byte values, so half the world's
+  existing files were already valid UTF-8 on the day it shipped.</p>
+
+  <ol>
+    <li>A file holds 5 bytes and displays as
+    4 characters. Give a one-sentence explanation
+    someone could act on.</li>
+    <li>Your chunker cuts text every 500 characters. Your colleague's cuts every 500
+    bytes. On an English corpus they agree. On a Japanese one they do not. Why, and
+    which one would you rather debug?</li>
+    <li>Someone sends you a file with no extension. Name two ways to find out what it
+    is, and say which one can be wrong.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your terminal shows boxes or question marks instead of
+    <code>→</code> or
+    <code>🧱</code>, the bytes are still correct.
+    Your terminal font has no picture for that character. Check
+    <code>len(ch.encode())</code> in Python instead of trusting the display; the number
+    is the evidence, the glyph is not.</p>
+    <p>If <code>xxd</code> is missing, use <code>hexdump -C</code>. The columns are
+    laid out slightly differently and the byte values are identical.</p>
+    <p>If <code>raw.decode("latin-1")</code> raises instead of printing
+    <code>cafÃ©</code>, you are decoding different
+    bytes than the exercise did. Latin-1 maps all
+    256 byte values to characters and cannot fail. Check
+    that <code>raw</code> came from <code>.encode("utf-8")</code>.</p>
+  </div>
+</div>
+<button class="done-toggle" type="button" aria-pressed="false" data-module="02-bytes-text"><span class="box"></span><span class="label">mark this module complete</span></button><nav class="modnav"><a class="prev" href="01-what-is-a-file.html"><span class="dir">previous</span><span class="name">01 · What is a file, actually?</span></a><a class="next" href="03-bytes-numbers.html"><span class="dir">next</span><span class="name">03 · How numbers become bytes</span></a></nav></main></div></div><script src="../assets/site.js"></script>
+</body>
+</html>

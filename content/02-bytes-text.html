@@ -1,0 +1,367 @@
+<p class="kicker learn">Part I · module 2 · investigate · 15–25 minutes · nothing to install</p>
+<h1><span class="num">02 ·</span> How text becomes bytes</h1>
+<p class="hook">This module sits two floors under <code>loader.load()</code>, and
+directly under every string your pipeline touches. Module 1 said a file is a record and
+a list of blocks. This module asks what is <em>in</em> the blocks.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>You think in text. The disk stores bytes. Something has to bridge the two, and the
+bridge is not a mechanism. It is an agreement: a table, written down decades ago, that
+pairs each character with a number. Your pipeline crosses this bridge on its very first
+line, when <code>loader.load()</code> turns bytes from disk into a string, and it
+crosses back every time anything gets saved.</p>
+
+<p>The reason to spend a module here is that the bridge can be crossed wrongly, and
+when it is, nothing crashes. The text that comes out is quietly different from the text
+that went in, and every later stage, chunking, embedding, retrieval, inherits the
+damage without knowing. By the end of this module you will be able to look at any file
+and say exactly which agreement its bytes are written under, and you will know what
+happens when a reader applies the wrong one.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Here are eight bytes, exactly as they might sit on your disk:</p>
+  <p style="font-family:var(--mono);font-size:1.05rem;letter-spacing:.08em">
+  {{ 02-bytes-text.mystery_bytes.0 }} {{ 02-bytes-text.mystery_bytes.1 }}
+  {{ 02-bytes-text.mystery_bytes.2 }} {{ 02-bytes-text.mystery_bytes.3 }}
+  {{ 02-bytes-text.mystery_bytes.4 }} {{ 02-bytes-text.mystery_bytes.5 }}
+  {{ 02-bytes-text.mystery_bytes.6 }} {{ 02-bytes-text.mystery_bytes.7 }}</p>
+  <p>Are they a word, a number, a colour, or four notes of audio? Study them as long as
+  you like. The question has no answer, and the reason it has no answer is the whole
+  subject of this module.</p>
+</div>
+
+<h2 id="mental-model">The mental model: meaning lives outside the bytes</h2>
+
+<p>A byte is eight switches. Each switch is on or off, so a byte has
+{{ 02-bytes-text.byte_settings }} possible settings and no more. That is the entire
+content of a byte. It is not a number, not a letter, not a colour. It is one of
+{{ 02-bytes-text.byte_settings }} states.</p>
+
+<p>So where does meaning come from? It comes from outside. Meaning is an agreement
+between whoever wrote the bytes and whoever reads them. The writer picks a scheme, the
+reader applies the same scheme, and text appears. Apply a different scheme and
+different text appears, from the same bytes, and nothing anywhere will complain.</p>
+
+<p>Here are those same eight bytes from the puzzle, read four ways:</p>
+
+<div class="table-wrap">
+<table>
+  <caption>one row of bytes, four conventions — measured by the exercise</caption>
+  <thead><tr><th>read them as</th><th>and you get</th></tr></thead>
+  <tbody>
+    <tr><td>text, one byte per letter</td>
+        <td class="num">{{ 02-bytes-text.mystery_readings.ascii_text }}</td></tr>
+    <tr><td>two whole numbers, low byte first</td>
+        <td class="num">{{ 02-bytes-text.mystery_readings.two_int32_le.0 | int }} and {{ 02-bytes-text.mystery_readings.two_int32_le.1 | int }}</td></tr>
+    <tr><td>two whole numbers, high byte first</td>
+        <td class="num">{{ 02-bytes-text.mystery_readings.two_int32_be.0 | int }} and {{ 02-bytes-text.mystery_readings.two_int32_be.1 | int }}</td></tr>
+    <tr><td>one decimal number</td>
+        <td class="num">{{ 02-bytes-text.mystery_readings.one_float64_le }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>All four are correct readings. None of them is <em>the</em> reading. The bytes do
+not know.</p>
+
+<h3>The first agreement: ASCII, where 65 means A</h3>
+
+<p>Somebody had to go first. In the 1960s a committee wrote down a table pairing
+numbers with characters: 65 means <code>A</code>, 66 means <code>B</code>, 32 means a
+space, and 10 means "start a new line". That table is called
+<span class="term">ASCII</span>, and it covers 128 of a byte's
+{{ 02-bytes-text.byte_settings }} settings, which is enough for English, digits, and
+punctuation, and nothing else.</p>
+
+<p>There is no reason 65 had to mean <code>A</code>. It means <code>A</code> because
+enough people agreed to act as though it does. In bits, the byte your keyboard sends
+for <code>A</code> is <code>{{ 02-bytes-text.letter_a.bits }}</code>. Nothing about
+that pattern is letter-shaped.</p>
+
+<h3>The second agreement: UTF-8, for every other character on Earth</h3>
+
+<p>The world has more than 128 characters in it. It has well over a hundred thousand.
+That is a problem, because a byte holds {{ 02-bytes-text.byte_settings }} values, and
+no arrangement of {{ 02-bytes-text.byte_settings }} values holds a hundred thousand
+characters.</p>
+
+<p>The solution was to stop using one byte per character.
+<span class="term">Unicode</span> gives every character a number. The letter
+<code>é</code> is {{ 02-bytes-text.char_widths.1.codepoint }}, and a brick emoji is
+{{ 02-bytes-text.char_widths.3.codepoint }}. Then <span class="term">UTF-8</span> is a
+scheme for writing those numbers as bytes. Characters that were in ASCII still take one
+byte and keep their old values, which is why UTF-8 could take over the world without
+breaking anything. Everything else takes two, three, or four bytes, and the leading
+bits of the first byte tell a reader how many to expect.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/02-bytes-text/investigate.py</caption>
+  <thead><tr><th>character</th><th>Unicode number</th><th class="num">bytes</th><th>the bytes</th></tr></thead>
+  <tbody>
+    <tr><td>{{ 02-bytes-text.char_widths.0.char }} &nbsp; <span style="color:var(--ink-3)">{{ 02-bytes-text.char_widths.0.name }}</span></td>
+        <td class="num">{{ 02-bytes-text.char_widths.0.codepoint }}</td>
+        <td class="num">{{ 02-bytes-text.char_widths.0.n_bytes }}</td>
+        <td class="num">{{ 02-bytes-text.char_widths.0.utf8_bytes.0 }}</td></tr>
+    <tr><td>{{ 02-bytes-text.char_widths.1.char }} &nbsp; <span style="color:var(--ink-3)">{{ 02-bytes-text.char_widths.1.name }}</span></td>
+        <td class="num">{{ 02-bytes-text.char_widths.1.codepoint }}</td>
+        <td class="num">{{ 02-bytes-text.char_widths.1.n_bytes }}</td>
+        <td class="num">{{ 02-bytes-text.char_widths.1.utf8_bytes.0 }} {{ 02-bytes-text.char_widths.1.utf8_bytes.1 }}</td></tr>
+    <tr><td>{{ 02-bytes-text.char_widths.2.char }} &nbsp; <span style="color:var(--ink-3)">{{ 02-bytes-text.char_widths.2.name }}</span></td>
+        <td class="num">{{ 02-bytes-text.char_widths.2.codepoint }}</td>
+        <td class="num">{{ 02-bytes-text.char_widths.2.n_bytes }}</td>
+        <td class="num">{{ 02-bytes-text.char_widths.2.utf8_bytes.0 }} {{ 02-bytes-text.char_widths.2.utf8_bytes.1 }} {{ 02-bytes-text.char_widths.2.utf8_bytes.2 }}</td></tr>
+    <tr><td>{{ 02-bytes-text.char_widths.3.char }} &nbsp; <span style="color:var(--ink-3)">{{ 02-bytes-text.char_widths.3.name }}</span></td>
+        <td class="num">{{ 02-bytes-text.char_widths.3.codepoint }}</td>
+        <td class="num">{{ 02-bytes-text.char_widths.3.n_bytes }}</td>
+        <td class="num">{{ 02-bytes-text.char_widths.3.utf8_bytes.0 }} {{ 02-bytes-text.char_widths.3.utf8_bytes.1 }} {{ 02-bytes-text.char_widths.3.utf8_bytes.2 }} {{ 02-bytes-text.char_widths.3.utf8_bytes.3 }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Why "the length of a string" is three different numbers</h3>
+
+<p>Once characters take a variable number of bytes, "how long is this text" splits into
+several questions with different answers.</p>
+
+<p>The word <code>{{ 02-bytes-text.cafe.text }}</code> is
+{{ 02-bytes-text.cafe.len_characters }} characters and
+{{ 02-bytes-text.cafe.len_utf8_bytes }} bytes, because the accented letter takes two.
+Ask Python for its length and you get {{ 02-bytes-text.cafe.len_characters }}. Ask for
+the length of its bytes and you get {{ 02-bytes-text.cafe.len_utf8_bytes }}. Both
+answers are right. They answer different questions.</p>
+
+<p>And there is a third number. An astronaut emoji is one thing on your screen. It is
+{{ 02-bytes-text.astronaut.len_characters }} Unicode characters, a woman, an invisible
+joiner, and a rocket, and it is
+{{ 02-bytes-text.astronaut.len_utf8_bytes }} bytes. One glyph,
+{{ 02-bytes-text.astronaut.len_characters }} characters,
+{{ 02-bytes-text.astronaut.len_utf8_bytes }} bytes. Three numbers, three questions, and
+a chunking function that cuts at "500 characters" is quietly picking one of them.</p>
+
+<h3>A file format is this same agreement, grown large</h3>
+
+<p>Now scale the idea up, because this is the sentence the parsing modules stand on.
+UTF-8 is an agreement about how to read a run of bytes as characters. A file format is
+an agreement about how to read a whole file. It is the same idea, with more of it.</p>
+
+<p>A PNG opens with eight fixed bytes that announce what it is, and the specification
+says exactly how to walk the rest: a length, a four-letter chunk name, the chunk's
+contents, a checksum, repeat. A PDF opens with <code>%PDF-</code> and a version number,
+and the PDF specification's rules tell a reader how to walk its objects.</p>
+
+<p>All files are bytes. What makes a PDF a PDF is that the writer and the reader honour
+the same contract. There is no PDF-ness in the storage. There is a document that
+follows the rules, and there are programs that know the rules.</p>
+
+<p>Hold onto the second half of that. If a format's rules record what you need, a
+parser reads it and you get your data. If the rules record something <em>else</em>,
+say, where to put ink on a page rather than what the words are, then a parser must
+guess, and no amount of careful reading recovers what was never written down. That is
+module 5, and module 13 is the full account of why the guessing is hard.</p>
+
+<h2 id="do">Investigate it yourself</h2>
+
+<p>Run everything at once, which also records the numbers on this page:</p>
+
+<figure>
+  <div class="code"><pre>python exercises/02-bytes-text/investigate.py</pre></div>
+</figure>
+
+<p>Or work by hand. On macOS and most Linux systems <code>xxd</code> is present, and
+where it is not, <code>hexdump -C</code> prints the same three columns.</p>
+
+<h3>1 · Look at text as bytes</h3>
+
+<div class="dual">
+  <div class="term-block">
+    <div class="term-head">with xxd</div>
+<pre><span class="prompt">$</span> printf 'Hello, floor.\n' > plain.txt
+<span class="prompt">$</span> xxd plain.txt</pre>
+  </div>
+  <div class="term-block">
+    <div class="term-head">with hexdump</div>
+<pre><span class="prompt">$</span> printf 'Hello, floor.\n' > plain.txt
+<span class="prompt">$</span> hexdump -C plain.txt</pre>
+  </div>
+</div>
+
+<p>You get three columns: where you are in the file, the bytes in hexadecimal, and the
+same bytes shown as characters where a character exists. Find <code>48</code> and check
+it against an ASCII table. It is 72, and 72 means <code>H</code>.</p>
+
+<h3>2 · Watch one character take several bytes</h3>
+
+<figure>
+  <div class="code"><pre><span class="c-kw">for</span> ch <span class="c-kw">in</span> <span class="c-st">"A"</span>, <span class="c-st">"é"</span>, <span class="c-st">"→"</span>, <span class="c-st">"🧱"</span>:
+    print(ch, len(ch), len(ch.encode(<span class="c-st">"utf-8"</span>)), ch.encode(<span class="c-st">"utf-8"</span>).hex(<span class="c-st">" "</span>))
+
+print(len(<span class="c-st">"café"</span>), len(<span class="c-st">"café"</span>.encode()))</pre></div>
+  <figcaption>python3 — no imports needed</figcaption>
+</figure>
+
+<h3>3 · Break the agreement, in one line</h3>
+
+<figure>
+  <div class="code"><pre>raw = <span class="c-st">"café"</span>.encode(<span class="c-st">"utf-8"</span>)
+print(raw.decode(<span class="c-st">"utf-8"</span>))     <span class="c-cm"># the agreement honoured</span>
+print(raw.decode(<span class="c-st">"latin-1"</span>))   <span class="c-cm"># the same bytes, a different agreement</span></pre></div>
+</figure>
+
+<h3>4 · Read a format announcing itself</h3>
+
+<figure>
+  <div class="code"><pre>xxd -l 32 one.png                       <span class="c-cm"># hexdump -C -n 32 one.png</span>
+xxd -l 32 pipeline/sample_pdfs/{{ 02-bytes-text.pdf.name }}
+file notes.txt                          <span class="c-cm"># the renamed PNG from module 1</span></pre></div>
+</figure>
+
+<h2 id="observe">What you should see</h2>
+
+<p>Here are the PNG's first bytes, from the exercise. The highlighted eight are the
+signature, and every PNG in the world starts with exactly these:</p>
+
+<figure>
+{{ hex:02-bytes-text.png.dump | 0-7 }}
+<figcaption>the first 32 bytes of a one-pixel PNG.
+after the signature comes a length, then <code>IHDR</code>, the first chunk's name,
+readable in the right-hand column</figcaption>
+</figure>
+
+<p>And here is a PDF, whose agreement announces itself in ASCII you can read
+directly:</p>
+
+<figure>
+{{ hex:02-bytes-text.pdf.dump | 0-7 }}
+<figcaption>pipeline/sample_pdfs/{{ 02-bytes-text.pdf.name }} — the same file the Part 0
+pipeline opened</figcaption>
+</figure>
+
+<p>Three things to have seen:</p>
+
+<ul>
+  <li><strong>One character is not one byte.</strong> <code>A</code> took
+  {{ 02-bytes-text.char_widths.0.n_bytes }}, <code>é</code> took
+  {{ 02-bytes-text.char_widths.1.n_bytes }}, the arrow took
+  {{ 02-bytes-text.char_widths.2.n_bytes }}, and the brick took
+  {{ 02-bytes-text.char_widths.3.n_bytes }}. The ratio between characters and bytes is
+  not fixed, and it depends on what language your documents are in.</li>
+  <li><strong>The same bytes produced two different texts.</strong>
+  <code>{{ 02-bytes-text.disagreement.bytes.0 }} {{ 02-bytes-text.disagreement.bytes.1 }}
+  {{ 02-bytes-text.disagreement.bytes.2 }} {{ 02-bytes-text.disagreement.bytes.3 }}
+  {{ 02-bytes-text.disagreement.bytes.4 }}</code> read as UTF-8 is
+  <code>{{ 02-bytes-text.disagreement.utf8 }}</code>. Read as Latin-1 it is
+  <code>{{ 02-bytes-text.disagreement.latin1 }}</code>. There was no error and no
+  warning. The second reader honoured a different agreement and got different
+  words.</li>
+  <li><strong>Sometimes it fails loudly instead.</strong> Bytes written under Latin-1
+  and read as UTF-8 give:
+  <code style="color:var(--break)">{{ 02-bytes-text.decode_error }}</code>. That error
+  is not a corrupt file. It is two conventions disagreeing.</li>
+</ul>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Start from the failure, because it is the clearest case. The byte
+<code>e9</code> is a perfectly good byte. Under Latin-1 it means <code>é</code>. Under
+UTF-8 it is the first byte of a two-byte sequence, and the rules say the next byte must
+begin with a particular bit pattern. It did not. So the decoder stopped, because it
+could tell that the agreement it was told to apply is not the agreement the bytes were
+written under.</p>
+
+<p>Contrast that with the pair that did not fail. <code>c3 a9</code> under UTF-8 is one
+character, <code>é</code>. Under Latin-1, each byte is its own character,
+<code>Ã</code> and <code>©</code>. Both readings are internally consistent, so nothing
+raised an error, and you got
+<code>{{ 02-bytes-text.disagreement.latin1 }}</code>. This is the mojibake you have
+seen on badly configured web pages your whole life, and now you know exactly what it
+is: two programs holding different agreements about the same bytes.</p>
+
+<p>This is also why "what encoding is this file in" is a question the file usually
+cannot answer. The encoding is not stored in the bytes. It is what you have to know
+<em>before</em> the bytes mean anything. Some formats solve this by writing the
+agreement down inside the file. HTML has a charset declaration, and XML has one in its
+first line. Plain text has nowhere to put it, so programs guess, and their guesses are
+where a corpus quietly acquires
+<code>{{ 02-bytes-text.disagreement.latin1 }}</code> in it.</p>
+
+<p>Now the signatures. A PNG starts with
+<code>{{ 02-bytes-text.png.signature.0 }} {{ 02-bytes-text.png.signature.1 }}
+{{ 02-bytes-text.png.signature.2 }} {{ 02-bytes-text.png.signature.3 }}</code> and four
+more bytes. Those four spell <code>PNG</code> in ASCII, preceded by a byte chosen
+deliberately to be invalid in most text encodings, so that a program treating a PNG as
+text fails early and loudly rather than quietly. The convention is designed to be
+detectable.</p>
+
+<p>That is how <code>file</code> works, and it is why it did not care about the
+<code>.txt</code> extension in module 1. It holds a table of known openings, reads the
+first bytes, and reports the first agreement that matches:
+<code>{{ 02-bytes-text.file_command }}</code>.</p>
+
+<p>Which brings the module to its point. Every stage of your pipeline is one of these
+agreements, applied. <code>loader.load()</code> decodes bytes to text under an assumed
+encoding. <code>parse()</code> reads a document under the PDF specification's rules.
+Even <code>embed()</code> is an agreement, a learned one instead of a standardised one,
+which is why module 6 introduces it as the same idea with the table filled in by data
+rather than by a committee.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>loader.load()</code> hands you a string, and that
+string exists only because someone chose an encoding on your behalf. When it chooses
+wrong, your corpus fills with <code>{{ 02-bytes-text.disagreement.latin1 }}</code> and
+every downstream stage inherits it. <strong>Backward:</strong> module 1 showed that the
+disk has no opinion about what a file is. This module says why it does not need one.
+The opinion lives in the bytes, as a convention two programs share.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>This module is the first half of that sentence, stated as plainly as the site ever
+states it. Module 3 does the same for numbers, and then module 6 fuses them: text in,
+numbers out, an agreement at each end.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Bryant &amp; O'Hallaron, <span class="title">Computer
+  Systems: A Programmer's Perspective</span>, chapter 2, opening sections.</strong>
+  Read the first pages on information as bits and bytes. Expect it to make the same
+  argument more formally, and to set up module 3's half, where numbers get the same
+  treatment.</p>
+
+  <p class="book"><strong>The Unicode Consortium's own
+  <span class="title">"What is Unicode?"</span> introduction.</strong> Two pages.
+  Expect the reason UTF-8 won: it kept ASCII's byte values, so half the world's
+  existing files were already valid UTF-8 on the day it shipped.</p>
+
+  <ol>
+    <li>A file holds {{ 02-bytes-text.cafe.len_utf8_bytes }} bytes and displays as
+    {{ 02-bytes-text.cafe.len_characters }} characters. Give a one-sentence explanation
+    someone could act on.</li>
+    <li>Your chunker cuts text every 500 characters. Your colleague's cuts every 500
+    bytes. On an English corpus they agree. On a Japanese one they do not. Why, and
+    which one would you rather debug?</li>
+    <li>Someone sends you a file with no extension. Name two ways to find out what it
+    is, and say which one can be wrong.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your terminal shows boxes or question marks instead of
+    <code>{{ 02-bytes-text.char_widths.2.char }}</code> or
+    <code>{{ 02-bytes-text.char_widths.3.char }}</code>, the bytes are still correct.
+    Your terminal font has no picture for that character. Check
+    <code>len(ch.encode())</code> in Python instead of trusting the display; the number
+    is the evidence, the glyph is not.</p>
+    <p>If <code>xxd</code> is missing, use <code>hexdump -C</code>. The columns are
+    laid out slightly differently and the byte values are identical.</p>
+    <p>If <code>raw.decode("latin-1")</code> raises instead of printing
+    <code>{{ 02-bytes-text.disagreement.latin1 }}</code>, you are decoding different
+    bytes than the exercise did. Latin-1 maps all
+    {{ 02-bytes-text.byte_settings }} byte values to characters and cannot fail. Check
+    that <code>raw</code> came from <code>.encode("utf-8")</code>.</p>
+  </div>
+</div>

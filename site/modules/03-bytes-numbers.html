@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · How numbers become bytes — Beneath the Pipeline</title>
+<meta name="description" content="0.1 + 0.2 is not 0.3, and one integer takes 1, 4, or 8 bytes.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead"><div class="masthead-inner"><div class="brandrow"><a class="brand" href="../index.html"><b>Beneath the Pipeline</b> &nbsp;/&nbsp; part i · the floor</a><span class="progress-label">03 / 15</span></div><nav class="strip" aria-label="the pipeline"><a class="stage" href="04-load.html" title="load() — built in module 4; stressed in module 9"><span class="n">04·09</span>load</a><a class="stage" href="05-parse.html" title="parse() — built in module 5; stressed in module 13"><span class="n">05·13</span>parse</a><a class="stage" href="06-chunk-embed.html" title="chunk() — built in module 6"><span class="n">06</span>chunk</a><a class="stage" href="06-chunk-embed.html" title="embed() — built in module 6; stressed in module 12"><span class="n">06·12</span>embed</a><a class="stage" href="07-index.html" title="index() — built in module 7; stressed in module 9, 10, 12"><span class="n">07·09·10·12</span>index</a><a class="stage" href="08-retrieve.html" title="retrieve() — built in module 8; stressed in module 11, 14"><span class="n">08·11·14</span>retrieve</a></nav><div class="lane2"><span class="spacer"></span><a class="branch" href="14-what-vectors-cant-answer.html" title="module 14 — the structured path">14 · structured</a></div></div></header><div class="wrap"><div class="layout"><div class="gutter" aria-hidden="true"><div class="marks"><div>0000</div><div>0010</div><div>0020</div><div>0030</div><div>0040</div><div>0050</div><div>0060</div><div>0070</div><div>0080</div><div>0090</div><div>00a0</div><div>00b0</div><div>00c0</div><div>00d0</div><div>00e0</div><div>00f0</div><div>0100</div><div>0110</div><div>0120</div><div>0130</div><div>0140</div><div>0150</div><div>0160</div><div>0170</div><div>0180</div><div>0190</div><div>01a0</div><div>01b0</div><div>01c0</div><div>01d0</div><div>01e0</div><div>01f0</div><div>0200</div><div>0210</div><div>0220</div><div>0230</div><div>0240</div><div>0250</div><div>0260</div><div>0270</div><div>0280</div><div>0290</div><div>02a0</div><div>02b0</div><div>02c0</div><div>02d0</div><div>02e0</div><div>02f0</div><div>0300</div><div>0310</div><div>0320</div><div>0330</div><div>0340</div><div>0350</div><div>0360</div><div>0370</div><div>0380</div><div>0390</div><div>03a0</div><div>03b0</div><div>03c0</div><div>03d0</div><div>03e0</div><div>03f0</div><div>0400</div><div>0410</div><div>0420</div><div>0430</div><div>0440</div><div>0450</div><div>0460</div><div>0470</div><div>0480</div><div>0490</div><div>04a0</div><div>04b0</div><div>04c0</div><div>04d0</div><div>04e0</div><div>04f0</div><div>0500</div><div>0510</div><div>0520</div><div>0530</div><div>0540</div><div>0550</div><div>0560</div><div>0570</div><div>0580</div><div>0590</div><div>05a0</div><div>05b0</div><div>05c0</div><div>05d0</div><div>05e0</div><div>05f0</div><div>0600</div><div>0610</div><div>0620</div><div>0630</div><div>0640</div><div>0650</div><div>0660</div><div>0670</div><div>0680</div><div>0690</div><div>06a0</div><div>06b0</div><div>06c0</div><div>06d0</div><div>06e0</div><div>06f0</div><div>0700</div><div>0710</div><div>0720</div><div>0730</div><div>0740</div><div>0750</div><div>0760</div><div>0770</div><div>0780</div><div>0790</div><div>07a0</div><div>07b0</div><div>07c0</div><div>07d0</div><div>07e0</div><div>07f0</div><div>0800</div><div>0810</div><div>0820</div><div>0830</div><div>0840</div><div>0850</div><div>0860</div><div>0870</div><div>0880</div><div>0890</div><div>08a0</div><div>08b0</div><div>08c0</div><div>08d0</div><div>08e0</div><div>08f0</div><div>0900</div><div>0910</div><div>0920</div><div>0930</div><div>0940</div><div>0950</div><div>0960</div><div>0970</div><div>0980</div><div>0990</div><div>09a0</div><div>09b0</div><div>09c0</div><div>09d0</div><div>09e0</div><div>09f0</div><div>0a00</div><div>0a10</div><div>0a20</div><div>0a30</div><div>0a40</div><div>0a50</div><div>0a60</div><div>0a70</div><div>0a80</div><div>0a90</div><div>0aa0</div><div>0ab0</div><div>0ac0</div><div>0ad0</div><div>0ae0</div><div>0af0</div><div>0b00</div><div>0b10</div><div>0b20</div><div>0b30</div><div>0b40</div><div>0b50</div><div>0b60</div><div>0b70</div><div>0b80</div><div>0b90</div><div>0ba0</div><div>0bb0</div><div>0bc0</div><div>0bd0</div><div>0be0</div><div>0bf0</div><div>0c00</div><div>0c10</div><div>0c20</div><div>0c30</div><div>0c40</div><div>0c50</div><div>0c60</div><div>0c70</div><div>0c80</div><div>0c90</div><div>0ca0</div><div>0cb0</div><div>0cc0</div><div>0cd0</div><div>0ce0</div><div>0cf0</div><div>0d00</div><div>0d10</div><div>0d20</div><div>0d30</div><div>0d40</div><div>0d50</div><div>0d60</div><div>0d70</div><div>0d80</div><div>0d90</div><div>0da0</div><div>0db0</div><div>0dc0</div><div>0dd0</div><div>0de0</div><div>0df0</div><div>0e00</div><div>0e10</div><div>0e20</div><div>0e30</div><div>0e40</div><div>0e50</div><div>0e60</div><div>0e70</div><div>0e80</div><div>0e90</div><div>0ea0</div><div>0eb0</div><div>0ec0</div><div>0ed0</div><div>0ee0</div><div>0ef0</div><div>0f00</div><div>0f10</div><div>0f20</div><div>0f30</div><div>0f40</div><div>0f50</div><div>0f60</div><div>0f70</div><div>0f80</div><div>0f90</div><div>0fa0</div><div>0fb0</div><div>0fc0</div><div>0fd0</div><div>0fe0</div><div>0ff0</div><div>1000</div><div>1010</div><div>1020</div><div>1030</div><div>1040</div><div>1050</div><div>1060</div><div>1070</div><div>1080</div><div>1090</div><div>10a0</div><div>10b0</div><div>10c0</div><div>10d0</div><div>10e0</div><div>10f0</div><div>1100</div><div>1110</div><div>1120</div><div>1130</div><div>1140</div><div>1150</div><div>1160</div><div>1170</div><div>1180</div><div>1190</div><div>11a0</div><div>11b0</div><div>11c0</div><div>11d0</div><div>11e0</div><div>11f0</div><div>1200</div><div>1210</div><div>1220</div><div>1230</div><div>1240</div><div>1250</div><div>1260</div><div>1270</div><div>1280</div><div>1290</div><div>12a0</div><div>12b0</div><div>12c0</div><div>12d0</div><div>12e0</div><div>12f0</div><div>1300</div><div>1310</div><div>1320</div><div>1330</div><div>1340</div><div>1350</div><div>1360</div><div>1370</div><div>1380</div><div>1390</div><div>13a0</div><div>13b0</div><div>13c0</div><div>13d0</div><div>13e0</div><div>13f0</div><div>1400</div><div>1410</div><div>1420</div><div>1430</div><div>1440</div><div>1450</div><div>1460</div><div>1470</div><div>1480</div><div>1490</div><div>14a0</div><div>14b0</div><div>14c0</div><div>14d0</div><div>14e0</div><div>14f0</div><div>1500</div><div>1510</div><div>1520</div><div>1530</div><div>1540</div><div>1550</div><div>1560</div><div>1570</div><div>1580</div><div>1590</div><div>15a0</div><div>15b0</div><div>15c0</div><div>15d0</div><div>15e0</div><div>15f0</div><div>1600</div><div>1610</div><div>1620</div><div>1630</div><div>1640</div><div>1650</div><div>1660</div><div>1670</div><div>1680</div><div>1690</div><div>16a0</div><div>16b0</div><div>16c0</div><div>16d0</div><div>16e0</div><div>16f0</div><div>1700</div><div>1710</div><div>1720</div><div>1730</div><div>1740</div><div>1750</div><div>1760</div><div>1770</div><div>1780</div><div>1790</div><div>17a0</div><div>17b0</div><div>17c0</div><div>17d0</div><div>17e0</div><div>17f0</div><div>1800</div><div>1810</div><div>1820</div><div>1830</div><div>1840</div><div>1850</div><div>1860</div><div>1870</div><div>1880</div><div>1890</div><div>18a0</div><div>18b0</div><div>18c0</div><div>18d0</div><div>18e0</div><div>18f0</div><div>1900</div><div>1910</div><div>1920</div><div>1930</div><div>1940</div><div>1950</div><div>1960</div><div>1970</div><div>1980</div><div>1990</div><div>19a0</div><div>19b0</div><div>19c0</div><div>19d0</div><div>19e0</div><div>19f0</div><div>1a00</div><div>1a10</div><div>1a20</div><div>1a30</div><div>1a40</div><div>1a50</div><div>1a60</div><div>1a70</div><div>1a80</div><div>1a90</div><div>1aa0</div><div>1ab0</div><div>1ac0</div><div>1ad0</div><div>1ae0</div><div>1af0</div><div>1b00</div><div>1b10</div><div>1b20</div><div>1b30</div><div>1b40</div><div>1b50</div><div>1b60</div><div>1b70</div><div>1b80</div><div>1b90</div><div>1ba0</div><div>1bb0</div><div>1bc0</div><div>1bd0</div><div>1be0</div><div>1bf0</div><div>1c00</div><div>1c10</div><div>1c20</div><div>1c30</div><div>1c40</div><div>1c50</div><div>1c60</div><div>1c70</div><div>1c80</div><div>1c90</div><div>1ca0</div><div>1cb0</div><div>1cc0</div><div>1cd0</div><div>1ce0</div><div>1cf0</div><div>1d00</div><div>1d10</div><div>1d20</div><div>1d30</div><div>1d40</div><div>1d50</div><div>1d60</div><div>1d70</div><div>1d80</div><div>1d90</div><div>1da0</div><div>1db0</div><div>1dc0</div><div>1dd0</div><div>1de0</div><div>1df0</div><div>1e00</div><div>1e10</div><div>1e20</div><div>1e30</div><div>1e40</div><div>1e50</div><div>1e60</div><div>1e70</div><div>1e80</div><div>1e90</div><div>1ea0</div><div>1eb0</div><div>1ec0</div><div>1ed0</div><div>1ee0</div><div>1ef0</div><div>1f00</div><div>1f10</div><div>1f20</div><div>1f30</div><div>1f40</div><div>1f50</div><div>1f60</div><div>1f70</div><div>1f80</div><div>1f90</div><div>1fa0</div><div>1fb0</div><div>1fc0</div><div>1fd0</div><div>1fe0</div><div>1ff0</div><div>2000</div><div>2010</div><div>2020</div><div>2030</div><div>2040</div><div>2050</div><div>2060</div><div>2070</div><div>2080</div><div>2090</div><div>20a0</div><div>20b0</div><div>20c0</div><div>20d0</div><div>20e0</div><div>20f0</div><div>2100</div><div>2110</div><div>2120</div><div>2130</div><div>2140</div><div>2150</div><div>2160</div><div>2170</div><div>2180</div><div>2190</div><div>21a0</div><div>21b0</div><div>21c0</div><div>21d0</div><div>21e0</div><div>21f0</div><div>2200</div><div>2210</div><div>2220</div><div>2230</div><div>2240</div><div>2250</div><div>2260</div><div>2270</div><div>2280</div><div>2290</div><div>22a0</div><div>22b0</div><div>22c0</div><div>22d0</div><div>22e0</div><div>22f0</div><div>2300</div><div>2310</div><div>2320</div><div>2330</div><div>2340</div><div>2350</div><div>2360</div><div>2370</div><div>2380</div><div>2390</div><div>23a0</div><div>23b0</div><div>23c0</div><div>23d0</div><div>23e0</div><div>23f0</div><div>2400</div><div>2410</div><div>2420</div><div>2430</div><div>2440</div><div>2450</div><div>2460</div><div>2470</div><div>2480</div><div>2490</div><div>24a0</div><div>24b0</div><div>24c0</div><div>24d0</div><div>24e0</div><div>24f0</div><div>2500</div><div>2510</div><div>2520</div><div>2530</div><div>2540</div><div>2550</div><div>2560</div><div>2570</div><div>2580</div><div>2590</div><div>25a0</div><div>25b0</div><div>25c0</div><div>25d0</div><div>25e0</div><div>25f0</div><div>2600</div><div>2610</div><div>2620</div><div>2630</div><div>2640</div><div>2650</div><div>2660</div><div>2670</div><div>2680</div><div>2690</div><div>26a0</div><div>26b0</div><div>26c0</div><div>26d0</div><div>26e0</div><div>26f0</div><div>2700</div><div>2710</div><div>2720</div><div>2730</div><div>2740</div><div>2750</div><div>2760</div><div>2770</div><div>2780</div><div>2790</div><div>27a0</div><div>27b0</div><div>27c0</div><div>27d0</div><div>27e0</div><div>27f0</div><div>2800</div><div>2810</div><div>2820</div><div>2830</div><div>2840</div><div>2850</div><div>2860</div><div>2870</div><div>2880</div><div>2890</div><div>28a0</div><div>28b0</div><div>28c0</div><div>28d0</div><div>28e0</div><div>28f0</div><div>2900</div><div>2910</div><div>2920</div><div>2930</div><div>2940</div><div>2950</div><div>2960</div><div>2970</div><div>2980</div><div>2990</div><div>29a0</div><div>29b0</div><div>29c0</div><div>29d0</div><div>29e0</div><div>29f0</div><div>2a00</div><div>2a10</div><div>2a20</div><div>2a30</div><div>2a40</div><div>2a50</div><div>2a60</div><div>2a70</div><div>2a80</div><div>2a90</div><div>2aa0</div><div>2ab0</div><div>2ac0</div><div>2ad0</div><div>2ae0</div><div>2af0</div><div>2b00</div><div>2b10</div><div>2b20</div><div>2b30</div><div>2b40</div><div>2b50</div><div>2b60</div><div>2b70</div><div>2b80</div><div>2b90</div><div>2ba0</div><div>2bb0</div><div>2bc0</div><div>2bd0</div><div>2be0</div><div>2bf0</div><div>2c00</div><div>2c10</div><div>2c20</div><div>2c30</div><div>2c40</div><div>2c50</div><div>2c60</div><div>2c70</div><div>2c80</div><div>2c90</div><div>2ca0</div><div>2cb0</div><div>2cc0</div><div>2cd0</div><div>2ce0</div><div>2cf0</div><div>2d00</div><div>2d10</div><div>2d20</div><div>2d30</div><div>2d40</div><div>2d50</div><div>2d60</div><div>2d70</div><div>2d80</div><div>2d90</div><div>2da0</div><div>2db0</div><div>2dc0</div><div>2dd0</div><div>2de0</div><div>2df0</div><div>2e00</div><div>2e10</div><div>2e20</div><div>2e30</div><div>2e40</div><div>2e50</div><div>2e60</div><div>2e70</div><div>2e80</div><div>2e90</div><div>2ea0</div><div>2eb0</div><div>2ec0</div><div>2ed0</div><div>2ee0</div><div>2ef0</div><div>2f00</div><div>2f10</div><div>2f20</div><div>2f30</div><div>2f40</div><div>2f50</div><div>2f60</div><div>2f70</div><div>2f80</div><div>2f90</div><div>2fa0</div><div>2fb0</div><div>2fc0</div><div>2fd0</div><div>2fe0</div><div>2ff0</div><div>3000</div><div>3010</div><div>3020</div><div>3030</div><div>3040</div><div>3050</div><div>3060</div><div>3070</div><div>3080</div><div>3090</div><div>30a0</div><div>30b0</div><div>30c0</div><div>30d0</div><div>30e0</div><div>30f0</div><div>3100</div><div>3110</div><div>3120</div><div>3130</div><div>3140</div><div>3150</div><div>3160</div><div>3170</div><div>3180</div><div>3190</div><div>31a0</div><div>31b0</div><div>31c0</div><div>31d0</div><div>31e0</div><div>31f0</div><div>3200</div><div>3210</div><div>3220</div><div>3230</div><div>3240</div><div>3250</div><div>3260</div><div>3270</div><div>3280</div><div>3290</div><div>32a0</div><div>32b0</div><div>32c0</div><div>32d0</div><div>32e0</div><div>32f0</div><div>3300</div><div>3310</div><div>3320</div><div>3330</div><div>3340</div><div>3350</div><div>3360</div><div>3370</div><div>3380</div><div>3390</div><div>33a0</div><div>33b0</div><div>33c0</div><div>33d0</div><div>33e0</div><div>33f0</div><div>3400</div><div>3410</div><div>3420</div><div>3430</div><div>3440</div><div>3450</div><div>3460</div><div>3470</div><div>3480</div><div>3490</div><div>34a0</div><div>34b0</div><div>34c0</div><div>34d0</div><div>34e0</div><div>34f0</div><div>3500</div><div>3510</div><div>3520</div><div>3530</div><div>3540</div><div>3550</div><div>3560</div><div>3570</div><div>3580</div><div>3590</div><div>35a0</div><div>35b0</div><div>35c0</div><div>35d0</div><div>35e0</div><div>35f0</div><div>3600</div><div>3610</div><div>3620</div><div>3630</div><div>3640</div><div>3650</div><div>3660</div><div>3670</div><div>3680</div><div>3690</div><div>36a0</div><div>36b0</div><div>36c0</div><div>36d0</div><div>36e0</div><div>36f0</div><div>3700</div><div>3710</div><div>3720</div><div>3730</div><div>3740</div><div>3750</div><div>3760</div><div>3770</div><div>3780</div><div>3790</div><div>37a0</div><div>37b0</div><div>37c0</div><div>37d0</div><div>37e0</div><div>37f0</div><div>3800</div><div>3810</div><div>3820</div><div>3830</div></div></div><main class="col"><p class="kicker learn">Part I · module 3 · build · 20–30 minutes · standard library only</p>
+<h1><span class="num">03 ·</span> How numbers become bytes</h1>
+<p class="hook">This module sits under <code>embed()</code>, long before you get there.
+That line turns a chunk of text into 384 numbers, and
+this module is about what a number is once it has to live in bytes.</p>
+
+<h2 id="what">From the things you think in, down to bytes</h2>
+
+<p>You think in numbers, text, pictures, sound, and video. A disk stores none of those
+things. It stores bytes, and a byte is eight switches that are each either on or off,
+which makes it a small number between 0 and 255. That is the entire vocabulary of
+computer storage. Everything you have ever saved was translated into a row of those
+small numbers on the way in, and translated back on the way out.</p>
+
+<p>The translation is never automatic. Someone had to sit down and write a rule that
+says "this kind of information gets written into bytes in this particular way", and
+those written rules are what file formats are. Module 2 showed you the rule for text,
+where an agreement says that 65 means <code>A</code>. This module shows you the rules
+for numbers, and numbers are the key that unlocks everything else, because every other
+kind of data turns out to be numbers underneath.</p>
+
+<p>Sound is the clearest example, and it is the one you will work with here. To record
+sound, a microphone measures air pressure
+44,100 times every second, and each measurement is a
+number. A WAV file is those numbers written down one after another, with a short header
+at the front telling any future reader how to interpret them: how many measurements per
+second, how many bytes per measurement, how many channels. Images work the same way,
+since each pixel's color is a few numbers and an image file is those numbers plus a
+header. Video is images over time with sound alongside. Once you see that each of these
+formats is "numbers, arranged by a written agreement", the whole zoo of file types
+collapses into one idea.</p>
+
+<p>A PDF is another such agreement, a far more complicated one, and what it encodes is
+subtler: what a page looks like. Hold onto that thought, because it explains what
+"parsing" means in your pipeline. When <code>load()</code> reads a PDF from disk, the
+thing that arrives in memory is still PDF bytes, the same agreement it was on disk.
+Loading changes where the bytes are, not what they are. Parsing is the actual
+conversion: reading bytes under one agreement, the PDF format, and writing the useful
+part back out under a different agreement, a plain text string. That is all any parser
+ever does, in any pipeline: it converts data from one agreement to another. Module 5
+opens up that conversion for PDFs. This module gives you the skill it depends on, which
+is reading bytes under a written agreement and knowing what goes wrong when the
+agreement is misread.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Ask Python whether <code>0.1 + 0.2 == 0.3</code> and it answers
+  False. Print the sum and you get
+  <code>0.30000000000000004</code>.</p>
+  <p>Here is a second oddity. Store the number
+  70,000 in
+  2 bytes and it comes back as
+  4,464, a different number, with no
+  error raised. Store it in 4 bytes and it
+  comes back unharmed.</p>
+  <p>Neither of these is a bug. Both are agreements that someone made for you. What are
+  the agreements, and where exactly do they break?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/03-bytes-numbers/starter.py</code>. It has four
+<code>TODO</code>s, about 40 lines of your own work, standard library only.</p>
+
+<figure>
+  <div class="code"><pre>python exercises/03-bytes-numbers/starter.py    <span class="c-cm"># run yours</span>
+python exercises/03-bytes-numbers/verify.py     <span class="c-cm"># check it</span></pre></div>
+</figure>
+
+<h3>1 · Write a hex dump tool, in about thirty lines</h3>
+
+<p>You have been reading <code>xxd</code>'s output since module 2. Now write your own.
+It prints three columns: the position in the file, sixteen bytes in hexadecimal with a
+gap after eight, and those same bytes shown as characters wherever a printable
+character exists. Printable means bytes 32 through 126, the visible part of module 2's
+table.</p>
+
+<p>It is a small program, and it forces one thing into the open: you have to decide
+what to display for bytes that are not text, and nothing in the bytes themselves tells
+you which ones those are.</p>
+
+<h3>2 · Read a real format's header, using its written agreement</h3>
+
+<p>The starter writes a WAV file for you with the standard library, so the bytes you
+parse were produced by something other than the code reading them. Then you read the
+header, not by guessing, but from the table the format's authors published:</p>
+
+<div class="table-wrap">
+<table>
+  <caption>the WAV header fields this exercise reads — offsets and widths from the format's specification</caption>
+  <thead><tr><th class="num">offset</th><th class="num">width</th><th>meaning</th><th>byte order</th></tr></thead>
+  <tbody>
+    <tr><td class="num">0</td><td class="num">4</td><td>the letters <code>RIFF</code></td><td>—</td></tr>
+    <tr><td class="num">8</td><td class="num">4</td><td>the letters <code>WAVE</code></td><td>—</td></tr>
+    <tr><td class="num">22</td><td class="num">2</td><td>number of channels</td><td>low byte first</td></tr>
+    <tr><td class="num">24</td><td class="num">4</td><td>sample rate</td><td>low byte first</td></tr>
+    <tr><td class="num">34</td><td class="num">2</td><td>bits per sample</td><td>low byte first</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Each field needs three facts: where it starts, how wide it is, and which end the
+bytes go in. Get any one of the three wrong and you still get a number. It is not the
+right one.</p>
+
+<h3>3 · Flip the byte order and watch the numbers turn to nonsense</h3>
+
+<p>Your parser takes an <code>endian</code> argument. Pass the other value. The bytes
+on disk do not move. Only your agreement about how to read them changes.</p>
+
+<h3>4 · Break integers and floats on purpose</h3>
+
+<p>Store numbers in 1, 2, and 4 bytes and find where each width stops working. Then
+compute <code>0.1 + 0.2</code>, look at the bytes of <code>0.1</code>, and print the
+exact decimal value that Python actually stored.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<p>Here is your hex dump of a real WAV header. The letters in the right-hand column are
+the format announcing itself, exactly as PNG and PDF did in module 2:</p>
+
+<figure>
+<div class="hex"><span class="off">00000000</span>  52 49 46 46 68 ac 00 00  57 41 56 45 66 6d 74 20   |RIFFh...WAVEfmt |
+<span class="off">00000010</span>  10 00 00 00 01 00 02 00  <span class="hl">44</span> <span class="hl">ac</span> <span class="hl">00</span> <span class="hl">00</span> 10 b1 02 00   |........D.......|
+<span class="off">00000020</span>  04 00 10 00 64 61 74 61  44 ac 00 00 00 00 00 00   |....dataD.......|</div>
+<figcaption>the first 48 bytes of a 44,100 Hz,
+2-channel, 16-bit WAV.
+highlighted: offsets 24–27, the four bytes holding the sample rate</figcaption>
+</figure>
+
+<p>Those four highlighted bytes are
+<code>44
+ac
+00
+00</code>. Read them low byte first and they
+say 44,100, which is the sample rate
+of a compact disc. Read the same four bytes high byte first and they say
+1,152,122,880.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>the same bytes, two agreements — measured by exercises/03-bytes-numbers/solution.py</caption>
+  <thead><tr><th>field</th><th class="num">low byte first</th><th class="num">high byte first</th></tr></thead>
+  <tbody>
+    <tr><td>channels</td>
+        <td class="num">2</td>
+        <td class="num">512</td></tr>
+    <tr><td>sample rate</td>
+        <td class="num">44,100</td>
+        <td class="num">1,152,122,880</td></tr>
+    <tr><td>bits per sample</td>
+        <td class="num">16</td>
+        <td class="num">4,096</td></tr>
+    <tr><td><code>RIFF</code> and <code>WAVE</code></td>
+        <td class="num">unchanged</td>
+        <td class="num">unchanged</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The last row is the one to sit with. The text fields came through both readings
+intact, because a run of one-byte characters has no "order" to get wrong. Only the
+multi-byte numbers broke.</p>
+
+<h3>Where each integer width stops working</h3>
+
+<div class="table-wrap">
+<table>
+  <caption>storing the same values in different widths</caption>
+  <thead><tr><th class="num">value</th><th class="num">width</th><th class="num">largest that fits</th><th class="num">what came back</th></tr></thead>
+  <tbody>
+    <tr><td class="num">200</td><td class="num">1 B</td><td class="num">255</td><td class="num">200</td></tr>
+    <tr><td class="num">255</td><td class="num">1 B</td><td class="num">255</td><td class="num">255</td></tr>
+    <tr class="lose"><td class="num">256</td><td class="num">1 B</td><td class="num">255</td><td class="num">0</td></tr>
+    <tr class="lose"><td class="num">300</td><td class="num">1 B</td><td class="num">255</td><td class="num">44</td></tr>
+    <tr class="lose"><td class="num">70,000</td><td class="num">2 B</td><td class="num">65,535</td><td class="num">4,464</td></tr>
+    <tr class="win"><td class="num">70,000</td><td class="num">4 B</td><td class="num">4,294,967,295</td><td class="num">70,000</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>What 0.1 + 0.2 actually is</h3>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>question</th><th class="num">answer</th></tr></thead>
+  <tbody>
+    <tr><td><code>0.1 + 0.2</code></td><td class="num">0.30000000000000004</td></tr>
+    <tr><td>is that <code>== 0.3</code>?</td><td class="num">False</td></tr>
+    <tr><td>by how much?</td><td class="num">5.551115123125783e-17</td></tr>
+    <tr><td><code>0.1</code> as eight bytes</td><td class="num">9a 99 99 99 99 99 b9 3f</td></tr>
+    <tr><td>what <code>0.1</code> exactly is</td><td class="num" style="white-space:normal">0.1000000000000000055511151231257827021181583404541015625</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Start with the sample rate, because it is the cleanest case. Four bytes hold the
+number 44,100. Written low byte first,
+they are <code>44
+ac
+00
+00</code>. Nothing in those bytes says which
+end to start reading from. That decision is called
+<span class="term">byte order</span>, or endianness, and it is a convention chosen by
+whoever designed the format. WAV chose low byte first because it grew up on Intel
+machines that work that way, and network protocols mostly chose the other end. Neither
+choice is correct. They are two possible agreements, and a reader has to know which one
+is in force.</p>
+
+<p>That is why the flipped reading did not raise an error. It produced
+1,152,122,880, a perfectly well-formed number
+that happens to be wrong. The failure mode of a misread agreement is usually not a
+crash. It is a plausible answer. Module 2 showed the same thing with
+<code>cafÃ©</code>, and this is that lesson repeated
+in numbers.</p>
+
+<p>The text fields survived the flip because <code>RIFF</code> is four separate
+one-byte characters. There is no order to reverse inside a single byte, so a run of
+single bytes reads the same either way. That is worth noticing: byte order is not a
+property of a file. It is a property of each multi-byte field inside the file.</p>
+
+<h3>Why widths exist at all</h3>
+
+<p>Now the integers. Python's own integers grow as large as memory allows, so it is
+easy to forget that this is unusual. Down at the level where data gets stored, a number
+occupies a fixed number of bytes, decided in advance. One byte can hold
+255 at most. Two bytes can hold
+65,535. Four can hold
+4,294,967,295.</p>
+
+<p>Try to store 300 in one byte and the
+value that comes back is 44, which is
+the remainder after dividing by 255 plus one.
+The high bits had nowhere to go, so they were dropped. This is called
+<span class="term">overflow</span>, and hardware does it silently, because checking for
+it would cost time on every arithmetic operation ever performed.</p>
+
+<p>The width is a promise about range, and choosing it is a real decision. Module 9
+turns this into a technique: the posting lists inside a search index are lists of
+integers, and storing each one in the smallest width that fits is where a large part of
+an index's compression comes from.</p>
+
+<h3>Why 0.1 is not 0.1</h3>
+
+<p>A 64-bit float stores a number as a fraction multiplied by a power of two. That
+scheme is called <span class="term">IEEE 754</span>, and every language on your machine
+uses it. It can represent halves, quarters, and eighths exactly. It cannot represent
+one tenth exactly, for the same reason base ten cannot represent one third: the digits
+never terminate.</p>
+
+<p>So when you write <code>0.1</code>, the machine stores the closest value it can
+hold, which is:</p>
+
+<p style="font-family:var(--mono);font-size:.82rem;color:var(--break);max-width:none">
+0.1000000000000000055511151231257827021181583404541015625</p>
+
+<p>Slightly more than a tenth. Add it to the closest value to 0.2, and the two small
+excesses add up to <code>0.30000000000000004</code>, off by
+<code>5.551115123125783e-17</code>. Nothing went wrong. You asked for a
+number the format cannot hold, and it gave you the nearest one it can, twice.</p>
+
+<p>This sets up a number to carry into Part II. An embedding is
+384 of these approximations. At 32-bit precision that
+is 1,536 bytes per chunk, and at 64-bit
+it is 3,072. A million chunks is
+1.4GB against
+2.9GB, the same vectors held
+one agreement apart. And every cosine similarity your pipeline computes is a sum of
+384 of these approximations, which is why two
+mathematically identical ways of computing the same similarity can return slightly
+different numbers.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>embed()</code> returns
+384 floats, and you now know what each one is: a
+fixed-width approximation under a published convention, not a number in the
+mathematical sense. <strong>Backward:</strong> modules 2 and 3 are one lesson told
+twice. Text is a convention over bytes, and numbers are a convention over bytes.
+Module 6 fuses them, with text going in and numbers coming out, and an agreement
+standing at each end.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>The offsets and widths in that WAV header are pure arrangement. The only reason a
+parser can find the sample rate is that someone decided in advance where to put it,
+and that is the same move a search index makes, at a scale you will build in
+module 7.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Bryant &amp; O'Hallaron, <span class="title">Computer
+  Systems: A Programmer's Perspective</span>, chapter 2, in full.</strong> Two's
+  complement, IEEE 754, and byte order, done properly. Expect it to make the overflow
+  you caused feel inevitable rather than surprising, and expect the floating-point
+  section to be the one you return to.</p>
+
+  <ol>
+    <li>You store a document count in two bytes. What is the largest corpus you can
+    count, and what happens on the document after that?</li>
+    <li>A colleague's parser reads your file and gets
+    1,152,122,880 where you wrote
+    44,100. What is the one-line
+    diagnosis, and how would you confirm it from a hex dump?</li>
+    <li>Your similarity scores differ in the twelfth decimal place between two runs
+    that compute the same thing in a different order. Is that a bug? Say why.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your hex dump's rows do not match the reference, the usual cause is padding
+    on a short final row: the hex column has to be padded to a fixed width or the
+    right-hand column drifts left. <code>verify.py</code> tests exactly that case and
+    prints both rows so you can line them up.</p>
+    <p>If flipping <code>endian</code> changes nothing, the argument is probably not
+    reaching <code>struct.unpack_from</code>. Check that the format string is built
+    from it rather than starting with a hard-coded <code>&lt;</code>.</p>
+    <p>If <code>0.1 + 0.2</code> prints as exactly <code>0.3</code> in your terminal,
+    you are seeing a shortened display rather than the stored value. Compare with
+    <code>==</code>, or print <code>repr()</code>, or use
+    <code>Decimal(0.1 + 0.2)</code> to see all of it.</p>
+  </div>
+</div>
+<button class="done-toggle" type="button" aria-pressed="false" data-module="03-bytes-numbers"><span class="box"></span><span class="label">mark this module complete</span></button><nav class="modnav"><a class="prev" href="02-bytes-text.html"><span class="dir">previous</span><span class="name">02 · How text becomes bytes</span></a><a class="next" href="04-load.html"><span class="dir">next</span><span class="name">04 · Load — what reading a file costs</span></a></nav></main></div></div><script src="../assets/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+{
+  "_generated_unix": 1785266451,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "brute_force": {
+    "build_seconds": 0.0,
+    "comparisons_per_query": 100000,
+    "median_seconds": 0.002418374875560403,
+    "multiplications_per_query": 38400000,
+    "p99_seconds": 0.0137940829154104,
+    "queries": 50
+  },
+  "comparison": {
+    "inverted_build_seconds": 1.437408832833171,
+    "inverted_query_seconds": 2.2907914826646447e-08,
+    "inverted_size_bytes": 86689259,
+    "vector_build_seconds": 0.0,
+    "vector_query_seconds": 0.002418374875560403,
+    "vector_size_bytes": 153600000
+  },
+  "corpus_bytes": 33688439,
+  "inverted": {
+    "build_seconds": 1.437408832833171,
+    "postings": 4024305,
+    "postings_per_passage": 40.24305,
+    "rss_after_bytes": 182108160,
+    "rss_before_bytes": 110297088,
+    "size_bytes": 86689259,
+    "size_vs_corpus": 2.5732643474516586,
+    "vocabulary": 125662
+  },
+  "load_seconds": 0.1353281249757856,
+  "lookup": {
+    "block": {
+      "hits": 326,
+      "reps": 200000,
+      "seconds": 2.2907914826646447e-08,
+      "speedup": 29925986.849410467,
+      "total_seconds": 0.0045815829653292894
+    },
+    "manhattan": {
+      "hits": 74,
+      "reps": 200000,
+      "seconds": 2.2246665321290492e-08,
+      "speedup": 31247748.729182083,
+      "total_seconds": 0.004449333064258099
+    },
+    "photosynthesis": {
+      "hits": 88,
+      "reps": 200000,
+      "seconds": 2.4618544848635792e-08,
+      "speedup": 25132684.68228537,
+      "total_seconds": 0.0049237089697271585
+    },
+    "the": {
+      "hits": 87278,
+      "reps": 200000,
+      "seconds": 2.673021052032709e-08,
+      "speedup": 22242157.109710366,
+      "total_seconds": 0.005346042104065418
+    },
+    "zyzzyva": {
+      "hits": 0,
+      "reps": 200000,
+      "seconds": 2.1583540365099906e-08,
+      "speedup": 29489361.90272771,
+      "total_seconds": 0.004316708073019981
+    }
+  },
+  "lookup_reps": 200000,
+  "mean_speedup": 27607587.8546632,
+  "n_passages": 100000,
+  "scan": {
+    "block": {
+      "hits": 326,
+      "seconds": 0.6855419578496367
+    },
+    "manhattan": {
+      "hits": 74,
+      "seconds": 0.6951582080218941
+    },
+    "photosynthesis": {
+      "hits": 88,
+      "seconds": 0.6187301250174642
+    },
+    "the": {
+      "hits": 87278,
+      "seconds": 0.594537541968748
+    },
+    "zyzzyva": {
+      "hits": 0,
+      "seconds": 0.6364848329685628
+    }
+  },
+  "scan_substring": {
+    "block": {
+      "hits": 805,
+      "seconds": 0.06239383411593735
+    },
+    "manhattan": {
+      "hits": 74,
+      "seconds": 0.06528420792892575
+    },
+    "photosynthesis": {
+      "hits": 89,
+      "seconds": 0.05233154189772904
+    },
+    "the": {
+      "hits": 91982,
+      "seconds": 0.05671904212795198
+    },
+    "zyzzyva": {
+      "hits": 0,
+      "seconds": 0.05527266697026789
+    }
+  },
+  "vectors": {
+    "bytes": 153600000,
+    "bytes_vs_corpus": 4.559427642224681,
+    "dims": 384,
+    "n": 100000
+  }
+}

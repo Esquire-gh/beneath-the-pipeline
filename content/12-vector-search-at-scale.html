@@ -1,0 +1,341 @@
+<p class="kicker">Part III · module 12 · build · 50–80 minutes</p>
+<h1><span class="num">12 ·</span> How vector search scales</h1>
+<p class="hook">This module breaks module 7's brute-force nearest neighbour. This is
+what Chroma was doing in Part 0, and what it decided on your behalf.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>Finding the nearest vectors by brute force means comparing the query against every
+vector in the collection. The cost grows in a straight line with the corpus, and unlike
+the inverted index there is no exact shortcut: nothing about a query vector tells you
+which stored vectors you can safely ignore. A million vectors means a million
+comparisons, every query, forever.</p>
+
+<p>The way out is the same move as module 7, arrangement in advance, applied to a
+harder problem. <span class="term">HNSW</span>, short for hierarchical navigable small
+world, builds a graph over the vectors where each one is connected to some of its
+neighbours, in several layers. The top layer is sparse and lets you cross the whole
+space in a few hops. Each layer down is denser and more local. A search enters at the
+top, greedily walks towards the query, drops a layer, walks again, and finishes with a
+careful local search at the bottom.</p>
+
+<p>Nothing about that walk is guaranteed to arrive at the true nearest neighbours. It
+can head into a region that looks good locally and miss a better one elsewhere. How
+hard it looks before giving up is a parameter called <code>ef_search</code>, and that
+single integer is a dial between speed and correctness. This module has you build the
+graph, sweep the dial, and measure both ends, including the case the sales pages do not
+mention: what happens when someone adds an ordinary filter to the query.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Brute force over {{ 12-vector-search-at-scale.n_passages | int }} vectors takes
+  {{ 12-vector-search-at-scale.brute_force.median_seconds | time }} per query,
+  {{ 12-vector-search-at-scale.brute_force.multiply_adds_per_query | int }}
+  multiply-adds every time, and it is exactly right.</p>
+  <p>HNSW answers the same query in
+  {{ 12-vector-search-at-scale.sweep.0.median_seconds | time }} and quietly stops
+  guaranteeing the right answer. At its cheapest setting it returns
+  {{ 12-vector-search-at-scale.sweep.0.recall | pct0 }} of the ten nearest vectors.</p>
+  <p>Where did the speed come from, and where exactly did the correctness go?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<figure>
+  <div class="code"><pre>pip install hnswlib
+python exercises/12-vector-search-at-scale/starter.py --scale part2
+python exercises/12-vector-search-at-scale/verify.py</pre></div>
+</figure>
+
+<p>There are three things to build. First the truth: brute force over every vector,
+which module 7's TODO 4 already gave you. That is what "right" means here, and you need
+it before you can say anything about approximate. Then an HNSW index over the same
+vectors. Then the measurement that matters,
+<span class="term">recall@10</span>: the fraction of the genuinely nearest ten that the
+index actually returned.</p>
+
+<div class="aside">
+  <span class="aside-label">two different questions</span>
+  Recall here is measured against brute force, not against MS MARCO's judgments. It asks
+  whether the index found what it was <em>asked</em> to find. Module 8's NDCG asks
+  whether that was worth finding. An index can have perfect recall and terrible NDCG:
+  it faithfully returned the ten nearest vectors, and the ten nearest vectors were not
+  the answer. Both numbers appear below, and keeping them apart is the point.
+</div>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>What the graph cost to build</h3>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/12-vector-search-at-scale/solution.py, M =
+  {{ 12-vector-search-at-scale.M }}, ef_construction =
+  {{ 12-vector-search-at-scale.ef_construction }}</caption>
+  <thead><tr><th>quantity</th><th class="num">measured</th></tr></thead>
+  <tbody>
+    <tr><td>vectors</td>
+      <td class="num">{{ 12-vector-search-at-scale.n_passages | int }} × {{ 12-vector-search-at-scale.dims }} dims = {{ 12-vector-search-at-scale.vector_bytes | bytes }}</td></tr>
+    <tr><td>time to build the graph</td>
+      <td class="num">{{ 12-vector-search-at-scale.hnsw_build.seconds | time }}</td></tr>
+    <tr><td>the graph itself</td>
+      <td class="num">{{ 12-vector-search-at-scale.hnsw_build.bytes | bytes }}</td></tr>
+    <tr><td>graph as a multiple of the vectors</td>
+      <td class="num">{{ 12-vector-search-at-scale.hnsw_build.bytes_over_vectors | x }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Module 7 said an index is arrangement, paid for in build time and memory. Here is
+the invoice: {{ 12-vector-search-at-scale.hnsw_build.seconds | time }} of building and
+{{ 12-vector-search-at-scale.hnsw_build.bytes | bytes }} of graph, on top of vectors
+you already had.</p>
+
+<h3>One integer trades speed against correctness</h3>
+
+<figure>
+{{ chart:recall-latency }}
+<figcaption>every point is one value of <code>ef_search</code>. the curve is the
+product's quality, drawn</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>{{ 12-vector-search-at-scale.n_queries }} real queries against
+  {{ 12-vector-search-at-scale.n_passages | int }} vectors</caption>
+  <thead><tr><th class="num">ef_search</th><th class="num">recall@10</th>
+    <th class="num">median</th><th class="num">p99</th>
+    <th class="num">vs brute force</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td class="num">{{ 12-vector-search-at-scale.sweep.0.ef }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.0.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.0.median_seconds | time }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.0.p99_seconds | time }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.0.speedup | x0 }}</td></tr>
+    <tr><td class="num">{{ 12-vector-search-at-scale.sweep.3.ef }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.3.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.3.median_seconds | time }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.3.p99_seconds | time }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.3.speedup | x0 }}</td></tr>
+    <tr class="win"><td class="num">{{ 12-vector-search-at-scale.sweep.5.ef }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.5.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.5.median_seconds | time }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.5.p99_seconds | time }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.5.speedup | x0 }}</td></tr>
+    <tr><td class="num">{{ 12-vector-search-at-scale.sweep.7.ef }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.7.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.7.median_seconds | time }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.7.p99_seconds | time }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.7.speedup | x0 }}</td></tr>
+    <tr><td class="num">{{ 12-vector-search-at-scale.sweep.10.ef }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.10.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.10.median_seconds | time }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.10.p99_seconds | time }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.10.speedup | x0 }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+{{ chart:recall-vs-speedup }}
+<figcaption>recall@10 at six settings of one integer</figcaption>
+</figure>
+
+<p>There is no "correct" row in that table. There is a dial, and every position on it
+is a defensible engineering decision. <strong>That is the finding</strong>: search
+quality is not a property of the index, it is a setting, and somebody chose it.</p>
+
+<h3>What the approximation costs where users can feel it</h3>
+
+<div class="table-wrap">
+<table>
+  <caption>the same queries, scored with module 8's harness</caption>
+  <thead><tr><th class="num">ef_search</th><th class="num">recall@10</th>
+    <th class="num">NDCG@10</th></tr></thead>
+  <tbody>
+    <tr><td class="num">{{ 12-vector-search-at-scale.quality.0.ef }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.0.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.quality.0.ndcg_at_10 | 4f }}</td></tr>
+    <tr><td class="num">{{ 12-vector-search-at-scale.quality.1.ef }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.3.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.quality.1.ndcg_at_10 | 4f }}</td></tr>
+    <tr><td class="num">{{ 12-vector-search-at-scale.quality.2.ef }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.sweep.7.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.quality.2.ndcg_at_10 | 4f }}</td></tr>
+    <tr class="win"><td class="num">exact</td><td class="num">1.0000</td>
+      <td class="num">{{ 12-vector-search-at-scale.exact_ndcg_at_10 | 4f }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Losing {{ 12-vector-search-at-scale.sweep.0.recall | pct0 }} of the nearest
+neighbours cost {{ 12-vector-search-at-scale.ndcg_cost_of_lowest_ef | 4f }} of NDCG.
+Those are not the same size of loss, and the reason is worth holding onto: a "wrong"
+neighbour returned by the graph is usually the eleventh or twelfth nearest, not a
+random document, and the eleventh nearest is often just as good an answer. Recall is
+the strict measure. NDCG is the one your users experience.</p>
+
+<h3>And then somebody asks for a filter</h3>
+
+<p>This is the most ordinary request there is: search only this customer's documents,
+only this year, only this language. Here every vector gets a bucket and the query asks
+for one bucket, {{ 12-vector-search-at-scale.filter.matching_documents | int }} of
+{{ 12-vector-search-at-scale.n_passages | int }} documents, or
+{{ 12-vector-search-at-scale.filter.selectivity | pct }}.</p>
+
+<figure>
+{{ chart:filter-cliff }}
+<figcaption>search the graph, then discard what does not match — against
+scanning the documents that do</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>strategy</th><th class="num">results kept of 10</th>
+    <th class="num">recall@10</th><th class="num">median</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td>graph, ef = {{ 12-vector-search-at-scale.filter.post_filter.0.ef }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.filter.post_filter.0.mean_kept | 2f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.filter.post_filter.0.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.filter.post_filter.0.median_seconds | time }}</td></tr>
+    <tr class="lose"><td>graph, ef = {{ 12-vector-search-at-scale.filter.post_filter.2.ef }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.filter.post_filter.2.mean_kept | 2f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.filter.post_filter.2.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.filter.post_filter.2.median_seconds | time }}</td></tr>
+    <tr><td>graph, ef = {{ 12-vector-search-at-scale.filter.post_filter.4.ef }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.filter.post_filter.4.mean_kept | 2f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.filter.post_filter.4.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.filter.post_filter.4.median_seconds | time }}</td></tr>
+    <tr class="win"><td>ignore the graph, scan the matches</td>
+      <td class="num">10.00</td>
+      <td class="num">{{ 12-vector-search-at-scale.filter.brute_force_subset.recall | 4f }}</td>
+      <td class="num">{{ 12-vector-search-at-scale.filter.brute_force_subset.median_seconds | time }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+{{ chart:filter-cost }}
+<figcaption>time per filtered query. note the logarithmic axis</figcaption>
+</figure>
+
+<p>At the setting that was fine a moment ago, the graph returns
+<strong>{{ 12-vector-search-at-scale.filter.post_filter.0.mean_kept | 2f }} usable
+results out of ten</strong> and recall of
+{{ 12-vector-search-at-scale.filter.post_filter.0.recall | 4f }}. Pushing
+<code>ef_search</code> up to
+{{ 12-vector-search-at-scale.filter.verdict.best_post_filter_ef }} recovers
+{{ 12-vector-search-at-scale.filter.verdict.best_post_filter_recall | pct0 }} recall
+and costs
+{{ 12-vector-search-at-scale.filter.verdict.best_post_filter_seconds | time }} per
+query.</p>
+
+<p>And scanning the {{ 12-vector-search-at-scale.filter.matching_documents | int }}
+matching vectors directly, with no graph and no approximation, takes
+{{ 12-vector-search-at-scale.filter.brute_force_subset.median_seconds | time }} and is
+exactly right.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>The filter result is the one to understand, because it is the one that will bite you
+in production, and it has a mechanism, not a mystery.</p>
+
+<p>The graph was built over <em>all</em> the vectors. Its edges encode which vectors
+are near which others across the whole collection, and the walk follows those edges.
+When you filter afterwards, you are asking the graph to find the ten nearest documents
+and then throwing most of them away, and the ten nearest documents overall are hardly
+ever in a bucket holding
+{{ 12-vector-search-at-scale.filter.selectivity | pct }} of the collection. So you must
+ask for far more than ten and hope enough survive, which means walking far more of the
+graph, which is exactly the cost the graph existed to avoid.</p>
+
+<p>Meanwhile, once the filter is selective enough, the honest answer is very cheap.
+There are only
+{{ 12-vector-search-at-scale.filter.matching_documents | int }} candidates, so compare
+against all of them. Brute force over a small set beats a clever structure over a large
+one, and there is a crossover point where that stops being true. Vector databases spend
+real engineering on this: pre-filtering with per-attribute subgraphs, filtered graph
+traversal that only follows edges to matching nodes, or detecting the selective case
+and scanning instead. When a vector database's documentation talks about filter
+strategies or a selectivity threshold, this measurement is what it is about.</p>
+
+<h3>What Part 0 was doing</h3>
+
+<p>Go back to <code>db.add()</code> and <code>db.query()</code>. Chroma built an index
+of this kind, this graph or one very like it, with an <code>M</code>, an
+<code>ef_construction</code>, and an <code>ef_search</code> chosen for you. Your Part 0
+pipeline has a recall number. You have never seen it. It is a specific value on the
+curve above, and it was picked by someone who had never met your corpus.</p>
+
+<p>That is not a criticism of the library. Defaults have to be something, and these are
+reasonable ones. It is a statement about what you now know how to ask: <em>what is my
+recall, and what would it cost me to raise it?</em></p>
+
+<h3>Two kinds of "faster", one module apart</h3>
+
+<p>Module 11's WAND skipped work and returned identical answers, because it could prove
+that what it skipped could not win. This module's graph skips work and returns
+different answers, because it cannot prove anything. It is a walk with a budget.</p>
+
+<p>Both are called making retrieval fast. Only one of them needs a recall measurement
+next to it, and the one that does is the one everybody reaches for first.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> the <code>retrieve()</code> line has a quality setting
+inside it that nothing in the API surfaces. <strong>Backward:</strong> module 6 said
+distance is a promise the model makes, and this module is where the <em>index</em>
+stops keeping that promise exactly. Module 7's brute force is what "exactly" means, and
+module 8's harness is what turns "approximately" into a number.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Here the cost is paid in a currency the earlier modules never used: not time, not
+memory, but <em>correctness</em>, in measured amounts, on purpose.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Grainger, Turnbull &amp; Irwin,
+  <span class="title">AI-Powered Search</span>.</strong> The dense-retrieval and hybrid
+  chapters, for where an approximate index sits in a real system rather than on its
+  own.</p>
+
+  <p class="book"><strong>Lin, Nogueira &amp; Yates,
+  <span class="title">Pretrained Transformers for Text Ranking</span>.</strong> For how
+  a reranker sits on top of an approximate first stage, which is module 15's subject
+  and the standard answer to "my recall is only
+  {{ 12-vector-search-at-scale.sweep.0.recall | pct0 }}".</p>
+
+  <ol>
+    <li>Recall fell to {{ 12-vector-search-at-scale.sweep.0.recall | pct0 }} but NDCG
+    fell by only {{ 12-vector-search-at-scale.ndcg_cost_of_lowest_ef | 4f }}. Explain
+    the gap, and say which number you would put in a service-level objective.</li>
+    <li>A filter matching {{ 12-vector-search-at-scale.filter.selectivity | pct }} of
+    documents broke the graph. At what selectivity would you expect the graph to become
+    worth using again, and how would you find that point for your own data?</li>
+    <li>Your team wants "the fastest possible vector search". What do you need to know
+    before that request means anything?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your recall is 1.0000 at every setting, your corpus is probably too small for
+    the graph to have any choices to get wrong. Under a few tens of thousands of
+    vectors, HNSW usually finds everything. Run at <code>--scale part2</code> or larger
+    before drawing conclusions from the curve.</p>
+    <p>If HNSW is <em>slower</em> than brute force, that is a real result at small
+    scale and not a mistake. Brute force is one large matrix multiply, which modern
+    hardware is extremely good at. The graph walk is many small dependent lookups,
+    which it is not. The crossover is somewhere in the hundreds of thousands of vectors
+    on most machines. Find yours.</p>
+    <p>If <code>hnswlib</code> will not install on macOS, it compiles C++ and needs the
+    libc++ headers on the compiler's search path. <code>requirements.txt</code> has the
+    one-line export that fixes it.</p>
+    <p>If your filtered recall looks fine at low <code>ef_search</code>, check that
+    your filter is actually selective. A filter matching half the corpus costs the
+    graph almost nothing. The cliff is a property of selectivity, not of
+    filtering.</p>
+  </div>
+</div>

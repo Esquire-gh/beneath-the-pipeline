@@ -1,0 +1,139 @@
+{
+  "_generated_unix": 1785267115,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "avgdl": 57.68889,
+  "bm25_readable_vs_fast_max_diff": 1.9073486328125e-06,
+  "dense_caveat": "all-MiniLM-L6-v2 was trained on data that includes MS MARCO, so its score here flatters it relative to a corpus it has never seen. The comparison is honest about ordering on THIS benchmark and should not be read as 'dense beats BM25 by 0.19 everywhere'.",
+  "index_build_seconds": 4.8862432080786675,
+  "length_bias": {
+    "bm25": {
+      "corpus_mean_length": 57.68889,
+      "mean_top10_length": 47.1,
+      "top1_text": "The androgen receptor (AR), also known as NR3C4 (nuclear receptor subfamily 3, group C, member 4), is a type of nuclear receptor that is activated by binding either of the androgenic hormones, testosterone, or dihydrotestosterone "
+    },
+    "query": "Androgen receptor define",
+    "term_counts": {
+      "corpus_mean_length": 57.68889,
+      "mean_top10_length": 58.7,
+      "top1_text": "We created define nutrition for one reason: To help others Fulfill Their Potential. Therefore, at define nutrition, we only make supplements that work. define[isolate] fruit punch. define[isolate] strawberry kiwi. define[isolate] "
+    },
+    "tfidf": {
+      "corpus_mean_length": 57.68889,
+      "mean_top10_length": 48.2,
+      "top1_text": "The androgen receptor (AR), also known as NR3C4 (nuclear receptor subfamily 3, group C, member 4), is a type of nuclear receptor that is activated by binding either of the androgenic hormones, testosterone, or dihydrotestosterone "
+    }
+  },
+  "length_distribution": {
+    "max": 281,
+    "mean": 57.68889,
+    "median": 52,
+    "p10": 35,
+    "p90": 93
+  },
+  "matching_docs": {
+    "max": 98758,
+    "median": 41070,
+    "returned": 10
+  },
+  "n_passages": 100000,
+  "n_queries": 1000,
+  "n_queries_available": 6980,
+  "postings": 4024305,
+  "runs": {
+    "bm25": {
+      "label": "BM25 (k1=1.2, b=0.75)",
+      "median_seconds": 0.0016093330923467875,
+      "mrr_at_10": 0.648728571428572,
+      "ndcg_at_10": 0.6828651589085976,
+      "p99_seconds": 0.004398208810016513,
+      "p_at_10": 0.08709999999999944,
+      "queries": 1000
+    },
+    "dense": {
+      "label": "dense (MiniLM, brute force)",
+      "median_seconds": 0.0042394171468913555,
+      "mrr_at_10": 0.8463503968253974,
+      "ndcg_at_10": 0.8703600085517735,
+      "p99_seconds": 0.006877209059894085,
+      "p_at_10": 0.10349999999999869,
+      "queries": 1000
+    },
+    "term_counts": {
+      "label": "raw term counts",
+      "median_seconds": 0.022896124981343746,
+      "mrr_at_10": 0.06752698412698419,
+      "ndcg_at_10": 0.0872020375172336,
+      "p99_seconds": 0.09175870916806161,
+      "p_at_10": 0.016199999999999964,
+      "queries": 1000
+    },
+    "tfidf": {
+      "label": "tf-idf",
+      "median_seconds": 0.03963395883329213,
+      "mrr_at_10": 0.5699698412698413,
+      "ndcg_at_10": 0.6137927412875872,
+      "p99_seconds": 0.14790899981744587,
+      "p_at_10": 0.08329999999999958,
+      "queries": 1000
+    }
+  },
+  "stopword_share": {
+    "mean": 0.5276350805669782,
+    "note": "share of a raw term-count score contributed by stopwords",
+    "queries": 300
+  },
+  "tuning": {
+    "b_one": {
+      "delta_ndcg": -0.007975108691972044,
+      "description": "set b to 1 \u2014 penalise long documents fully",
+      "helped": false,
+      "ndcg_at_10": 0.6748900502166255,
+      "p_at_10": 0.08649999999999944
+    },
+    "b_zero": {
+      "delta_ndcg": -0.035730418591593094,
+      "description": "set b to 0 \u2014 stop penalising long documents",
+      "helped": false,
+      "ndcg_at_10": 0.6471347403170045,
+      "p_at_10": 0.08519999999999951
+    },
+    "drop_stopwords": {
+      "delta_ndcg": 0.005229049014378262,
+      "description": "drop stopwords from the index and query",
+      "helped": true,
+      "ndcg_at_10": 0.6880942079229758,
+      "p_at_10": 0.08789999999999941
+    },
+    "k1_high": {
+      "delta_ndcg": -0.034882537123028357,
+      "description": "raise k1 to 2.5 \u2014 reward repeated terms more",
+      "helped": false,
+      "ndcg_at_10": 0.6479826217855692,
+      "p_at_10": 0.08539999999999949
+    }
+  },
+  "tuning_summary": {
+    "baseline_ndcg": 0.6828651589085976,
+    "hurt": [
+      "k1_high",
+      "b_zero",
+      "b_one"
+    ],
+    "n_hurt": 3,
+    "n_tried": 4
+  },
+  "vocabulary": 125662
+}

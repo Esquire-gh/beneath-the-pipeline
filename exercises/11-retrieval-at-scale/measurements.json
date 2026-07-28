@@ -1,0 +1,103 @@
+{
+  "_generated_unix": 1785268299,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "float_order": {
+    "max_score_difference": 0.0,
+    "median_score_difference": 0.0,
+    "note": "Any remaining difference is the order of floating-point addition: term-at-a-time sums one term across all documents, WAND sums all terms for one document. IEEE 754 addition is not associative, so near-tied documents can swap places.",
+    "queries_with_different_order": 0
+  },
+  "index_build_seconds": 3.0262764578219503,
+  "n_passages": 100000,
+  "n_queries": 200,
+  "postings": 4024305,
+  "postings_per_query": {
+    "max": 430647,
+    "median": 44231
+  },
+  "reduction": {
+    "postings_skip_vs_linear": 1.4721113546074875,
+    "postings_taat_vs_wand": 1.4740872567137344,
+    "scored_taat_vs_wand": 62.44503240686676,
+    "speed_taat_vs_wand": 0.6008375399956578
+  },
+  "skip_stride": 64,
+  "strategies": {
+    "daat": {
+      "agreement_with_taat": 1.0,
+      "documents_scored_per_query": 42777.345,
+      "label": "document at a time",
+      "max_seconds": 1.1066437498666346,
+      "median_seconds": 0.1194829170126468,
+      "p99_seconds": 0.671162832994014,
+      "postings_touched_per_query": 65236.815,
+      "same_set_as_taat": 1.0
+    },
+    "taat": {
+      "agreement_with_taat": 1.0,
+      "documents_scored_per_query": 42777.345,
+      "label": "term at a time",
+      "max_seconds": 0.04214125010184944,
+      "median_seconds": 0.0063249170780181885,
+      "p99_seconds": 0.03479233314283192,
+      "postings_touched_per_query": 65236.815,
+      "same_set_as_taat": 1.0
+    },
+    "wand": {
+      "agreement_with_taat": 1.0,
+      "documents_scored_per_query": 685.04,
+      "label": "WAND with skip pointers",
+      "max_seconds": 0.4676025421358645,
+      "median_seconds": 0.010526834055781364,
+      "p99_seconds": 0.14938775007613003,
+      "postings_touched_per_query": 44255.735,
+      "same_set_as_taat": 1.0
+    },
+    "wand_linear": {
+      "agreement_with_taat": 1.0,
+      "documents_scored_per_query": 685.04,
+      "label": "WAND, stepping one at a time",
+      "max_seconds": 0.4639275830704719,
+      "median_seconds": 0.01397745800204575,
+      "p99_seconds": 0.15250229113735259,
+      "postings_touched_per_query": 65149.37,
+      "same_set_as_taat": 1.0
+    }
+  },
+  "tail": {
+    "daat": {
+      "median_ms": 119.4829170126468,
+      "p99_ms": 671.162832994014,
+      "p99_over_median": 5.617228385234134
+    },
+    "taat": {
+      "median_ms": 6.3249170780181885,
+      "p99_ms": 34.79233314283192,
+      "p99_over_median": 5.500836250288604
+    },
+    "wand": {
+      "median_ms": 10.526834055781364,
+      "p99_ms": 149.38775007613003,
+      "p99_over_median": 14.191137552328556
+    },
+    "wand_linear": {
+      "median_ms": 13.97745800204575,
+      "p99_ms": 152.5022911373526,
+      "p99_over_median": 10.910588399910216
+    }
+  },
+  "vocabulary": 125662
+}

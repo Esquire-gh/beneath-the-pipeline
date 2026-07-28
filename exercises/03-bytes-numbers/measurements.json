@@ -1,0 +1,177 @@
+{
+  "_generated_unix": 1785265142,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "embedding": {
+    "dims": 384,
+    "float32_bytes": 1536,
+    "float64_bytes": 3072,
+    "million_float32_bytes": 1536000000,
+    "million_float64_bytes": 3072000000
+  },
+  "endian_ratio": 26125.23537414966,
+  "floats": {
+    "as_bytes": "9a 99 99 99 99 99 b9 3f",
+    "equals_point_three": false,
+    "error": 5.551115123125783e-17,
+    "exact": "0.1000000000000000055511151231257827021181583404541015625",
+    "exact_sum": "0.3000000000000000444089209850062616169452667236328125",
+    "sum": 0.30000000000000004
+  },
+  "header_correct": {
+    "bits_per_sample": 16,
+    "channels": 2,
+    "riff": "RIFF",
+    "sample_rate": 44100,
+    "wave": "WAVE"
+  },
+  "header_flipped": {
+    "bits_per_sample": 4096,
+    "channels": 512,
+    "riff": "RIFF",
+    "sample_rate": 1152122880,
+    "wave": "WAVE"
+  },
+  "hexdump_dump": [
+    {
+      "ascii": "RIFFh...WAVEfmt ",
+      "hex": [
+        "52",
+        "49",
+        "46",
+        "46",
+        "68",
+        "ac",
+        "00",
+        "00",
+        "57",
+        "41",
+        "56",
+        "45",
+        "66",
+        "6d",
+        "74",
+        "20"
+      ],
+      "offset": 0
+    },
+    {
+      "ascii": "........D.......",
+      "hex": [
+        "10",
+        "00",
+        "00",
+        "00",
+        "01",
+        "00",
+        "02",
+        "00",
+        "44",
+        "ac",
+        "00",
+        "00",
+        "10",
+        "b1",
+        "02",
+        "00"
+      ],
+      "offset": 16
+    },
+    {
+      "ascii": "....dataD.......",
+      "hex": [
+        "04",
+        "00",
+        "10",
+        "00",
+        "64",
+        "61",
+        "74",
+        "61",
+        "44",
+        "ac",
+        "00",
+        "00",
+        "00",
+        "00",
+        "00",
+        "00"
+      ],
+      "offset": 32
+    }
+  ],
+  "hexdump_lines": [
+    "00000000  52 49 46 46 68 ac 00 00  57 41 56 45 66 6d 74 20  |RIFFh...WAVEfmt |",
+    "00000010  10 00 00 00 01 00 02 00  44 ac 00 00 10 b1 02 00  |........D.......|",
+    "00000020  04 00 10 00 64 61 74 61  44 ac 00 00 00 00 00 00  |....dataD.......|"
+  ],
+  "integer_widths": [
+    {
+      "max": 255,
+      "overflowed": false,
+      "stored": 200,
+      "value": 200,
+      "width": 1
+    },
+    {
+      "max": 255,
+      "overflowed": false,
+      "stored": 255,
+      "value": 255,
+      "width": 1
+    },
+    {
+      "max": 255,
+      "overflowed": true,
+      "stored": 0,
+      "value": 256,
+      "width": 1
+    },
+    {
+      "max": 255,
+      "overflowed": true,
+      "stored": 44,
+      "value": 300,
+      "width": 1
+    },
+    {
+      "max": 65535,
+      "overflowed": true,
+      "stored": 4464,
+      "value": 70000,
+      "width": 2
+    },
+    {
+      "max": 4294967295,
+      "overflowed": false,
+      "stored": 70000,
+      "value": 70000,
+      "width": 4
+    }
+  ],
+  "wav": {
+    "bits": 16,
+    "channels": 2,
+    "name": "tone.wav",
+    "rate": 44100,
+    "size": 44144
+  },
+  "width_limits": {
+    "1": 255,
+    "2": 65535,
+    "4": 4294967295,
+    "8": 18446744073709551615
+  }
+}

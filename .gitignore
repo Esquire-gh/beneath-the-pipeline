@@ -1,0 +1,16 @@
+.venv/
+data/msmarco/
+data/hard_pdfs/
+data/invoices/
+data/corpus_small/
+data/*.tar.gz
+data/*.part
+pipeline/sample_pdfs/
+exercises/*/_scratch/
+exercises/*/_index/
+__pycache__/
+*.pyc
+.DS_Store
+data/eval_docs/
+data/vectors/
+cowork-prompt-bytes-to-retrieval.md

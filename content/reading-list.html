@@ -1,0 +1,144 @@
+<p class="kicker learn">appendix</p>
+<h1>The reading list</h1>
+<p class="hook">Every book this site points at, with the chapter and the reason. Usable
+on its own by someone who wants only the reading path.</p>
+
+<p>The site is not a replacement for any of these. It is a machine for generating the
+questions they answer. Read a chapter after the module that made you want it, and it
+will land differently than it would have before.</p>
+
+<div class="table-wrap">
+<table class="reading">
+  <caption>modules link to the page where the book is discussed</caption>
+  <thead><tr><th>what you want to understand</th><th>book</th><th>chapters</th>
+    <th class="mods">modules</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Storage as blocks; what a filesystem does</td>
+      <td class="book">Petrov, <span class="title">Database Internals</span></td>
+      <td>Part I opening</td>
+      <td class="mods"><a href="modules/01-what-is-a-file.html">01</a>
+        <a href="modules/04-load.html">04</a></td>
+    </tr>
+    <tr>
+      <td>Bytes, text encodings, numeric representation</td>
+      <td class="book">Bryant &amp; O'Hallaron, <span class="title">Computer Systems: A Programmer's Perspective</span></td>
+      <td>2</td>
+      <td class="mods"><a href="modules/02-bytes-text.html">02</a>
+        <a href="modules/03-bytes-numbers.html">03</a></td>
+    </tr>
+    <tr>
+      <td>Storage engines; batching; LSM structure</td>
+      <td class="book">Petrov, <span class="title">Database Internals</span></td>
+      <td>Part I</td>
+      <td class="mods"><a href="modules/04-load.html">04</a>
+        <a href="modules/10-ingestion-vs-query.html">10</a></td>
+    </tr>
+    <tr>
+      <td>Serialization and schema evolution</td>
+      <td class="book">Kleppmann &amp; Riccomini, <span class="title">Designing Data-Intensive Applications</span>, 2nd ed.</td>
+      <td>Encoding and Evolution</td>
+      <td class="mods"><a href="modules/10-ingestion-vs-query.html">10</a></td>
+    </tr>
+    <tr>
+      <td>Data models and query languages</td>
+      <td class="book">Kleppmann &amp; Riccomini, <span class="title">Designing Data-Intensive Applications</span>, 2nd ed.</td>
+      <td>Opening chapters</td>
+      <td class="mods"><a href="modules/14-what-vectors-cant-answer.html">14</a></td>
+    </tr>
+    <tr>
+      <td>Index fundamentals</td>
+      <td class="book">Manning, Raghavan &amp; Schütze, <span class="title">Introduction to Information Retrieval</span></td>
+      <td>1–2</td>
+      <td class="mods"><a href="modules/07-index.html">07</a></td>
+    </tr>
+    <tr>
+      <td>Index construction under memory pressure; compression</td>
+      <td class="book"><span class="title">Introduction to Information Retrieval</span></td>
+      <td>4–5</td>
+      <td class="mods"><a href="modules/09-index-that-doesnt-fit.html">09</a></td>
+    </tr>
+    <tr>
+      <td>Ranking and evaluation</td>
+      <td class="book"><span class="title">Introduction to Information Retrieval</span></td>
+      <td>6–8</td>
+      <td class="mods"><a href="modules/08-retrieve.html">08</a></td>
+    </tr>
+    <tr>
+      <td>Query execution at scale</td>
+      <td class="book">Büttcher, Clarke &amp; Cormack, <span class="title">Information Retrieval</span></td>
+      <td>Query processing, compression</td>
+      <td class="mods"><a href="modules/11-retrieval-at-scale.html">11</a></td>
+    </tr>
+    <tr>
+      <td>Dense and hybrid retrieval in production</td>
+      <td class="book">Grainger, Turnbull &amp; Irwin, <span class="title">AI-Powered Search</span></td>
+      <td>Full</td>
+      <td class="mods"><a href="modules/06-chunk-embed.html">06</a>
+        <a href="modules/12-vector-search-at-scale.html">12</a>
+        <a href="modules/14-what-vectors-cant-answer.html">14</a>
+        <a href="modules/15-rebuilt-and-measured.html">15</a></td>
+    </tr>
+    <tr>
+      <td>Neural ranking architectures</td>
+      <td class="book">Lin, Nogueira &amp; Yates, <span class="title">Pretrained Transformers for Text Ranking</span></td>
+      <td>Full</td>
+      <td class="mods"><a href="modules/12-vector-search-at-scale.html">12</a>
+        <a href="modules/15-rebuilt-and-measured.html">15</a></td>
+    </tr>
+    <tr>
+      <td>Operating AI systems</td>
+      <td class="book">Huyen, <span class="title">AI Engineering</span></td>
+      <td>Full</td>
+      <td class="mods"><a href="modules/15-rebuilt-and-measured.html">15</a></td>
+    </tr>
+    <tr>
+      <td>Why PDF text extraction is hard</td>
+      <td class="book">ISO 32000 (the PDF specification), content-stream overview</td>
+      <td>One section</td>
+      <td class="mods"><a href="modules/05-parse.html">05</a></td>
+    </tr>
+    <tr>
+      <td>Document layout as a learned problem</td>
+      <td class="book">DocLayNet and LayoutLM papers; the Docling technical report</td>
+      <td>Introductions</td>
+      <td class="mods"><a href="modules/13-why-parsing-is-hard.html">13</a></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="notes">Notes on the list</h2>
+
+<p><strong>Cite <span class="title">Designing Data-Intensive Applications</span> by
+edition.</strong> The second edition (Kleppmann &amp; Riccomini, 2026) renumbered the
+chapters from the first, so this list references them by title rather than by number.</p>
+
+<p><strong>Two stages have no book.</strong> Parsing has a specification and a research
+literature, and module 13 says so on the page rather than pretending otherwise. That
+absence is itself informative: the pipeline line that decides the most has the least
+settled theory behind it.</p>
+
+<p><strong>What is deliberately not here.</strong> Growth beyond one machine, meaning
+partitioning, replication, and distributed query fanout, is out of scope for this site.
+Everything here runs on one computer, and that constraint is what keeps the mechanisms
+visible. <span class="title">Designing Data-Intensive Applications</span>'s replication
+and sharding chapters are the named next step for anyone who finishes.</p>
+
+<h2 id="order">If you only read three</h2>
+
+<p>In this order, and each one after the module that earns it:</p>
+
+<ol>
+  <li><strong><span class="title">Introduction to Information Retrieval</span>,
+  chapters 1–2 and 6–8.</strong> Free online. It is the spine of Part II, and chapter 8
+  will make you more careful about every quality claim you ever read.</li>
+  <li><strong><span class="title">Computer Systems: A Programmer's Perspective</span>,
+  chapter 2.</strong> One chapter that permanently fixes what a number is. Everything in
+  Part I stands on it.</li>
+  <li><strong><span class="title">Designing Data-Intensive Applications</span>, 2nd
+  edition, opening chapters.</strong> The formal statement of module 14's argument: the
+  shape of your data decides which questions you can ask.</li>
+</ol>
+
+<p style="margin-top:2rem"><a href="index.html">← back to the pipeline</a></p>

@@ -1,0 +1,282 @@
+{
+  "_generated_unix": 1785264888,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "astronaut": {
+    "displayed_as": "one glyph",
+    "len_characters": 3,
+    "len_utf8_bytes": 11
+  },
+  "byte_settings": 256,
+  "cafe": {
+    "len_characters": 4,
+    "len_utf16_bytes": 8,
+    "len_utf8_bytes": 5,
+    "text": "caf\u00e9",
+    "utf8": [
+      "63",
+      "61",
+      "66",
+      "c3",
+      "a9"
+    ]
+  },
+  "char_widths": [
+    {
+      "char": "A",
+      "codepoint": "U+0041",
+      "n_bytes": 1,
+      "name": "LATIN CAPITAL LETTER A",
+      "utf8_bytes": [
+        "41"
+      ]
+    },
+    {
+      "char": "\u00e9",
+      "codepoint": "U+00E9",
+      "n_bytes": 2,
+      "name": "LATIN SMALL LETTER E WITH ACUTE",
+      "utf8_bytes": [
+        "c3",
+        "a9"
+      ]
+    },
+    {
+      "char": "\u2192",
+      "codepoint": "U+2192",
+      "n_bytes": 3,
+      "name": "RIGHTWARDS ARROW",
+      "utf8_bytes": [
+        "e2",
+        "86",
+        "92"
+      ]
+    },
+    {
+      "char": "\ud83e\uddf1",
+      "codepoint": "U+1F9F1",
+      "n_bytes": 4,
+      "name": "BRICK",
+      "utf8_bytes": [
+        "f0",
+        "9f",
+        "a7",
+        "b1"
+      ]
+    }
+  ],
+  "decode_error": "'utf-8' codec can't decode byte 0xe9 in position 3: invalid continuation byte",
+  "disagreement": {
+    "bytes": [
+      "63",
+      "61",
+      "66",
+      "c3",
+      "a9"
+    ],
+    "latin1": "caf\u00c3\u00a9",
+    "same_bytes": true,
+    "utf8": "caf\u00e9"
+  },
+  "file_command": "notes.txt: PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced",
+  "letter_a": {
+    "bits": "01000001",
+    "char": "A",
+    "code": 65
+  },
+  "mystery_bytes": [
+    "48",
+    "65",
+    "6c",
+    "6c",
+    "6f",
+    "21",
+    "00",
+    "2a"
+  ],
+  "mystery_readings": {
+    "ascii_text": "Hello!\\x00*",
+    "one_float64_le": 2.1978711810724756e-106,
+    "rgba_pixels": [
+      [
+        72,
+        101,
+        108,
+        108
+      ],
+      [
+        111,
+        33,
+        0,
+        42
+      ]
+    ],
+    "two_int32_be": [
+      1214606444,
+      1864433706
+    ],
+    "two_int32_le": [
+      1819043144,
+      704651631
+    ]
+  },
+  "pdf": {
+    "dump": [
+      {
+        "ascii": "%PDF-1.4.%.... R",
+        "hex": [
+          "25",
+          "50",
+          "44",
+          "46",
+          "2d",
+          "31",
+          "2e",
+          "34",
+          "0a",
+          "25",
+          "93",
+          "8c",
+          "8b",
+          "9e",
+          "20",
+          "52"
+        ],
+        "offset": 0
+      },
+      {
+        "ascii": "eportLab Generat",
+        "hex": [
+          "65",
+          "70",
+          "6f",
+          "72",
+          "74",
+          "4c",
+          "61",
+          "62",
+          "20",
+          "47",
+          "65",
+          "6e",
+          "65",
+          "72",
+          "61",
+          "74"
+        ],
+        "offset": 16
+      }
+    ],
+    "name": "gen-clean-1col.pdf",
+    "signature": [
+      "25",
+      "50",
+      "44",
+      "46",
+      "2d",
+      "31",
+      "2e",
+      "34"
+    ],
+    "signature_ascii": "%PDF-1.4"
+  },
+  "plain": {
+    "bytes": 14,
+    "dump": [
+      {
+        "ascii": "Hello, floor..",
+        "hex": [
+          "48",
+          "65",
+          "6c",
+          "6c",
+          "6f",
+          "2c",
+          "20",
+          "66",
+          "6c",
+          "6f",
+          "6f",
+          "72",
+          "2e",
+          "0a"
+        ],
+        "offset": 0
+      }
+    ],
+    "text": "Hello, floor.\n",
+    "tool": "xxd"
+  },
+  "png": {
+    "dump": [
+      {
+        "ascii": ".PNG........IHDR",
+        "hex": [
+          "89",
+          "50",
+          "4e",
+          "47",
+          "0d",
+          "0a",
+          "1a",
+          "0a",
+          "00",
+          "00",
+          "00",
+          "0d",
+          "49",
+          "48",
+          "44",
+          "52"
+        ],
+        "offset": 0
+      },
+      {
+        "ascii": "................",
+        "hex": [
+          "00",
+          "00",
+          "00",
+          "01",
+          "00",
+          "00",
+          "00",
+          "01",
+          "08",
+          "06",
+          "00",
+          "00",
+          "00",
+          "1f",
+          "15",
+          "c4"
+        ],
+        "offset": 16
+      }
+    ],
+    "signature": [
+      "89",
+      "50",
+      "4e",
+      "47",
+      "0d",
+      "0a",
+      "1a",
+      "0a"
+    ],
+    "signature_ascii": ".PNG....",
+    "size": 67
+  }
+}

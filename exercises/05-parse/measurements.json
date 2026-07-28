@@ -1,0 +1,186 @@
+{
+  "_generated_unix": 1785265792,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "content_stream": {
+    "excerpt": "1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET\nq\n1 0 0 1 85.2 696 cm\nq\n0 0 0 rg\nBT 1 0 0 1 0 3 Tm /F2 15 Tf 18 TL 84.345 0 Td (Block Devices and the Cost of Small Reads) Tj T* -84.345 0 Td ET\nQ\nQ\nq\n1 0 0 1 85.2 673.5 cm\nq\nBT 1 0 0 1 0 3 Tm 12.5 TL /F3 9.5 Tf 0 0 0 rg (R. Ackon \\267 Beneath the Pipeline) Tj T* ET\nQ\nQ\nq\n1 0 0 1 85.2 659.5 cm\nQ\nq\n1 0 0 1 85.2 616 cm\nq\n0 0 0 rg\nBT 1 0 0 1 0 28 Tm /F3 9.5 Tf 12.5 TL .82945 Tw (A storage device presents one interface to the software above it: a long row of numbered blocks, each of a fixed) Tj T* 0 Tw .138625 Tw (size. A common size is 4096 bytes. The devic",
+    "n_Td": 2,
+    "n_Tf": 11,
+    "n_Tj": 40,
+    "total_bytes": 3927
+  },
+  "csv": {
+    "fields": [
+      "INV-10007",
+      "Acme Corp, Ltd.",
+      "3",
+      "He said \"ship it\"",
+      "1240.50",
+      ""
+    ],
+    "input": "INV-10007,\"Acme Corp, Ltd.\",3,\"He said \"\"ship it\"\"\",1240.50,",
+    "matches_stdlib": true,
+    "n_fields": 6
+  },
+  "extractions": {
+    "acl-2col-01": {
+      "char_ratio": 0.18424281340656568,
+      "chars_a": 44462,
+      "chars_b": 42749,
+      "first_difference": {
+        "a": "Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics, p",
+        "b": "Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context ZihangDai 12,Zhili",
+        "offset": 0,
+        "tag": "insert"
+      },
+      "only_in_a": 777,
+      "only_in_b": 589,
+      "same_words": false,
+      "word_gap": 1781,
+      "word_gap_pct": 0.2550479736502936,
+      "words_a": 6983,
+      "words_b": 5202
+    },
+    "gen-2col": {
+      "char_ratio": 0.5615970580509587,
+      "chars_a": 1904,
+      "chars_b": 1903,
+      "first_difference": {
+        "a": "it: a long row of numbered blocks, each of a fixed size. A common size is 4096 bytes. The",
+        "b": "The same reasoning governs index construction. An index is it: a long row of numbered blo",
+        "offset": 135,
+        "tag": "insert"
+      },
+      "only_in_a": 0,
+      "only_in_b": 0,
+      "same_words": true,
+      "word_gap": 0,
+      "word_gap_pct": 0.0,
+      "words_a": 339,
+      "words_b": 339
+    },
+    "gen-clean-1col": {
+      "char_ratio": 0.9918571053322827,
+      "chars_a": 1904,
+      "chars_b": 1903,
+      "first_difference": {
+        "a": "requests bytes moved relative cost file at a time 10,000 41.2 MB 14.2 line at a time 4,11",
+        "b": "requests bytes moved relative cost file at a time 10,000 41.2 MB 14.2 line at a time 4,11",
+        "offset": 1178,
+        "tag": "replace"
+      },
+      "only_in_a": 0,
+      "only_in_b": 0,
+      "same_words": true,
+      "word_gap": 0,
+      "word_gap_pct": 0.0,
+      "words_a": 339,
+      "words_b": 339
+    },
+    "gen-tables": {
+      "char_ratio": 0.18115942028985507,
+      "chars_a": 1795,
+      "chars_b": 1793,
+      "first_difference": {
+        "a": "postings index MB build s p50 ms p99 ms 50,000 2,350,000 9.3 1.22 0.40 1.90 100,000 4,700",
+        "b": "postings index MB build s p50 ms p99 ms 50,000 2,350,000 9.3 1.22 0.40 1.90 100,000 4,700",
+        "offset": 49,
+        "tag": "replace"
+      },
+      "only_in_a": 0,
+      "only_in_b": 0,
+      "same_words": true,
+      "word_gap": 0,
+      "word_gap_pct": 0.0,
+      "words_a": 279,
+      "words_b": 279
+    },
+    "irs-1040": {
+      "char_ratio": 0.5090574445413155,
+      "chars_a": 10494,
+      "chars_b": 10152,
+      "first_difference": {
+        "a": "Form 1040 2025 U.S. Individual Income Tax Return Department of the Treasury\u2014Internal Rev",
+        "b": "mroF 1040 Department of the Treasury\u2014Internal Revenue Service 2025 U.S. Individual Income",
+        "offset": 0,
+        "tag": "insert"
+      },
+      "only_in_a": 3,
+      "only_in_b": 4,
+      "same_words": false,
+      "word_gap": 4,
+      "word_gap_pct": 0.0017937219730941704,
+      "words_a": 2230,
+      "words_b": 2226
+    }
+  },
+  "json": {
+    "input": "{\"invoice\": \"INV-10007\", \"vendor\": \"Acme Corp, Ltd.\", \"note\": \"He said \\\"ship it\\\"\", \"total\": 1240.50, \"tags\": []}",
+    "keys": [
+      "invoice",
+      "note",
+      "tags",
+      "total",
+      "vendor"
+    ],
+    "parsed": {
+      "invoice": "INV-10007",
+      "note": "He said \"ship it\"",
+      "tags": [],
+      "total": 1240.5,
+      "vendor": "Acme Corp, Ltd."
+    }
+  },
+  "raw_bytes": {
+    "compression": {
+      "at_offset": 1100,
+      "has_flatedecode": true
+    },
+    "file": "gen-clean-1col.pdf",
+    "file_size": 3472,
+    "page_counts": {
+      "The": 8,
+      "block": 5,
+      "device": 2,
+      "storage": 1
+    },
+    "raw_counts": {
+      "The": 0,
+      "block": 0,
+      "device": 0,
+      "storage": 0
+    }
+  },
+  "reading_order": {
+    "char_ratio": 0.48777078965758214,
+    "chars_a": 1904,
+    "chars_b": 2389,
+    "first_difference": {
+      "a": "Block Devices and the Cost of Small Reads R. Ackon \u00b7 Beneath the Pipeline A storage device",
+      "b": "Block Devices and the Cost of Small Reads R. Ackon \u00b7 Beneath the Pipeline",
+      "offset": 0,
+      "tag": "insert"
+    },
+    "naive_excerpt": "n so that a question becomes cheap to common size is 4096 bytes. The device will not hand back answer. The work does not disappear; it moves from query less than a block, and it will not write less than a block. time to build time, and is paid for in memory, in build Every abstraction above it \u2014 files, folders, databases,",
+    "only_in_a": 2,
+    "only_in_b": 2,
+    "same_words": false,
+    "smart_excerpt": "an a block. Every abstraction above it \u2014 files, folders, databases, indexes \u2014 is built out of that one operation. The consequence shows up immediately in measurement. Reading ten thousand small files costs far more than reading one file of the same total size, because each file carries a fixed overhead that has nothing to do with how many",
+    "word_gap": 2,
+    "word_gap_pct": 0.0058997050147492625,
+    "words_a": 339,
+    "words_b": 337
+  }
+}

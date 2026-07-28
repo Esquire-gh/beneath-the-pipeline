@@ -1,0 +1,345 @@
+<p class="kicker">Part III · module 14 · build · 60–90 minutes</p>
+<h1><span class="num">14 ·</span> What vectors can't answer</h1>
+<p class="hook">This module breaks <code>retrieve()</code> itself. Not its speed, its
+<em>fitness</em>. This is the last assumption in Part 0's inventory, and the only one
+that no amount of engineering fixes.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>Every module so far has taken a question of the form "which documents are about X"
+and made answering it faster, cheaper, or more accurate. This module is about the
+questions that are not of that form at all. "How many invoices exceed $10,000?" "What
+is the total across all invoices from Acme?" "Which customers ordered from vendors who
+also supplied Acme?" These need counting, adding, filtering, and following
+relationships, and their answers are usually numbers that nobody ever wrote in any
+document.</p>
+
+<p>Similarity search cannot answer them, and the reason is structural rather than a
+matter of quality. A retriever returns the few documents nearest a query. An aggregate
+question needs an <em>operation applied across all of them</em>, and there is no
+passage that is "most similar to" a sum. The fix is also structural: at ingestion,
+extract each document's facts into records with named, typed fields, put the records in
+a database, and answer those questions with the operations databases actually have. A
+system that handles both kinds of question is a router over differently shaped stores,
+and by the end of this module you will have built one and measured each part.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Take {{ 14-what-vectors-cant-answer.n_invoices | int }} invoices, parsed, chunked,
+  embedded, and indexed. Ask your best pipeline, BM25 and dense retrieval fused:</p>
+  <p style="font-family:var(--mono);font-size:.9rem">"What is the total across all
+  invoices from Acme Corp?"</p>
+  <p>It confidently returns the {{ 14-what-vectors-cant-answer.k }} most
+  similar-sounding invoices. The true total is
+  {{ 14-what-vectors-cant-answer.aggregate.all.0.true_answer | money }}, and it is not
+  written in any of them, or anywhere else in the corpus. Yet every number needed to
+  compute it is in the corpus, parsed and indexed.</p>
+  <p>What is missing, and why won't better retrieval supply it?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<figure>
+  <div class="code"><pre>python data/fetch.py --only invoices
+python exercises/14-what-vectors-cant-answer/solution.py</pre></div>
+</figure>
+
+<p>The corpus is {{ 14-what-vectors-cant-answer.n_invoices | int }} invoices rendered
+to PDF, and it exists so that every fact about it is <em>known</em>: the generator
+wrote the numbers before it drew the pages. The PDFs are the only input to the
+pipeline, and the ground truth is only ever used for scoring.</p>
+
+<p>There are two question sets, both with exact answers:</p>
+
+<ul>
+  <li><strong>{{ 14-what-vectors-cant-answer.n_descriptive }} descriptive
+  questions</strong>, like "which invoice from Contoso to Cascade Foundry includes a
+  bearing assembly?" The answer is a document.</li>
+  <li><strong>{{ 14-what-vectors-cant-answer.n_aggregate }} aggregate
+  questions</strong>, like "how many invoices exceed $10,000?" and "what is the total
+  across all invoices from Acme Corp?" The answer is a number nobody wrote down.</li>
+</ul>
+
+<p>Then build the fix: extract a structured record from each parsed invoice, load the
+records into SQLite, and answer the aggregate set with SQL. Then build a router that
+decides, per question, which store to ask.</p>
+
+<div class="callout">
+  <p>The schema is <em>yours</em>. Which fields does a record hold? Are line items
+  their own table? This is module 2's lesson with you on the authoring side one more
+  time, and it has the same consequence: <strong>every field you leave out is a
+  question the table can never answer.</strong></p>
+</div>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>First, that the extraction is not the problem</h3>
+
+<p>An argument about what retrieval cannot do is worthless if the data was mangled on
+the way in. So grade the extractor against what the generator wrote:</p>
+
+<div class="table-wrap">
+<table>
+  <caption>{{ 14-what-vectors-cant-answer.n_invoices | int }} invoices, parsed with
+  PyMuPDF and extracted with regular expressions</caption>
+  <thead><tr><th>field</th><th class="num">extracted correctly</th></tr></thead>
+  <tbody>
+    <tr><td>vendor</td><td class="num">{{ 14-what-vectors-cant-answer.extraction.field_accuracy.vendor | pct }}</td></tr>
+    <tr><td>customer</td><td class="num">{{ 14-what-vectors-cant-answer.extraction.field_accuracy.customer | pct }}</td></tr>
+    <tr><td>issue date</td><td class="num">{{ 14-what-vectors-cant-answer.extraction.field_accuracy.issue_date | pct }}</td></tr>
+    <tr><td>purchase order</td><td class="num">{{ 14-what-vectors-cant-answer.extraction.field_accuracy.purchase_order | pct }}</td></tr>
+    <tr><td>total</td><td class="num">{{ 14-what-vectors-cant-answer.extraction.field_accuracy.total | pct }}</td></tr>
+    <tr><td>status</td><td class="num">{{ 14-what-vectors-cant-answer.extraction.field_accuracy.status | pct }}</td></tr>
+    <tr><td>line-item count</td><td class="num">{{ 14-what-vectors-cant-answer.extraction.line_item_count_accuracy | pct }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>These are clean, generated, single-column PDFs, so the extraction is perfect. That
+is deliberate: it removes parsing as an explanation, and everything that follows is
+about the <em>shape</em> of the question rather than the quality of the data. Module 13
+already showed what happens when the documents fight back, and module 15 puts the two
+together.</p>
+
+<h3>The two question sets get opposite results</h3>
+
+<figure>
+{{ chart:two-query-sets }}
+<figcaption>the same corpus, the same documents, two kinds of question</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/14-what-vectors-cant-answer/solution.py</caption>
+  <thead><tr><th>question type</th><th class="num">similarity search</th>
+    <th class="num">SQL over records</th></tr></thead>
+  <tbody>
+    <tr><td>descriptive ({{ 14-what-vectors-cant-answer.n_descriptive }} questions), correct in top-{{ 14-what-vectors-cant-answer.k }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.descriptive.retrieval.accuracy_at_k | pct }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.descriptive.sql.accuracy_at_k | pct }}</td></tr>
+    <tr><td>aggregate ({{ 14-what-vectors-cant-answer.n_aggregate }} questions), exactly correct</td>
+      <td class="num">0.0%</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.sql.accuracy | pct }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Similarity search is near perfect on descriptive questions and scores zero on
+aggregates. SQL is exactly inverted. And the zero deserves an explanation rather than
+an assertion, because it is the module's whole claim.</p>
+
+<h3>Why the zero is a measurement, not an assumption</h3>
+
+<figure>
+{{ chart:evidence-gap }}
+<figcaption>what a median aggregate question requires, against what
+<code>k={{ 14-what-vectors-cant-answer.k }}</code> returns</figcaption>
+</figure>
+
+<p>Two things were measured, and neither of them needed a language model.</p>
+
+<p><strong>Evidence coverage:
+{{ 14-what-vectors-cant-answer.aggregate.retrieval.mean_evidence_coverage | pct }}.</strong>
+To answer "how many invoices exceed $10,000" you have to see every invoice that does.
+The median aggregate question here needs
+{{ 14-what-vectors-cant-answer.aggregate.retrieval.median_documents_needed }} documents,
+and the retriever returns {{ 14-what-vectors-cant-answer.k }}. Even a perfect retriever
+handing back the {{ 14-what-vectors-cant-answer.k }} most relevant invoices delivers a
+tenth of the evidence.</p>
+
+<p><strong>The answer is not in the text:
+{{ 14-what-vectors-cant-answer.aggregate.retrieval.answers_found }} of
+{{ 14-what-vectors-cant-answer.aggregate.retrieval.distinctive_answers }}.</strong> For
+every aggregate question whose answer is a distinctive number, a total like
+{{ 14-what-vectors-cant-answer.aggregate.all.0.true_answer | money }} rather than a
+two-digit count that could match by coincidence, the retrieved text does not contain it
+anywhere. Not once. Because nobody ever wrote it down.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>a sample of the aggregate set, with what each question actually requires</caption>
+  <thead><tr><th>question</th><th class="num">true answer</th>
+    <th class="num">SQL</th><th class="num">documents needed</th></tr></thead>
+  <tbody>
+    <tr><td>{{ 14-what-vectors-cant-answer.aggregate.all.0.question }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.0.true_answer | money }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.0.sql_answer | money }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.0.documents_needed }}</td></tr>
+    <tr><td>{{ 14-what-vectors-cant-answer.aggregate.all.1.question }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.1.true_answer }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.1.sql_answer }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.1.documents_needed }}</td></tr>
+    <tr><td>{{ 14-what-vectors-cant-answer.aggregate.all.2.question }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.2.true_answer | money }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.2.sql_answer | money }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.2.documents_needed }}</td></tr>
+    <tr><td>{{ 14-what-vectors-cant-answer.aggregate.all.3.question }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.3.true_answer }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.3.sql_answer }}</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.aggregate.all.3.documents_needed }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>SQL answers these in
+{{ 14-what-vectors-cant-answer.aggregate.sql.median_seconds | time }} and is exactly
+right, {{ 14-what-vectors-cant-answer.aggregate.sql.accuracy | pct }} of the time,
+because the question maps onto an operation the store actually has.</p>
+
+<h3>And the router beats both stores alone</h3>
+
+<figure>
+{{ chart:router-result }}
+<figcaption>all {{ 14-what-vectors-cant-answer.router.questions }} questions, three
+systems</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>system</th><th class="num">all questions answered correctly</th></tr></thead>
+  <tbody>
+    <tr><td>similarity search alone</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.end_to_end.retrieval_only | pct }}</td></tr>
+    <tr><td>SQL alone</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.end_to_end.sql_only | pct }}</td></tr>
+    <tr class="win"><td>routed between the two</td>
+      <td class="num">{{ 14-what-vectors-cant-answer.end_to_end.routed | pct }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The router is a dozen words of regular expression, "how many", "total", "average",
+"largest", "exceed", and it picks the right store for
+{{ 14-what-vectors-cant-answer.router.accuracy | pct }} of the
+{{ 14-what-vectors-cant-answer.router.questions }} questions. That is a suspiciously
+easy result and you should treat it as one: these questions were generated from
+templates, so their phrasing is regular in a way real user questions are not. What
+survives the caveat is the shape. <strong>The routed system beats both stores
+alone</strong>, and it does so by a margin neither store could close by getting
+better.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Go back to module 6, because the answer was already there.</p>
+
+<p>An embedding is a learned convention for turning text into a point, arranged so that
+nearness of points tracks nearness of meaning. That is the entire promise. It says
+nothing about counting, nothing about summing, nothing about exactness, and nothing
+about relationships between documents, because <em>nearness was the only promise the
+convention ever made</em>.</p>
+
+<p>So ask what an aggregate question actually needs. "How many invoices exceed $10,000"
+needs a comparison applied to every record and the results counted. "What is the total
+across all invoices from Acme" needs a filter, then an addition over
+{{ 14-what-vectors-cant-answer.aggregate.all.0.documents_needed }} numbers. Neither is
+a question about which document is <em>about</em> something. There is no passage that
+is "most similar to" a sum.</p>
+
+<p>And that is why retrieval fails here in a way more retrieval cannot fix. Raise
+<code>k</code> from {{ 14-what-vectors-cant-answer.k }} to 50 and evidence coverage
+improves, but the arithmetic still has not happened. Use a better embedding model and
+the points move slightly. Add a reranker and you reorder documents that were never the
+answer. The failure is not in the quality of the retrieval. It is that the question
+wanted an operation the store does not have.</p>
+
+<h3>What the table has that the index does not</h3>
+
+<p>The table has <span class="term">records</span>: named fields with types, one row
+per thing, so a comparison can be applied to a column and the results counted. That is
+not a smarter index. It is a different <em>shape of data</em>, decided at ingestion,
+and it is what makes counting and summing expressible at all.</p>
+
+<p>There is a third shape worth naming, because the questions that need it are common.
+When a question hops between things, "which customers ordered from vendors who also
+supplied Acme?", what you want is an
+<span class="term">entity-relationship graph</span>: nodes for the things, edges for
+the relationships between them, so a query can follow a chain rather than filtering a
+column. It is the same move with a different geometry: structure built at ingestion so
+a class of question becomes cheap.</p>
+
+<p>Which is the module's real subject. <strong>Production retrieval systems are
+routers over differently shaped stores</strong>: a vector index for "what is this
+about", an inverted index for exact terms, a relational table for facts and totals,
+sometimes a graph for relationships. Not one vector index with better prompts in front
+of it.</p>
+
+<p>"Retrieval-augmented" never had to mean "similarity search". It meant fetching the
+right context. Similarity is one way to decide what the right context is, and it is the
+right way for exactly one kind of question.</p>
+
+<h3>The design question this leaves you with</h3>
+
+<p>You cannot route to a store you did not build, and you cannot build a table for
+fields you did not extract. So the decision moves upstream, to ingestion, and it is not
+a technical one: <em>which questions is this system for?</em></p>
+
+<p>If nobody will ever ask for a total, the table is wasted work. If somebody will,
+then no amount of retrieval quality will substitute for it, and the time to find that
+out is before the corpus is indexed rather than after a user asks.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> the last line of Part 0 is demystified <em>and</em>
+demoted. <code>retrieve()</code> is one strategy, not the definition. Part 0's
+inventory ended with "is the nearest chunk even the right kind of answer to every
+question?", and the answer, measured, is no, for
+{{ 14-what-vectors-cant-answer.n_aggregate }} of the
+{{ 14-what-vectors-cant-answer.router.questions }} questions on this page.</p>
+
+<p><strong>Backward:</strong> module 1's filesystem keeps bookkeeping so a name becomes
+cheap to resolve. Module 7's index keeps bookkeeping so a word becomes cheap to find.
+This module's table keeps bookkeeping so a total becomes cheap to compute. It is the
+same move at three scales, and you have now built all three.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Here the cost of <em>not</em> arranging is the one that shows: the numbers were all
+present, and no amount of searching could add them up.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Kleppmann &amp; Riccomini,
+  <span class="title">Designing Data-Intensive Applications</span>, 2nd edition, the
+  opening chapters on data models and query languages.</strong> The formal home of "the
+  shape of your data determines the questions you can ask". Expect the relational,
+  document and graph models to be presented as answers to different question shapes,
+  which is exactly the choice this module made you make.</p>
+
+  <p class="book"><strong>Grainger, Turnbull &amp; Irwin,
+  <span class="title">AI-Powered Search</span>.</strong> On combining structured
+  signals with search, which is the production version of the router you just
+  wrote.</p>
+
+  <ol>
+    <li>Your pipeline answers "what did Acme order in March?" well and "how much did
+    Acme spend in March?" not at all. Explain the difference to a colleague without
+    using the word "embedding".</li>
+    <li>Raising <code>k</code> from {{ 14-what-vectors-cant-answer.k }} to 100 would
+    raise evidence coverage. Would it make the aggregate answers correct? Say why.</li>
+    <li>You are designing ingestion for a corpus of contracts. Name three fields you
+    would extract into a table, and one question each would make cheap that retrieval
+    alone would make impossible.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your extraction accuracy is below 100%, your regular expressions are meeting
+    a layout variation. Check which field failed and on which invoice. This corpus is
+    deliberately uniform, so a failure here is a bug in the extractor rather than a
+    hard document, and finding it is a fair use of an hour.</p>
+    <p>If SQL scores below 100% on aggregates, compare your query against the
+    <code>sql_hint</code> field in <code>ground_truth.json</code>, which names the
+    operation each question wants. A mismatch is usually rounding: totals are stored to
+    the cent, so compare with a tolerance rather than with <code>==</code>.</p>
+    <p>If retrieval does <em>better</em> than 0 on aggregates in your own version,
+    check how you are grading it. Counting a two-digit answer as "present in the
+    retrieved text" will find it by coincidence in almost any invoice. The solution
+    only counts distinctive answers for exactly this reason.</p>
+    <p>If your router misclassifies, look at which side it errs on. Sending a
+    descriptive question to SQL loses you a good answer. Sending an aggregate to the
+    retriever produces a confident wrong one. Those are not equally bad, and a real
+    router should be biased accordingly.</p>
+  </div>
+</div>

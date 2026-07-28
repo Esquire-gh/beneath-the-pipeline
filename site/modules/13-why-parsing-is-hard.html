@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 · Why parsing is a hard problem — Beneath the Pipeline</title>
+<meta name="description" content="Two identical-looking PDFs. One parses perfectly, one returns nothing.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead"><div class="masthead-inner"><div class="brandrow"><a class="brand" href="../index.html"><b>Beneath the Pipeline</b> &nbsp;/&nbsp; part iii · when reality arrives</a><span class="progress-label">13 / 15</span></div><nav class="strip" aria-label="the pipeline"><a class="stage reinforced" href="04-load.html" title="load() — built in module 4; stressed in module 9"><span class="n">04·09</span>load</a><a class="stage stressed" href="05-parse.html" title="parse() — built in module 5; stressed in module 13"><span class="n">05·13</span>parse</a><a class="stage done" href="06-chunk-embed.html" title="chunk() — built in module 6"><span class="n">06</span>chunk</a><a class="stage reinforced" href="06-chunk-embed.html" title="embed() — built in module 6; stressed in module 12"><span class="n">06·12</span>embed</a><a class="stage reinforced" href="07-index.html" title="index() — built in module 7; stressed in module 9, 10, 12"><span class="n">07·09·10·12</span>index</a><a class="stage reinforced" href="08-retrieve.html" title="retrieve() — built in module 8; stressed in module 11, 14"><span class="n">08·11·14</span>retrieve</a></nav><div class="lane2"><span class="spacer"></span><a class="branch" href="14-what-vectors-cant-answer.html" title="module 14 — the structured path">14 · structured</a></div></div></header><div class="wrap"><div class="layout"><div class="gutter" aria-hidden="true"><div class="marks"><div>0000</div><div>0010</div><div>0020</div><div>0030</div><div>0040</div><div>0050</div><div>0060</div><div>0070</div><div>0080</div><div>0090</div><div>00a0</div><div>00b0</div><div>00c0</div><div>00d0</div><div>00e0</div><div>00f0</div><div>0100</div><div>0110</div><div>0120</div><div>0130</div><div>0140</div><div>0150</div><div>0160</div><div>0170</div><div>0180</div><div>0190</div><div>01a0</div><div>01b0</div><div>01c0</div><div>01d0</div><div>01e0</div><div>01f0</div><div>0200</div><div>0210</div><div>0220</div><div>0230</div><div>0240</div><div>0250</div><div>0260</div><div>0270</div><div>0280</div><div>0290</div><div>02a0</div><div>02b0</div><div>02c0</div><div>02d0</div><div>02e0</div><div>02f0</div><div>0300</div><div>0310</div><div>0320</div><div>0330</div><div>0340</div><div>0350</div><div>0360</div><div>0370</div><div>0380</div><div>0390</div><div>03a0</div><div>03b0</div><div>03c0</div><div>03d0</div><div>03e0</div><div>03f0</div><div>0400</div><div>0410</div><div>0420</div><div>0430</div><div>0440</div><div>0450</div><div>0460</div><div>0470</div><div>0480</div><div>0490</div><div>04a0</div><div>04b0</div><div>04c0</div><div>04d0</div><div>04e0</div><div>04f0</div><div>0500</div><div>0510</div><div>0520</div><div>0530</div><div>0540</div><div>0550</div><div>0560</div><div>0570</div><div>0580</div><div>0590</div><div>05a0</div><div>05b0</div><div>05c0</div><div>05d0</div><div>05e0</div><div>05f0</div><div>0600</div><div>0610</div><div>0620</div><div>0630</div><div>0640</div><div>0650</div><div>0660</div><div>0670</div><div>0680</div><div>0690</div><div>06a0</div><div>06b0</div><div>06c0</div><div>06d0</div><div>06e0</div><div>06f0</div><div>0700</div><div>0710</div><div>0720</div><div>0730</div><div>0740</div><div>0750</div><div>0760</div><div>0770</div><div>0780</div><div>0790</div><div>07a0</div><div>07b0</div><div>07c0</div><div>07d0</div><div>07e0</div><div>07f0</div><div>0800</div><div>0810</div><div>0820</div><div>0830</div><div>0840</div><div>0850</div><div>0860</div><div>0870</div><div>0880</div><div>0890</div><div>08a0</div><div>08b0</div><div>08c0</div><div>08d0</div><div>08e0</div><div>08f0</div><div>0900</div><div>0910</div><div>0920</div><div>0930</div><div>0940</div><div>0950</div><div>0960</div><div>0970</div><div>0980</div><div>0990</div><div>09a0</div><div>09b0</div><div>09c0</div><div>09d0</div><div>09e0</div><div>09f0</div><div>0a00</div><div>0a10</div><div>0a20</div><div>0a30</div><div>0a40</div><div>0a50</div><div>0a60</div><div>0a70</div><div>0a80</div><div>0a90</div><div>0aa0</div><div>0ab0</div><div>0ac0</div><div>0ad0</div><div>0ae0</div><div>0af0</div><div>0b00</div><div>0b10</div><div>0b20</div><div>0b30</div><div>0b40</div><div>0b50</div><div>0b60</div><div>0b70</div><div>0b80</div><div>0b90</div><div>0ba0</div><div>0bb0</div><div>0bc0</div><div>0bd0</div><div>0be0</div><div>0bf0</div><div>0c00</div><div>0c10</div><div>0c20</div><div>0c30</div><div>0c40</div><div>0c50</div><div>0c60</div><div>0c70</div><div>0c80</div><div>0c90</div><div>0ca0</div><div>0cb0</div><div>0cc0</div><div>0cd0</div><div>0ce0</div><div>0cf0</div><div>0d00</div><div>0d10</div><div>0d20</div><div>0d30</div><div>0d40</div><div>0d50</div><div>0d60</div><div>0d70</div><div>0d80</div><div>0d90</div><div>0da0</div><div>0db0</div><div>0dc0</div><div>0dd0</div><div>0de0</div><div>0df0</div><div>0e00</div><div>0e10</div><div>0e20</div><div>0e30</div><div>0e40</div><div>0e50</div><div>0e60</div><div>0e70</div><div>0e80</div><div>0e90</div><div>0ea0</div><div>0eb0</div><div>0ec0</div><div>0ed0</div><div>0ee0</div><div>0ef0</div><div>0f00</div><div>0f10</div><div>0f20</div><div>0f30</div><div>0f40</div><div>0f50</div><div>0f60</div><div>0f70</div><div>0f80</div><div>0f90</div><div>0fa0</div><div>0fb0</div><div>0fc0</div><div>0fd0</div><div>0fe0</div><div>0ff0</div><div>1000</div><div>1010</div><div>1020</div><div>1030</div><div>1040</div><div>1050</div><div>1060</div><div>1070</div><div>1080</div><div>1090</div><div>10a0</div><div>10b0</div><div>10c0</div><div>10d0</div><div>10e0</div><div>10f0</div><div>1100</div><div>1110</div><div>1120</div><div>1130</div><div>1140</div><div>1150</div><div>1160</div><div>1170</div><div>1180</div><div>1190</div><div>11a0</div><div>11b0</div><div>11c0</div><div>11d0</div><div>11e0</div><div>11f0</div><div>1200</div><div>1210</div><div>1220</div><div>1230</div><div>1240</div><div>1250</div><div>1260</div><div>1270</div><div>1280</div><div>1290</div><div>12a0</div><div>12b0</div><div>12c0</div><div>12d0</div><div>12e0</div><div>12f0</div><div>1300</div><div>1310</div><div>1320</div><div>1330</div><div>1340</div><div>1350</div><div>1360</div><div>1370</div><div>1380</div><div>1390</div><div>13a0</div><div>13b0</div><div>13c0</div><div>13d0</div><div>13e0</div><div>13f0</div><div>1400</div><div>1410</div><div>1420</div><div>1430</div><div>1440</div><div>1450</div><div>1460</div><div>1470</div><div>1480</div><div>1490</div><div>14a0</div><div>14b0</div><div>14c0</div><div>14d0</div><div>14e0</div><div>14f0</div><div>1500</div><div>1510</div><div>1520</div><div>1530</div><div>1540</div><div>1550</div><div>1560</div><div>1570</div><div>1580</div><div>1590</div><div>15a0</div><div>15b0</div><div>15c0</div><div>15d0</div><div>15e0</div><div>15f0</div><div>1600</div><div>1610</div><div>1620</div><div>1630</div><div>1640</div><div>1650</div><div>1660</div><div>1670</div><div>1680</div><div>1690</div><div>16a0</div><div>16b0</div><div>16c0</div><div>16d0</div><div>16e0</div><div>16f0</div><div>1700</div><div>1710</div><div>1720</div><div>1730</div><div>1740</div><div>1750</div><div>1760</div><div>1770</div><div>1780</div><div>1790</div><div>17a0</div><div>17b0</div><div>17c0</div><div>17d0</div><div>17e0</div><div>17f0</div><div>1800</div><div>1810</div><div>1820</div><div>1830</div><div>1840</div><div>1850</div><div>1860</div><div>1870</div><div>1880</div><div>1890</div><div>18a0</div><div>18b0</div><div>18c0</div><div>18d0</div><div>18e0</div><div>18f0</div><div>1900</div><div>1910</div><div>1920</div><div>1930</div><div>1940</div><div>1950</div><div>1960</div><div>1970</div><div>1980</div><div>1990</div><div>19a0</div><div>19b0</div><div>19c0</div><div>19d0</div><div>19e0</div><div>19f0</div><div>1a00</div><div>1a10</div><div>1a20</div><div>1a30</div><div>1a40</div><div>1a50</div><div>1a60</div><div>1a70</div><div>1a80</div><div>1a90</div><div>1aa0</div><div>1ab0</div><div>1ac0</div><div>1ad0</div><div>1ae0</div><div>1af0</div><div>1b00</div><div>1b10</div><div>1b20</div><div>1b30</div><div>1b40</div><div>1b50</div><div>1b60</div><div>1b70</div><div>1b80</div><div>1b90</div><div>1ba0</div><div>1bb0</div><div>1bc0</div><div>1bd0</div><div>1be0</div><div>1bf0</div><div>1c00</div><div>1c10</div><div>1c20</div><div>1c30</div><div>1c40</div><div>1c50</div><div>1c60</div><div>1c70</div><div>1c80</div><div>1c90</div><div>1ca0</div><div>1cb0</div><div>1cc0</div><div>1cd0</div><div>1ce0</div><div>1cf0</div><div>1d00</div><div>1d10</div><div>1d20</div><div>1d30</div><div>1d40</div><div>1d50</div><div>1d60</div><div>1d70</div><div>1d80</div><div>1d90</div><div>1da0</div><div>1db0</div><div>1dc0</div><div>1dd0</div><div>1de0</div><div>1df0</div><div>1e00</div><div>1e10</div><div>1e20</div><div>1e30</div><div>1e40</div><div>1e50</div><div>1e60</div><div>1e70</div><div>1e80</div><div>1e90</div><div>1ea0</div><div>1eb0</div><div>1ec0</div><div>1ed0</div><div>1ee0</div><div>1ef0</div><div>1f00</div><div>1f10</div><div>1f20</div><div>1f30</div><div>1f40</div><div>1f50</div><div>1f60</div><div>1f70</div><div>1f80</div><div>1f90</div><div>1fa0</div><div>1fb0</div><div>1fc0</div><div>1fd0</div><div>1fe0</div><div>1ff0</div><div>2000</div><div>2010</div><div>2020</div><div>2030</div><div>2040</div><div>2050</div><div>2060</div><div>2070</div><div>2080</div><div>2090</div><div>20a0</div><div>20b0</div><div>20c0</div><div>20d0</div><div>20e0</div><div>20f0</div><div>2100</div><div>2110</div><div>2120</div><div>2130</div><div>2140</div><div>2150</div><div>2160</div><div>2170</div><div>2180</div><div>2190</div><div>21a0</div><div>21b0</div><div>21c0</div><div>21d0</div><div>21e0</div><div>21f0</div><div>2200</div><div>2210</div><div>2220</div><div>2230</div><div>2240</div><div>2250</div><div>2260</div><div>2270</div><div>2280</div><div>2290</div><div>22a0</div><div>22b0</div><div>22c0</div><div>22d0</div><div>22e0</div><div>22f0</div><div>2300</div><div>2310</div><div>2320</div><div>2330</div><div>2340</div><div>2350</div><div>2360</div><div>2370</div><div>2380</div><div>2390</div><div>23a0</div><div>23b0</div><div>23c0</div><div>23d0</div><div>23e0</div><div>23f0</div><div>2400</div><div>2410</div><div>2420</div><div>2430</div><div>2440</div><div>2450</div><div>2460</div><div>2470</div><div>2480</div><div>2490</div><div>24a0</div><div>24b0</div><div>24c0</div><div>24d0</div><div>24e0</div><div>24f0</div><div>2500</div><div>2510</div><div>2520</div><div>2530</div><div>2540</div><div>2550</div><div>2560</div><div>2570</div><div>2580</div><div>2590</div><div>25a0</div><div>25b0</div><div>25c0</div><div>25d0</div><div>25e0</div><div>25f0</div><div>2600</div><div>2610</div><div>2620</div><div>2630</div><div>2640</div><div>2650</div><div>2660</div><div>2670</div><div>2680</div><div>2690</div><div>26a0</div><div>26b0</div><div>26c0</div><div>26d0</div><div>26e0</div><div>26f0</div><div>2700</div><div>2710</div><div>2720</div><div>2730</div><div>2740</div><div>2750</div><div>2760</div><div>2770</div><div>2780</div><div>2790</div><div>27a0</div><div>27b0</div><div>27c0</div><div>27d0</div><div>27e0</div><div>27f0</div><div>2800</div><div>2810</div><div>2820</div><div>2830</div><div>2840</div><div>2850</div><div>2860</div><div>2870</div><div>2880</div><div>2890</div><div>28a0</div><div>28b0</div><div>28c0</div><div>28d0</div><div>28e0</div><div>28f0</div><div>2900</div><div>2910</div><div>2920</div><div>2930</div><div>2940</div><div>2950</div><div>2960</div><div>2970</div><div>2980</div><div>2990</div><div>29a0</div><div>29b0</div><div>29c0</div><div>29d0</div><div>29e0</div><div>29f0</div><div>2a00</div><div>2a10</div><div>2a20</div><div>2a30</div><div>2a40</div><div>2a50</div><div>2a60</div><div>2a70</div><div>2a80</div><div>2a90</div><div>2aa0</div><div>2ab0</div><div>2ac0</div><div>2ad0</div><div>2ae0</div><div>2af0</div><div>2b00</div><div>2b10</div><div>2b20</div><div>2b30</div><div>2b40</div><div>2b50</div><div>2b60</div><div>2b70</div><div>2b80</div><div>2b90</div><div>2ba0</div><div>2bb0</div><div>2bc0</div><div>2bd0</div><div>2be0</div><div>2bf0</div><div>2c00</div><div>2c10</div><div>2c20</div><div>2c30</div><div>2c40</div><div>2c50</div><div>2c60</div><div>2c70</div><div>2c80</div><div>2c90</div><div>2ca0</div><div>2cb0</div><div>2cc0</div><div>2cd0</div><div>2ce0</div><div>2cf0</div><div>2d00</div><div>2d10</div><div>2d20</div><div>2d30</div><div>2d40</div><div>2d50</div><div>2d60</div><div>2d70</div><div>2d80</div><div>2d90</div><div>2da0</div><div>2db0</div><div>2dc0</div><div>2dd0</div><div>2de0</div><div>2df0</div><div>2e00</div><div>2e10</div><div>2e20</div><div>2e30</div><div>2e40</div><div>2e50</div><div>2e60</div><div>2e70</div><div>2e80</div><div>2e90</div><div>2ea0</div><div>2eb0</div><div>2ec0</div><div>2ed0</div><div>2ee0</div><div>2ef0</div><div>2f00</div><div>2f10</div><div>2f20</div><div>2f30</div><div>2f40</div><div>2f50</div><div>2f60</div><div>2f70</div><div>2f80</div><div>2f90</div><div>2fa0</div><div>2fb0</div><div>2fc0</div><div>2fd0</div><div>2fe0</div><div>2ff0</div><div>3000</div><div>3010</div><div>3020</div><div>3030</div><div>3040</div><div>3050</div><div>3060</div><div>3070</div><div>3080</div><div>3090</div><div>30a0</div><div>30b0</div><div>30c0</div><div>30d0</div><div>30e0</div><div>30f0</div><div>3100</div><div>3110</div><div>3120</div><div>3130</div><div>3140</div><div>3150</div><div>3160</div><div>3170</div><div>3180</div><div>3190</div><div>31a0</div><div>31b0</div><div>31c0</div><div>31d0</div><div>31e0</div><div>31f0</div><div>3200</div><div>3210</div><div>3220</div><div>3230</div><div>3240</div><div>3250</div><div>3260</div><div>3270</div><div>3280</div><div>3290</div><div>32a0</div><div>32b0</div><div>32c0</div><div>32d0</div><div>32e0</div><div>32f0</div><div>3300</div><div>3310</div><div>3320</div><div>3330</div><div>3340</div><div>3350</div><div>3360</div><div>3370</div><div>3380</div><div>3390</div><div>33a0</div><div>33b0</div><div>33c0</div><div>33d0</div><div>33e0</div><div>33f0</div><div>3400</div><div>3410</div><div>3420</div><div>3430</div><div>3440</div><div>3450</div><div>3460</div><div>3470</div><div>3480</div><div>3490</div><div>34a0</div><div>34b0</div><div>34c0</div><div>34d0</div><div>34e0</div><div>34f0</div><div>3500</div><div>3510</div><div>3520</div><div>3530</div><div>3540</div><div>3550</div><div>3560</div><div>3570</div><div>3580</div><div>3590</div><div>35a0</div><div>35b0</div><div>35c0</div><div>35d0</div><div>35e0</div><div>35f0</div><div>3600</div><div>3610</div><div>3620</div><div>3630</div><div>3640</div><div>3650</div><div>3660</div><div>3670</div><div>3680</div><div>3690</div><div>36a0</div><div>36b0</div><div>36c0</div><div>36d0</div><div>36e0</div><div>36f0</div><div>3700</div><div>3710</div><div>3720</div><div>3730</div><div>3740</div><div>3750</div><div>3760</div><div>3770</div><div>3780</div><div>3790</div><div>37a0</div><div>37b0</div><div>37c0</div><div>37d0</div><div>37e0</div><div>37f0</div><div>3800</div><div>3810</div><div>3820</div><div>3830</div></div></div><main class="col"><p class="kicker">Part III · module 13 · investigate &amp; build · 60–90 minutes</p>
+<h1><span class="num">13 ·</span> Why parsing is a hard problem</h1>
+<p class="hook">This module pays off the thread module 5 opened. The pipeline line with
+no canonical book behind it finally gets its mechanisms, four of them.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>Module 5 established what parsing is: converting a document from the agreement it
+was written under into the plain text your pipeline needs. It also showed the first
+crack, that a PDF records where ink goes rather than what the text says, so extraction
+is reconstruction. This module goes the rest of the way down, because the crack widens
+into four separate mechanisms, and each one fails differently.</p>
+
+<p>First, many PDFs contain no text at all. A scanned document is a photograph of a
+page, and a parser honouring the PDF specification perfectly will find nothing in it.
+Second, the fix for that, optical character recognition, is a model guessing characters
+from pixels, and its guesses are wrong in measurable amounts that depend on scan
+quality. Third, even when the text is present, the structure is not: reading order,
+columns, and tables are all inferences from coordinates, and they fail on styling
+choices as small as whether a table's grid lines were drawn. Fourth, the modern answer
+to all of this, vision models that read the page the way a person does, costs orders of
+magnitude more compute per page, which is why serious document pipelines want a GPU.
+You will measure each mechanism on documents built to isolate it.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Here are two PDFs. On screen they are indistinguishable: same layout, same words,
+  same table. Open them side by side and you cannot tell which is which.</p>
+  <p>Run the same parser over both. One returns
+  1,903 characters.
+  The other returns
+  0.</p>
+  <p>How can two documents that look identical to a human behave that differently to a
+  program?</p>
+</div>
+
+<h2 id="do">Build it yourself, then run the experiments</h2>
+
+<figure>
+  <div class="code"><pre>pip install pymupdf pdfplumber pytesseract
+brew install tesseract        <span class="c-cm"># or: apt install tesseract-ocr</span>
+python data/fetch.py --only pdfs
+
+python exercises/13-why-parsing-is-hard/starter.py     <span class="c-cm"># three TODOs</span>
+python exercises/13-why-parsing-is-hard/verify.py
+python exercises/13-why-parsing-is-hard/solution.py    <span class="c-cm"># the four experiments</span></pre></div>
+</figure>
+
+<p>This module is mostly investigation: run the solution and read what happened. But
+three functions are worth writing yourself first. Two of them are how every accuracy
+claim below is computed, <strong>edit distance</strong> and the
+<strong>character error rate</strong> built from it. The third is the one to take to
+work with you: a function that decides whether an extraction <em>failed</em>. Module 15
+uses all three.</p>
+
+<p>Then come four investigations. Each one is a mechanism, and together they are the
+reason "parse this PDF" is not one operation.</p>
+
+<h2 id="observe">(a) A scanned page contains no text to find</h2>
+
+<p>The repository builds the matched pair for you, and how it does it is the whole
+explanation: it takes a clean text PDF, renders each page to a picture, and wraps the
+pictures back into a PDF. That is exactly what every office scanner and every "print to
+PDF" button on a photocopier does.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/13-why-parsing-is-hard/solution.py</caption>
+  <thead><tr><th>document</th><th class="num">characters extracted</th>
+    <th class="num">file size</th></tr></thead>
+  <tbody>
+    <tr class="win"><td>gen-clean-1col.pdf</td>
+      <td class="num">1,903</td>
+      <td class="num">3.4KB</td></tr>
+    <tr class="lose"><td>gen-clean-1col-scanned.pdf</td>
+      <td class="num">0</td>
+      <td class="num">6.0MB</td></tr>
+    <tr class="win"><td>gen-tables.pdf</td>
+      <td class="num">1,794</td>
+      <td class="num">4.0KB</td></tr>
+    <tr class="lose"><td>gen-tables-scanned.pdf</td>
+      <td class="num">0</td>
+      <td class="num">12.0MB</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>That is not "worse extraction". It is <strong>nothing at all</strong>, from a file
+1,819&times; larger.</p>
+
+<p>This is module 2's lesson at document scale. The bytes now honour an
+<em>image</em> agreement: a grid of pixel values, with rules for compressing them. The
+words exist only as patterns of dark pixels that a human eye decodes. There are no
+glyphs, no fonts, and no <code>Tj</code> commands. Module 5 showed you what a text
+PDF's page holds, and none of it is here. A parser honouring the PDF specification
+perfectly finds no text, because there is no text.</p>
+
+<h2 id="ocr">(b) OCR guesses at the pixels, with a measurable error rate</h2>
+
+<p><span class="term">Optical character recognition</span> is a model that looks at
+pixels and predicts characters. It does not recover the original text. It makes a fresh
+guess at what the shapes say, and its guesses are wrong in measurable amounts.</p>
+
+<p>The measure is <span class="term">character error rate</span>: the number of
+single-character edits, insert, delete, or substitute, needed to turn the OCR output
+back into the true text, divided by the true text's length. Zero is perfect.</p>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 112" preserveAspectRatio="xMinYMin meet" role="img" aria-label="characters recovered from the same page"><text class="lbl" x="0" y="21">text PDF, extract</text><rect class="bar" x="150" y="11" width="336.0" height="14"></rect><text x="492.0" y="22">1,903</text><text class="lbl" x="0" y="47">scanned, extract</text><rect class="bar alt" x="150" y="37" width="1.5" height="14"></rect><text x="157.5" y="48">0</text><text class="lbl" x="0" y="73">scanned, then OCR</text><rect class="bar" x="150" y="63" width="336.0" height="14"></rect><text x="492.0" y="74">1,903</text><line class="base" x1="150" y1="8" x2="150" y2="86"></line><text class="axis-title" x="150" y="106">characters recovered — the middle bar is zero</text></svg>
+<figcaption>characters recovered from the same page by three routes</figcaption>
+</figure>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 112" preserveAspectRatio="xMinYMin meet" role="img" aria-label="character error rate by document quality"><text class="lbl" x="0" y="21">a clean 150 dpi scan</text><rect class="bar" x="190" y="11" width="1.5" height="14"></rect><text x="197.5" y="22">0.0005</text><text class="lbl" x="0" y="47">ruled tables, dense small numbers</text><rect class="bar alt" x="190" y="37" width="34.9" height="14"></rect><text x="230.9" y="48">0.0151</text><text class="lbl" x="0" y="73">120 dpi, skewed, speckled</text><rect class="bar alt" x="190" y="63" width="296.0" height="14"></rect><text x="492.0" y="74">0.1277</text><line class="base" x1="190" y1="8" x2="190" y2="86"></line><text class="axis-title" x="190" y="106">character error rate — same OCR engine, same settings</text></svg>
+<figcaption>the same Tesseract, the same settings, three documents</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>document</th><th class="num">character error rate</th>
+    <th class="num">words found</th><th class="num">seconds per page</th></tr></thead>
+  <tbody>
+    <tr class="win"><td>a clean 150 dpi scan</td>
+      <td class="num">0.0005</td>
+      <td class="num">99.7%</td>
+      <td class="num">951.7ms</td></tr>
+    <tr><td>ruled tables, dense small numbers</td>
+      <td class="num">0.0151</td>
+      <td class="num">92.8%</td>
+      <td class="num">563.9ms</td></tr>
+    <tr class="lose"><td>120 dpi, skewed, speckled</td>
+      <td class="num">0.1277</td>
+      <td class="num">85.8%</td>
+      <td class="num">1.02s</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>On a clean scan, OCR is close to free:
+0.0005 error rate,
+99.7% of words recovered. It
+is genuinely a solved problem for clean printed text, and it has been for years.</p>
+
+<p>Then take the resolution down to 120 dpi, tilt the page by under a degree, and add
+speckle, a photocopy of a photocopy, which is what a great deal of the world's archived
+paper actually looks like. The error rate goes to
+0.1277.
+<strong>That is 243&times; the error rate of
+the clean scan, from the same engine with the same settings.</strong></p>
+
+<p>Look at where the errors land in the table scan, because the pattern is the
+point:</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">OCR of a page of ruled tables</div>
+<pre class="out">Index Cost Tables Table 1. Scaling run 1 Passages postings indexMB_ builds p50ms p99 ms 50,000 2,350,000 9.3 1.22 0.40 1.90 100,000 4,700,000 18.5 2.44 0.51 2.53 200,000 9,400,000 37.0 4.88 0.62 3.16 400,000 18,800,000 74.1 9.76 0.73 3.79 800,000 37,600,000 14</pre>
+  </div>
+  <figcaption>the prose is perfect. look at what happened to the column headers</figcaption>
+</figure>
+
+<p>Errors cluster where the visual evidence is thinnest: small type, digits, which have
+less shape to distinguish them than letters, and text touching a ruling line. A
+document that is mostly prose OCRs beautifully while the one table in it, the part
+somebody wants to ask a question about, is the part that came back wrong.</p>
+
+<h2 id="layout">(c) Reading order and tables are guesses about layout</h2>
+
+<p>Now assume the text is in the file. Structure still is not.</p>
+
+<figure>
+  <div class="dual">
+    <div class="term-block">
+      <div class="term-head">layout-aware</div>
+<pre class="out">. The device will not hand back less than a block, and it will not write less than a block. Every abstraction above it — files, folders, databases, indexes — is built out of that one operation. The consequence shows up immediately in measurement. Reading ten thousand small files costs far more than </pre>
+    </div>
+    <div class="term-block">
+      <div class="term-head">coordinate order</div>
+<pre class="out">d blocks, each of a fixed size. A an arrangement chosen so that a question becomes cheap to common size is 4096 bytes. The device will not hand back answer. The work does not disappear; it moves from query less than a block, and it will not write less than a block. time to build time, and is paid fo</pre>
+    </div>
+  </div>
+  <figcaption>the same library, the same file, one argument changed. character
+  similarity between them: 0.488</figcaption>
+</figure>
+
+<p>Reading top to bottom by coordinate, the pen visits the left column and the right
+column alternately, so the sentences interleave. Every word is present. The document is
+unreadable.</p>
+
+<p>The page never stored "this is a column". Columns are a <em>visual</em> convention
+that a human reader infers from a gap of whitespace. A parser has to infer it too, from
+coordinates, and whether it does depends on a setting most people never see.</p>
+
+<h3>Tables are worse, because detection comes before extraction</h3>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 240" preserveAspectRatio="xMinYMin meet" role="img" aria-label="ruling lines against tables detected"><line class="grid" x1="46" y1="194.0" x2="548" y2="194.0"></line><text x="40" y="197.5" text-anchor="end">0</text><line class="grid" x1="46" y1="140.2" x2="548" y2="140.2"></line><text x="40" y="143.8" text-anchor="end">10</text><line class="grid" x1="46" y1="86.5" x2="548" y2="86.5"></line><text x="40" y="90.0" text-anchor="end">20</text><line class="grid" x1="46" y1="32.8" x2="548" y2="32.8"></line><text x="40" y="36.2" text-anchor="end">30</text><rect class="bar " x="132.5" y="151.0" width="24.0" height="43.0"></rect><rect class="bar alt" x="158.5" y="194.0" width="24.0" height="0.8"></rect><rect class="bar mute" x="184.5" y="194.0" width="24.0" height="0.8"></rect><text class="lbl" x="171.5" y="209" text-anchor="middle">horizontal rules only</text><rect class="bar " x="383.5" y="22.0" width="24.0" height="172.0"></rect><rect class="bar alt" x="409.5" y="81.1" width="24.0" height="112.9"></rect><rect class="bar mute" x="435.5" y="38.1" width="24.0" height="155.9"></rect><text class="lbl" x="422.5" y="209" text-anchor="middle">full grid</text><rect class="bar " x="46" y="228" width="9" height="9"></rect><text x="59" y="236">horizontal rules</text><rect class="bar alt" x="174" y="228" width="9" height="9"></rect><text x="187" y="236">vertical rules</text><rect class="bar mute" x="288" y="228" width="9" height="9"></rect><text x="301" y="236">table rows found</text><text class="axis-title" x="46" y="14">count</text></svg>
+<figcaption>two documents holding the same numbers in the same visual arrangement</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>document</th><th class="num">horizontal rules</th>
+    <th class="num">vertical rules</th><th class="num">tables found</th>
+    <th class="num">rows extracted</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td>gen-tables.pdf</td>
+      <td class="num">8</td>
+      <td class="num">0</td>
+      <td class="num">0</td>
+      <td class="num">0</td></tr>
+    <tr class="win"><td>gen-tables-ruled.pdf</td>
+      <td class="num">32</td>
+      <td class="num">21</td>
+      <td class="num">3</td>
+      <td class="num">29</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Same numbers. Same column arrangement. Same font. A person reads both as tables
+without hesitating. The difference is that one is drawn with a full grid and the other
+with three horizontal rules and no verticals, a styling choice made by whoever wrote
+the document, years ago, for aesthetic reasons.</p>
+
+<p>The library finds 29 rows in
+one and 0 in the other, because
+its table finder works by looking for ruling lines. The undetected page still extracts
+as text. It comes out as a stream of numbers with no row or column structure, and a
+chunker will cut it wherever the character count runs out, which is module 6's table
+disaster arriving on schedule.</p>
+
+<h2 id="gpu">(d) Why the good models want a GPU</h2>
+
+<p>Rules get you part of the way. The long tail of real layouts, every newsletter,
+form, receipt, and multi-column journal ever printed, is why modern document
+understanding trains vision models to <em>look</em> at the page the way a person does,
+instead of reasoning about coordinates.</p>
+
+<p>Those models are a different kind of program. Tesseract is a character-level engine
+that walks the image with hand-built stages. A transformer OCR model runs a fixed
+network over an image: here,
+333.9M parameters, and a matrix
+multiply against every one of them for every line it reads. That is millions of
+multiply-adds, module 3's floats in bulk, with no dependency between them, which is
+precisely the workload a GPU exists for.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>this machine: Apple Silicon GPU (Metal) (mps) — measured on
+  the same scanned page</caption>
+  <thead><tr><th>engine</th><th>device</th><th class="num">time</th>
+    <th class="num">unit</th></tr></thead>
+  <tbody>
+    <tr><td>Tesseract</td><td>CPU</td>
+      <td class="num">958.6ms</td>
+      <td class="num">per page</td></tr>
+    <tr class="lose"><td>TrOCR (333.9M params)</td><td>CPU</td>
+      <td class="num">1.68s</td>
+      <td class="num">per line</td></tr>
+    <tr class="win"><td>TrOCR (333.9M params)</td><td>mps</td>
+      <td class="num">412.2ms</td>
+      <td class="num">per line</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 112" preserveAspectRatio="xMinYMin meet" role="img" aria-label="time per unit of work, by engine and device"><text class="lbl" x="0" y="21">Tesseract, one page</text><rect class="bar" x="160" y="11" width="186.3" height="14"></rect><text x="352.3" y="22">958.6ms</text><text class="lbl" x="0" y="47">TrOCR per line, cpu</text><rect class="bar alt" x="160" y="37" width="326.0" height="14"></rect><text x="492.0" y="48">1.68s</text><text class="lbl" x="0" y="73">TrOCR per line, mps</text><rect class="bar" x="160" y="63" width="80.1" height="14"></rect><text x="246.1" y="74">412.2ms</text><line class="base" x1="160" y1="8" x2="160" y2="86"></line><text class="axis-title" x="160" y="106">lower is better — note the units differ between rows</text></svg>
+<figcaption>note that the units differ between rows — Tesseract is timed per page, the
+ML model per line</figcaption>
+</figure>
+
+<p>The GPU runs the same model
+<strong>4.1&times; faster</strong> than the CPU.
+Nothing about the model changed. The arithmetic moved to hardware built to do a great
+deal of it at once.</p>
+
+<p>And be honest about the other column. Extrapolated to a whole page, the ML model
+costs about 10.7&times; what Tesseract
+costs, <em>even on the GPU</em>. This is the trade nobody mentions when they say "just
+use a modern model": you are choosing to spend one to two orders of magnitude more
+compute per page, and for a clean printed scan, where Tesseract already gets
+0.0005, you would be spending it for
+nothing. The ML path earns its cost on the documents where the rules fail.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Put the four investigations together and parsing difficulty stops being a vague
+complaint and becomes a ladder with rungs you can name.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>the parsing ladder — each rung needs a different kind of program</caption>
+  <thead><tr><th>the document</th><th>what it takes</th><th>state</th></tr></thead>
+  <tbody>
+    <tr class="win"><td>text PDF, clean single-column layout</td>
+      <td>read the content stream, honour the specification</td>
+      <td>solved</td></tr>
+    <tr><td>text PDF, hard layout — columns, tables, forms</td>
+      <td>reconstruct structure from coordinates and whitespace; heuristics,
+      and a table finder that depends on how the document was drawn</td>
+      <td>partially solved</td></tr>
+    <tr><td>scanned document, clean</td>
+      <td>OCR — a model predicting characters from pixels</td>
+      <td>solved for clean print</td></tr>
+    <tr class="lose"><td>scanned document, hard layout or poor quality</td>
+      <td>vision models that read the page as an image, on a GPU</td>
+      <td>open research</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Part 0's <code>parse()</code> line silently assumed the top rung.</strong>
+One line, no arguments, no error if the document turns out to be a photograph of a fax.
+It returns an empty string and the pipeline carries on: it chunks nothing, embeds
+nothing, indexes nothing, and answers questions about that document by returning some
+other document, confidently.</p>
+
+<p>That failure mode is the one to take away. Every other stage of the pipeline fails
+loudly. A missing dependency raises, and a malformed query errors. Parsing fails
+<em>silently</em>, and it fails per document, so a corpus can be 5% invisible and
+nothing anywhere will say so. The first thing to build into any ingestion pipeline is
+the check module 5 and this module both point at: <em>how many characters did each
+document yield, and which ones yielded none?</em></p>
+
+<h3>Why there is no book for this</h3>
+
+<p>Every other stage of your pipeline sits on decades of settled theory. Retrieval has
+<span class="title">Introduction to Information Retrieval</span>. Storage has Petrov.
+Encoding has <span class="title">CS:APP</span>. This stage has a nine-hundred-page
+specification that tells you how to draw a page, and a research literature that is
+still arguing about how to read one.</p>
+
+<p>That is not an accident. The other stages solve problems somebody designed a format
+for. This one solves the problem of recovering an intent that was never written down.
+The document's author knew it was a table, the format had no way to say so, and
+everything downstream is inference.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>parse()</code> is a rung on a ladder, and which rung
+your corpus sits on decides what the rest of the pipeline can possibly do.
+<strong>Backward:</strong> module 2 said a file format is an agreement, and that a
+reader can only recover what the agreement recorded. Here the agreement records pixels.
+Module 5 measured two libraries disagreeing, and this module gives the mechanisms for
+why.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>A scanned page is the purest statement of the first half on the whole site. The
+meaning is entirely in the reader, human eye or neural network, and the bytes carry
+none of it.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>The DocLayNet and LayoutLM papers, introductions
+  only.</strong> Readable statements of why layout is a learned problem rather than a
+  rules problem, from the people who built the datasets. Expect DocLayNet's
+  introduction to describe exactly the table you just failed to detect.</p>
+
+  <p class="book"><strong>The Docling technical report.</strong> How a modern open
+  pipeline stages these steps, detecting layout, classifying regions, OCRing what needs
+  it, reconstructing reading order, and where it puts the model that needs a GPU.</p>
+
+  <p><strong>There is no canonical book.</strong> The papers are the literature. That
+  is worth saying out loud about the pipeline line every tutorial spends the least time
+  on.</p>
+
+  <ol>
+    <li>A colleague reports that retrieval "doesn't work for some documents". Name the
+    single measurement you would take first, and what its distribution would tell
+    you.</li>
+    <li>OCR gave 0.0005 on one scan and
+    0.1277 on another. Both are "scanned
+    PDFs". What would you need to know about a corpus before quoting either
+    number?</li>
+    <li>The ML model costs about
+    10.7&times; Tesseract per page
+    even on a GPU. Describe a corpus where you would pay that, and one where paying it
+    would be waste.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If <code>pytesseract</code> raises <code>TesseractNotFoundError</code>, remember
+    the Python package is only a wrapper. The engine is a separate binary:
+    <code>brew install tesseract</code> on macOS,
+    <code>apt install tesseract-ocr</code> on Debian and Ubuntu.</p>
+    <p>If your character error rates are much lower than these across the board, check
+    the dpi you are rendering at. This page's numbers come from rendering the page
+    images at 200 dpi. Feeding OCR a higher-resolution image makes almost everything
+    easier, which is itself the finding: scan quality is a parameter you often
+    control.</p>
+    <p>If the TrOCR download fails or the processor will not load, run with
+    <code>--skip-ml</code>. Parts (a) to (c) carry the module's argument on their own,
+    and (d) only puts a number on the cost.</p>
+    <p>If you have no GPU, the CPU timing still makes the point. The model is
+    333.9M parameters against a
+    hand-built engine, and you will feel the difference. The page reports the machine
+    it ran on; yours will differ, and the ratio between CPU and GPU is what to
+    compare.</p>
+  </div>
+</div>
+<button class="done-toggle" type="button" aria-pressed="false" data-module="13-why-parsing-is-hard"><span class="box"></span><span class="label">mark this module complete</span></button><nav class="modnav"><a class="prev" href="12-vector-search-at-scale.html"><span class="dir">previous</span><span class="name">12 · How vector search scales</span></a><a class="next" href="14-what-vectors-cant-answer.html"><span class="dir">next</span><span class="name">14 · What vectors can&#x27;t answer</span></a></nav></main></div></div><script src="../assets/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+<p class="kicker">Part III · module 9 · build · 45–70 minutes</p>
+<h1><span class="num">09 ·</span> When the index doesn't fit in memory</h1>
+<p class="hook">This module breaks module 7's inverted index, and module 4's loading
+with it. Part II worked because everything fitted in memory. This is the module where
+that stops being true, and it is the hinge of Part III.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>Every structure you built in Part II lived comfortably in memory, and that comfort
+was doing quiet work for you. A dict lookup assumes the dict is there. Sorting assumes
+the list is there. Module 7's index assumed the whole corpus could be tokenized into
+one structure that fits in RAM.</p>
+
+<p>But the index grows in a straight line with the corpus, and your RAM does not grow
+at all. At some corpus size the two lines cross, and past that point the naive build is
+not slow, it is impossible. Real search engines index billions of documents on machines
+that could never hold those indexes in memory, so there must be a technique, and there
+is. It is old, general, and worth knowing far beyond search: <strong>never require the
+whole structure to exist at once</strong>. Build a bounded piece in memory, write it to
+disk sorted, forget it, repeat, and at the end merge the sorted pieces with a merge
+that itself only ever holds a sliver. In this module you build that technique, and then
+you shrink what lands on disk with a compression scheme built from module 3's
+observation that small numbers need fewer bytes.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Module 7's index held {{ 07-index.n_passages | int }} passages in
+  {{ 09-index-that-doesnt-fit.curve.in_memory.3.index_bytes | bytes }}. Run the same
+  code at {{ 09-index-that-doesnt-fit.curve.sizes.6 | int }} passages and it holds
+  {{ 09-index-that-doesnt-fit.curve.in_memory.6.index_bytes | bytes }}.</p>
+  <p>It grows by {{ 09-index-that-doesnt-fit.in_memory_bytes_per_passage | bytes }} per
+  passage, and it does not stop. Notice the other thing that broke on the way: at these
+  sizes you can no longer "load the corpus" either.</p>
+  <p>How do you build an index that is bigger than your memory, using only your
+  memory?</p>
+</div>
+
+<div class="aside">
+  <span class="aside-label">a note on how this module measures</span>
+  Watching a process die is a poor experiment, because when it dies depends entirely on
+  how much memory your machine happens to have. This one measures peak memory at seven
+  corpus sizes for both strategies and plots the curves, so you can read where the line
+  leaves <em>your</em> machine. On the machine that produced these numbers
+  ({{ machine.ram_human }}) the in-memory line reaches physical memory at around
+  {{ 09-index-that-doesnt-fit.passages_until_ram_full | count }} passages.
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/09-index-that-doesnt-fit/starter.py</code>. It has four
+<code>TODO</code>s: two that stop the index needing memory it does not have, and two
+that make what is left smaller.</p>
+
+<figure>
+  <div class="code"><pre>python exercises/09-index-that-doesnt-fit/starter.py --scale small
+python exercises/09-index-that-doesnt-fit/verify.py</pre></div>
+</figure>
+
+<h3>Stream, block, spill, merge</h3>
+
+<p>The technique is called <span class="term">SPIMI</span>, short for single-pass
+in-memory indexing, and it is four rules:</p>
+
+<ol>
+  <li>Read documents one at a time. Never hold the corpus.</li>
+  <li>Accumulate postings in a dict until you have a block's worth of documents.</li>
+  <li>Write that block to disk as a run of lines <em>sorted by term</em>, then throw
+  the dict away.</li>
+  <li>When every block is written, merge the sorted runs into one, taking the smallest
+  term available across all the files at each step.</li>
+</ol>
+
+<p>Peak memory is then set by the block size, which you choose, rather than by the
+corpus size, which you do not.</p>
+
+<h3>Then make the postings smaller</h3>
+
+<p>A posting list is a sorted list of document ids. Sorted means every id is larger
+than the one before, so you can store the <em>differences</em> and lose nothing:</p>
+
+<figure>
+  <div class="code"><pre>ids   [3, 17, 18, 92, 415, 416, 417]
+gaps  [3, 14,  1, 74, 323,   1,   1]</pre></div>
+</figure>
+
+<p>The numbers got much smaller, and module 3 already told you that a small number
+needs fewer bytes. So write each one with as few bytes as it needs. The scheme is
+called <span class="term">varbyte</span>: seven bits of the number per byte, low bits
+first, and the eighth bit of each byte says whether another byte follows. Anything
+under 128 takes one byte instead of four.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>One memory curve climbs, the other stays flat</h3>
+
+<figure>
+{{ chart:memory-curve }}
+<figcaption>peak memory held while building, measured in a fresh process at each size
+so the high-water mark is real. note the logarithmic horizontal axis</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/09-index-that-doesnt-fit/solution.py, block size
+  {{ 09-index-that-doesnt-fit.block_size | int }}</caption>
+  <thead><tr><th class="num">passages</th><th class="num">all in memory</th>
+    <th class="num">SPIMI, building</th><th class="num">SPIMI, with merge</th>
+    <th class="num">in-memory time</th><th class="num">SPIMI time</th></tr></thead>
+  <tbody>
+    <tr><td class="num">{{ 09-index-that-doesnt-fit.curve.sizes.0 | int }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.in_memory.0.index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.0.build_index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.0.index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.in_memory.0.seconds | time }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.0.seconds | time }}</td></tr>
+    <tr><td class="num">{{ 09-index-that-doesnt-fit.curve.sizes.3 | int }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.in_memory.3.index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.3.build_index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.3.index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.in_memory.3.seconds | time }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.3.seconds | time }}</td></tr>
+    <tr><td class="num">{{ 09-index-that-doesnt-fit.curve.sizes.5 | int }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.in_memory.5.index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.5.build_index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.5.index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.in_memory.5.seconds | time }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.5.seconds | time }}</td></tr>
+    <tr class="lose"><td class="num">{{ 09-index-that-doesnt-fit.curve.sizes.6 | int }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.in_memory.6.index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.6.build_index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.6.index_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.in_memory.6.seconds | time }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.curve.spimi.6.seconds | time }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Over a {{ 09-index-that-doesnt-fit.corpus_span | int }}× range of corpus sizes:</p>
+
+<ul>
+  <li>the in-memory index grew
+  <strong>{{ 09-index-that-doesnt-fit.in_memory_spread | x }}</strong>;</li>
+  <li>SPIMI's block-building phase grew
+  <strong>{{ 09-index-that-doesnt-fit.spimi_build_spread | x }}</strong>, because it is
+  bounded by the block size and not by the corpus;</li>
+  <li>SPIMI including the merge grew
+  {{ 09-index-that-doesnt-fit.spimi_peak_spread | x }}, and that number is worth
+  explaining rather than hiding.</li>
+</ul>
+
+<p>SPIMI costs about twice the wall time,
+{{ 09-index-that-doesnt-fit.curve.spimi.6.seconds | time }} against
+{{ 09-index-that-doesnt-fit.curve.in_memory.6.seconds | time }} at
+{{ 09-index-that-doesnt-fit.curve.sizes.6 | int }} passages, because it writes
+everything out and reads it back. That is the price, and it buys a build that does not
+stop working.</p>
+
+<h3>What compression saved, and what it charges</h3>
+
+<figure>
+{{ chart:compression-sizes }}
+<figcaption>{{ 09-index-that-doesnt-fit.compression.postings | int }} postings across
+{{ 09-index-that-doesnt-fit.compression.terms | int }} terms</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>encoding</th><th class="num">total</th>
+    <th class="num">bytes per posting</th></tr></thead>
+  <tbody>
+    <tr><td>raw 32-bit document ids</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.compression.raw_int32_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.compression.bytes_per_posting_raw | 2f }}</td></tr>
+    <tr><td>gaps, still 32 bits each</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.compression.gaps_int32_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.compression.bytes_per_posting_raw | 2f }}</td></tr>
+    <tr class="win"><td>gaps, varbyte</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.compression.gaps_varbyte_bytes | bytes }}</td>
+      <td class="num">{{ 09-index-that-doesnt-fit.compression.bytes_per_posting_varbyte | 2f }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>{{ 09-index-that-doesnt-fit.compression.ratio | x }} smaller</strong>, from
+{{ 09-index-that-doesnt-fit.compression.bytes_per_posting_raw | 2f }} bytes per posting
+down to
+{{ 09-index-that-doesnt-fit.compression.bytes_per_posting_varbyte | 2f }}.</p>
+
+<p>Look at the middle row, because it is the one that teaches. Converting to gaps saved
+<em>nothing</em> on its own. The numbers got smaller, but each one still sat in four
+bytes. The saving came only when the encoding was allowed to use fewer bytes for
+smaller numbers. Two ideas, and neither works without the other.</p>
+
+<p>And compression charges you back. Reading a posting list that has to be decoded
+costs <strong>{{ 09-index-that-doesnt-fit.decode_cost.slowdown | x }}</strong> more
+than reading a plain Python list of the same postings. Every compressed index in the
+world makes that trade deliberately: memory and disk are the scarce things, and a few
+extra arithmetic operations per posting are cheap by comparison.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Start with why the in-memory index grows the way it does. Each new passage adds
+roughly {{ 09-index-that-doesnt-fit.compression.postings | int }} ÷
+{{ 07-index.n_passages | int }} postings, around forty, and each posting is a Python
+integer inside a Python list, which carries far more than four bytes of machinery.
+Measured, the whole structure costs
+{{ 09-index-that-doesnt-fit.in_memory_bytes_per_passage | bytes }} per passage. Nothing
+about that is fixable by being careful. It is linear in the corpus, and linear growth
+against a fixed amount of memory has exactly one outcome.</p>
+
+<p>SPIMI's answer is not to make the index smaller. It is to stop requiring the whole
+index to exist at once. You hold one block, write it out, and forget it. The finished
+index is assembled by a merge that reads one line at a time from each block file and
+writes one line at a time to the output, so the largest thing in memory during the
+merge is one term's complete posting list, plus one buffered line per file.</p>
+
+<p>Which is exactly why SPIMI's total peak still grew
+{{ 09-index-that-doesnt-fit.spimi_peak_spread | x }} while its building phase grew only
+{{ 09-index-that-doesnt-fit.spimi_build_spread | x }}. At a million passages, the
+posting list for a word like <em>the</em> holds hundreds of thousands of ids, and
+assembling it means holding it. Real systems stream that too, writing the merged
+postings out incrementally instead of building the list first. The measurement tells
+you where the remaining cost is, and it is not where the naive version's cost was.</p>
+
+<h3>You have seen this trick before</h3>
+
+<p>Look at what spill-and-merge actually is, because it is not new to you.</p>
+
+<p>Module 4 measured that few large transfers beat many small ones, and concluded that
+you should read in big buffered chunks. This module runs that lesson in reverse. Here
+memory is the scarce resource instead of time, so you deliberately break one enormous
+operation into many bounded ones, and the reason that is affordable is module 4's
+result. Each spill is one large sequential write. Each merge input is one large
+sequential read. If disk transfers were priced per byte rather than per request, SPIMI
+would not be worth doing.</p>
+
+<p>Compression is module 3 applied a few million times. Byte widths, and the
+observation that a small number does not need a large box. Gaps make the numbers small,
+varbyte lets the small numbers use small boxes, and the
+{{ 09-index-that-doesnt-fit.compression.ratio | x }} is the compound interest on a
+byte-level decision.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>db.add()</code> at scale does not build the structure
+module 7 built. It streams, spills, merges, and compresses, and every vector database
+and search engine you will use does some version of exactly this.
+<strong>Backward:</strong> module 4's "few large transfers beat many small ones", run
+backwards to buy bounded memory; module 3's byte widths, applied
+{{ 09-index-that-doesnt-fit.compression.postings | int }} times; module 7's index,
+which is what broke.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>This is the module where the cost stops being a number on a page and starts deciding
+what you are allowed to build.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Manning, Raghavan &amp; Schütze,
+  <span class="title">Introduction to Information Retrieval</span>, chapters
+  4–5.</strong> Chapter 4 is index construction under memory pressure, with BSBI and
+  SPIMI named and compared. Chapter 5 is compression, including the gap-and-varbyte
+  scheme you just built and several better ones. Expect chapter 5 to make your
+  {{ 09-index-that-doesnt-fit.compression.ratio | x }} look modest.</p>
+
+  <ol>
+    <li>Your block size is {{ 09-index-that-doesnt-fit.block_size | int }} documents.
+    What happens to peak memory, merge time, and the number of block files if you
+    halve it? Which of those three do you care about?</li>
+    <li>Gaps alone saved nothing. Say why, in terms of what a 32-bit integer is.</li>
+    <li>Decoding costs {{ 09-index-that-doesnt-fit.decode_cost.slowdown | x }} more
+    than not decoding. Name a situation where you would refuse to compress, and one
+    where the {{ 09-index-that-doesnt-fit.compression.ratio | x }} is worth far more
+    than the time.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If SPIMI's memory grows as fast as the in-memory build, check that your document
+    source is a generator rather than a list. <code>eval_corpus(n)</code> returns a
+    list and holds the whole corpus; <code>iter_eval_corpus(n)</code> streams. Getting
+    this wrong is the most common way to write a streaming index that does not stream,
+    and it is worth causing on purpose once.</p>
+    <p>If your varbyte round trip fails, the usual cause is the continuation bit. The
+    high bit marks the <em>last</em> byte of a number, not the first. Check the order
+    you emit bytes in, and remember the low seven bits go out first.</p>
+    <p>If your compression ratio is much better than
+    {{ 09-index-that-doesnt-fit.compression.ratio | x }}, you may be measuring only the
+    long posting lists. Rare terms have posting lists of one or two entries where gaps
+    save nothing, and they are most of the vocabulary. The ratio over the whole index
+    is always worse than the ratio over the common terms.</p>
+  </div>
+</div>

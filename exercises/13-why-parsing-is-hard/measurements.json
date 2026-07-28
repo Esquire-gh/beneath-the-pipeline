@@ -1,0 +1,152 @@
+{
+  "_generated_unix": 1785269124,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "accelerator": {
+    "detail": "torch 2.13.0",
+    "kind": "mps",
+    "name": "Apple Silicon GPU (Metal)"
+  },
+  "layout": {
+    "coordinate_order_excerpt": "d blocks, each of a fixed size. A an arrangement chosen so that a question becomes cheap to common size is 4096 bytes. The device will not hand back answer. The work does not disappear; it moves from query less than a block, and it will not write less than a block. time to build time, and is paid fo",
+    "file": "gen-2col.pdf",
+    "layout_aware_excerpt": ". The device will not hand back less than a block, and it will not write less than a block. Every abstraction above it \u2014 files, folders, databases, indexes \u2014 is built out of that one operation. The consequence shows up immediately in measurement. Reading ten thousand small files costs far more than ",
+    "same_words": false,
+    "similarity": 0.48777078965758214
+  },
+  "matched_pairs": {
+    "clean_1col": {
+      "image_bytes": 6314818,
+      "image_chars": 0,
+      "image_pdf": "gen-clean-1col-scanned.pdf",
+      "size_ratio": 1818.7839861751152,
+      "text_bytes": 3472,
+      "text_chars": 1903,
+      "text_pdf": "gen-clean-1col.pdf"
+    },
+    "tables": {
+      "image_bytes": 12626556,
+      "image_chars": 0,
+      "image_pdf": "gen-tables-scanned.pdf",
+      "size_ratio": 3062.4681057482417,
+      "text_bytes": 4123,
+      "text_chars": 1794,
+      "text_pdf": "gen-tables.pdf"
+    }
+  },
+  "ml": {
+    "gpu_device": "mps",
+    "gpu_speedup": 4.070205206499286,
+    "lines_available": 25,
+    "ml_vs_tesseract_per_page": 10.749266584881736,
+    "tesseract": {
+      "approx_parameters": null,
+      "cer": 0.0005254860746190226,
+      "device": "cpu",
+      "note": "Tesseract is a character-level engine; it runs on the CPU.",
+      "seconds_per_page": 0.9585931249894202
+    },
+    "trocr": {
+      "devices": {
+        "cpu": {
+          "cer_against_tesseract_lines": 0.772461456671983,
+          "excerpt": "BLOCK DEVICES AND THE COST OF SMAIL READS R. ACKON - BENEATH THE PIPELINE A STRANGE DEVERSES ARE INTERFACE TO THE SOFRAKE ABOVE IT: A LONG INV OF NUMBERED HACKS, EACH OR A FREE SIZE. A COMMUN SIZE IS ",
+          "seconds": 40.26249483297579,
+          "seconds_per_line": 1.6776039513739913
+        },
+        "mps": {
+          "cer_against_tesseract_lines": 0.772461456671983,
+          "excerpt": "BLOCK DEVICES AND THE COST OF SMAIL READS R. ACKON - BENEATH THE PIPELINE A STRANGE DEVERSES ARE INTERFACE TO THE SOFRAKE ABOVE IT: A LONG INV OF NUMBERED HACKS, EACH OR A FREE SIZE. A COMMUN SIZE IS ",
+          "seconds": 9.892006125068292,
+          "seconds_per_line": 0.4121669218778455
+        }
+      },
+      "lines": 24,
+      "load_seconds": 0.9604861249681562,
+      "model": "microsoft/trocr-base-printed",
+      "parameters": 333921792
+    }
+  },
+  "ocr": {
+    "clean_scan": {
+      "cer": 0.0005254860746190226,
+      "description": "a clean 150 dpi scan",
+      "excerpt": "Block Devices and the Cost of Small Reads R. Ackon - Beneath the Pipeline A storage device presents one interface to the software above it: a long row of numbered blocks, each of a fixed size. A common size is 4096 bytes. The device will not hand back less tha",
+      "file": "gen-clean-1col-scanned.pdf",
+      "got_chars": 1903,
+      "pages": 1,
+      "reference_chars": 1903,
+      "seconds": 0.951657708035782,
+      "seconds_per_page": 0.951657708035782,
+      "word_accuracy": 0.9970501474926253
+    },
+    "noisy_scan": {
+      "cer": 0.12769311613242249,
+      "description": "120 dpi, skewed, speckled",
+      "excerpt": "\u201cBlock Devices and the Cost of Small Reads R. Ackon - Bengath-the Pipi a : A storage device presents one interface to the software \u2018aibove : _ ita long row of numbered blocks, each of a fixed size. A. : * Gommen size is 4096 bytes. The device. wil] not hand ba",
+      "file": "gen-2col-scanned-noisy.pdf",
+      "got_chars": 2027,
+      "pages": 1,
+      "reference_chars": 1903,
+      "seconds": 1.0220908340997994,
+      "seconds_per_page": 1.0220908340997994,
+      "word_accuracy": 0.8584070796460177
+    },
+    "table_scan": {
+      "cer": 0.01505856107083101,
+      "description": "ruled tables, dense small numbers",
+      "excerpt": "Index Cost Tables Table 1. Scaling run 1 Passages postings indexMB_ builds p50ms p99 ms 50,000 2,350,000 9.3 1.22 0.40 1.90 100,000 4,700,000 18.5 2.44 0.51 2.53 200,000 9,400,000 37.0 4.88 0.62 3.16 400,000 18,800,000 74.1 9.76 0.73 3.79 800,000 37,600,000 14",
+      "file": "gen-tables-scanned.pdf",
+      "got_chars": 1791,
+      "pages": 2,
+      "reference_chars": 1793,
+      "seconds": 1.1277733750175685,
+      "seconds_per_page": 0.5638866875087842,
+      "word_accuracy": 0.9283154121863799
+    }
+  },
+  "ocr_spread": {
+    "best": "clean_scan",
+    "ratio": 243.0,
+    "worst": "noisy_scan"
+  },
+  "tables": {
+    "full_grid": {
+      "file": "gen-tables-ruled.pdf",
+      "first_row": [
+        "passages",
+        "postings",
+        "index MB",
+        "build s",
+        "p50 ms",
+        "p99 ms"
+      ],
+      "horizontal_lines": 32,
+      "linearised_excerpt": "Index Cost Tables (ruled) Table 1. Scaling run 1 passages postings index MB build s p50 ms p99 ms 50,000 2,350,000 9.3 1.22 0.40 1.90 100,000 4,700,000 18.5 2.44 0.51 2.53 200,000 9,400,000 37.0 4.88 0.62 3.16 400,000 18,800,000 74.1 9.76 0",
+      "rows_found": 29,
+      "tables_found": 3,
+      "vertical_lines": 21
+    },
+    "rules_only": {
+      "file": "gen-tables.pdf",
+      "first_row": null,
+      "horizontal_lines": 8,
+      "linearised_excerpt": "Index Cost Tables Table 1. Scaling run 1 passages postings index MB build s p50 ms p99 ms 50,000 2,350,000 9.3 1.22 0.40 1.90 100,000 4,700,000 18.5 2.44 0.51 2.53 200,000 9,400,000 37.0 4.88 0.62 3.16 400,000 18,800,000 74.1 9.76 0.73 3.79",
+      "rows_found": 0,
+      "tables_found": 0,
+      "vertical_lines": 0
+    }
+  }
+}

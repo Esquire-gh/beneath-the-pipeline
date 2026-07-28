@@ -1,0 +1,150 @@
+{
+  "_generated_unix": 1785265956,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "chunking": {
+    "examples": [
+      {
+        "broken_word": "project",
+        "left": "projec",
+        "right": "t",
+        "start": 800
+      },
+      {
+        "broken_word": "Office",
+        "left": "Offic",
+        "right": "e",
+        "start": 1200
+      },
+      {
+        "broken_word": "will",
+        "left": "w",
+        "right": "ill",
+        "start": 1600
+      },
+      {
+        "broken_word": "the",
+        "left": "t",
+        "right": "he",
+        "start": 2000
+      },
+      {
+        "broken_word": "facilitator",
+        "left": "fac",
+        "right": "ilitator",
+        "start": 2800
+      },
+      {
+        "broken_word": "justice",
+        "left": "just",
+        "right": "ice",
+        "start": 3200
+      }
+    ],
+    "fixed_broken_ratio": 0.6666666666666666,
+    "fixed_broken_words": 106,
+    "fixed_chunks": 159,
+    "mean_fixed_chars": 496.69182389937106,
+    "mean_sentence_chars": 417.79470198675494,
+    "overlap": 100,
+    "sentence_broken_words": 0,
+    "sentence_chunks": 151,
+    "size": 500,
+    "source_chars": 63237
+  },
+  "embedding": {
+    "bytes_per_vector": 1536,
+    "dims": 384,
+    "dtype": "float32",
+    "encode_seconds_4": 0.1616798748727888,
+    "first_eight_floats": [
+      0.13040179014205933,
+      -0.011870122514665127,
+      -0.028117019683122635,
+      0.05123865604400635,
+      -0.05597449839115143,
+      0.030191559344530106,
+      0.03016134351491928,
+      0.02469828352332115
+    ],
+    "model": "all-MiniLM-L6-v2",
+    "sentences": [
+      "the cat sat on the mat",
+      "a feline rested upon soft carpet",
+      "quarterly revenue exceeded analyst expectations",
+      "the cat did not sit on the mat"
+    ],
+    "shared_words_cat_feline": []
+  },
+  "similarity": {
+    "cat_contradiction": 0.8681467565057237,
+    "cat_feline": 0.5496803911211681,
+    "cat_unrelated": 0.01302012913032926,
+    "feline_unrelated": 0.007683059663384662
+  },
+  "similarity_numpy_check": 0.5496804714202881,
+  "table_chunks": 5,
+  "table_cut": {
+    "after": "6.10 1.17 6.31 12,800,000 601,600,000 2370.4 312.20 1.28 6.94 Table 2. Scaling run 2 passages postings index M",
+    "before": "0 75,200,000 296.3 39.02 0.95 5.05 3,200,000 150,400,000 592.6 78.05 1.06 5.68 6,400,000 300,800,000 1185.2 15",
+    "start": 400
+  },
+  "throughput": {
+    "bytes_per_million": 1536000000,
+    "device": "mps:0",
+    "n_passages": 10000,
+    "per_second": 999.1128876814779,
+    "seconds": 10.00887899985537,
+    "total_bytes": 15360000
+  },
+  "tokens": {
+    "ids": [
+      101,
+      1996,
+      4937,
+      2938,
+      2006,
+      1996,
+      13523,
+      102
+    ],
+    "n_tokens": 8,
+    "pieces": [
+      "[CLS]",
+      "the",
+      "cat",
+      "sat",
+      "on",
+      "the",
+      "mat",
+      "[SEP]"
+    ],
+    "text": "the cat sat on the mat",
+    "vocab_size": 30522
+  },
+  "tokens_rare": {
+    "n_tokens": 7,
+    "pieces": [
+      "[CLS]",
+      "un",
+      "##bel",
+      "##ie",
+      "##va",
+      "##bility",
+      "[SEP]"
+    ],
+    "text": "unbelievability"
+  }
+}

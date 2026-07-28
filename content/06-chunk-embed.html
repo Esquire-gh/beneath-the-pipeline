@@ -1,0 +1,320 @@
+<p class="kicker learn">Part II · module 6 · build · 40–60 minutes</p>
+<h1><span class="num">06 ·</span> Chunk &amp; Embed — how text becomes vectors</h1>
+<p class="hook">This module opens up two lines of the Part 0 pipeline:
+<code>split()</code>, which cuts documents into pieces, and <code>embed()</code>, which
+turns each piece into numbers that a computer can compare.</p>
+
+<h2 id="what">What these stages do, and why the pipeline needs them</h2>
+
+<p>By this point the pipeline has text. Module 5 pulled it out of the PDFs, and what
+came out is a handful of long strings, one per document. The next two stages prepare
+that text for retrieval, and each one exists to solve a practical problem.</p>
+
+<p>The first problem is size. When someone asks a question, you want to hand the
+language model the paragraph that answers it, not the whole manual. A full document is
+too big to be a useful unit of retrieval, so the pipeline cuts each one into smaller
+pieces called <span class="term">chunks</span>. The goal is for each chunk to hold one
+retrievable idea. There are several ways to cut. The crudest way counts characters and
+cuts every 500, no matter what the cut lands on. More careful ways cut at sentence or
+paragraph boundaries, so that a cut never falls in the middle of a thought. The Part 0
+pipeline uses the crude way, and in this module you will measure what that choice
+costs.</p>
+
+<p>The second problem is comparison. To retrieve the right chunk, the pipeline needs to
+know which chunk is most similar in meaning to the question, and a computer cannot
+compare meanings directly. It can compare numbers. So the pipeline runs every chunk
+through an <span class="term">embedding model</span>, a neural network that turns a
+piece of text into a fixed-length list of numbers,
+{{ 06-chunk-embed.embedding.dims }} of them here. The model was trained so that texts
+about similar things come out with similar numbers. Once every chunk is a list of
+numbers, "find the most relevant chunk" becomes arithmetic: compare the question's
+numbers against every chunk's numbers and take the closest.</p>
+
+<p>That is the plan on paper. The puzzle is how those numbers actually behave.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Take two sentences: <em>{{ 06-chunk-embed.embedding.sentences.0 }}</em> and
+  <em>{{ 06-chunk-embed.embedding.sentences.1 }}</em>. Read them side by side and you
+  will find that they share no words at all. A system that matches words would call
+  them completely unrelated.</p>
+  <p>The pipeline scores their similarity at
+  {{ 06-chunk-embed.similarity.cat_feline | 3f }}, far above the score it gives a
+  genuinely unrelated sentence.</p>
+  <p>If the computer is not matching words, what is it comparing?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/06-chunk-embed/starter.py</code>. It has four
+<code>TODO</code>s. The first two are about cutting text up, and the last two are about
+turning text into numbers.</p>
+
+<figure>
+  <div class="code"><pre>pip install sentence-transformers numpy
+python data/fetch.py --only msmarco --small
+python exercises/06-chunk-embed/starter.py
+python exercises/06-chunk-embed/verify.py</pre></div>
+</figure>
+
+<h3>Write two chunkers and compare what they break</h3>
+
+<p>The first chunker cuts every {{ 06-chunk-embed.chunking.size }} characters with
+{{ 06-chunk-embed.chunking.overlap }} characters of overlap, which is exactly what the
+Part 0 pipeline does. The second splits the text into sentences first, then packs whole
+sentences together up to the same size limit, so that no cut ever lands inside a
+sentence.</p>
+
+<p>Then write a third function that inspects the results. It finds every chunk boundary
+that landed in the middle of a word and prints the word that got broken. This is how
+you will see the damage directly instead of taking it on faith.</p>
+
+<h3>Turn a sentence into numbers, and measure similarity by hand</h3>
+
+<p>Tokenize a sentence and look at the integers that come out. Run the embedding model
+and look at the floats that come out. Then compute cosine similarity yourself, with a
+dot product and two vector lengths, about five lines of code. The reason to do this by
+hand is that "similarity" should not remain a function you have never opened.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>The fixed-size chunker cuts words in half</h3>
+
+<figure>
+{{ chart:chunk-damage }}
+<figcaption>{{ 06-chunk-embed.chunking.source_chars | int }} characters of real
+passages, cut two ways</figcaption>
+</figure>
+
+<p><strong>{{ 06-chunk-embed.chunking.fixed_broken_ratio | pct0 }} of the fixed-size
+chunk boundaries landed inside a word</strong>:
+{{ 06-chunk-embed.chunking.fixed_broken_words | int }} broken words across
+{{ 06-chunk-embed.chunking.fixed_chunks | int }} chunks. The sentence-boundary chunker
+broke {{ 06-chunk-embed.chunking.sentence_broken_words | int }}.</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">words cut in half by a 500-character boundary</div>
+<pre class="out">at {{ 06-chunk-embed.chunking.examples.0.start }}   {{ 06-chunk-embed.chunking.examples.0.left }} | {{ 06-chunk-embed.chunking.examples.0.right }}
+at {{ 06-chunk-embed.chunking.examples.1.start }}   {{ 06-chunk-embed.chunking.examples.1.left }} | {{ 06-chunk-embed.chunking.examples.1.right }}
+at {{ 06-chunk-embed.chunking.examples.2.start }}   {{ 06-chunk-embed.chunking.examples.2.left }} | {{ 06-chunk-embed.chunking.examples.2.right }}
+at {{ 06-chunk-embed.chunking.examples.3.start }}   {{ 06-chunk-embed.chunking.examples.3.left }} | {{ 06-chunk-embed.chunking.examples.3.right }}
+at {{ 06-chunk-embed.chunking.examples.4.start }}   {{ 06-chunk-embed.chunking.examples.4.left }} | {{ 06-chunk-embed.chunking.examples.4.right }}</pre>
+  </div>
+</figure>
+
+<p>A broken word is the mild version of the problem. Run the same chunker over the
+table document from module 5 and the boundary lands here:</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">gen-tables.pdf, chunk boundary at character {{ 06-chunk-embed.table_cut.start }}</div>
+<pre class="out">…{{ 06-chunk-embed.table_cut.before }}
+──────────────────── CUT ────────────────────
+{{ 06-chunk-embed.table_cut.after }}…</pre>
+  </div>
+  <figcaption>the row is split in two. the numbers after the cut no longer belong to
+  any row, and the header that explains the columns is chunks away</figcaption>
+</figure>
+
+<p>Neither half of that table can answer a question about the table. Both halves will
+still be embedded, indexed, and returned to users as confident matches.</p>
+
+<h3>Each word becomes an integer from a learned vocabulary</h3>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">{{ 06-chunk-embed.tokens.text }}</div>
+<pre class="out">{{ 06-chunk-embed.tokens.pieces.0 }}   {{ 06-chunk-embed.tokens.ids.0 }}
+{{ 06-chunk-embed.tokens.pieces.1 }}   {{ 06-chunk-embed.tokens.ids.1 }}
+{{ 06-chunk-embed.tokens.pieces.2 }}   {{ 06-chunk-embed.tokens.ids.2 }}
+{{ 06-chunk-embed.tokens.pieces.3 }}   {{ 06-chunk-embed.tokens.ids.3 }}
+{{ 06-chunk-embed.tokens.pieces.4 }}   {{ 06-chunk-embed.tokens.ids.4 }}
+{{ 06-chunk-embed.tokens.pieces.5 }}   {{ 06-chunk-embed.tokens.ids.5 }}
+{{ 06-chunk-embed.tokens.pieces.6 }}   {{ 06-chunk-embed.tokens.ids.6 }}
+{{ 06-chunk-embed.tokens.pieces.7 }}   {{ 06-chunk-embed.tokens.ids.7 }}</pre>
+  </div>
+  <figcaption>{{ 06-chunk-embed.tokens.n_tokens }} tokens from a vocabulary of
+  {{ 06-chunk-embed.tokens.vocab_size | int }}</figcaption>
+</figure>
+
+<p>This is the same move you saw in module 2, where an agreement says that 65 means
+<code>A</code>. The difference is who made the agreement. The ASCII table was written
+by a committee. This vocabulary was learned from data during training, which is how
+{{ 06-chunk-embed.tokens.ids.2 }} came to mean <code>cat</code>. And when the
+vocabulary meets a word it has never seen, it takes the word apart into smaller pieces
+that it does know:</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">{{ 06-chunk-embed.tokens_rare.text }}</div>
+<pre class="out">{{ 06-chunk-embed.tokens_rare.pieces.1 }} {{ 06-chunk-embed.tokens_rare.pieces.2 }} {{ 06-chunk-embed.tokens_rare.pieces.3 }} {{ 06-chunk-embed.tokens_rare.pieces.4 }} {{ 06-chunk-embed.tokens_rare.pieces.5 }}</pre>
+  </div>
+  <figcaption>the <code>##</code> means "this continues the previous piece"</figcaption>
+</figure>
+
+<h3>Each sentence becomes {{ 06-chunk-embed.embedding.dims }} floating-point numbers</h3>
+
+<p>The model turns those integers into {{ 06-chunk-embed.embedding.dims }} floats per
+sentence, which takes {{ 06-chunk-embed.embedding.bytes_per_vector | bytes }} in
+{{ 06-chunk-embed.embedding.dtype }}. Every one of those floats is the kind of
+approximate number that module 3 examined. Here are the first eight, for the cat
+sentence:</p>
+
+<figure>
+  <div class="code"><pre>[{{ 06-chunk-embed.embedding.first_eight_floats.0 | 4f }}, {{ 06-chunk-embed.embedding.first_eight_floats.1 | 4f }}, {{ 06-chunk-embed.embedding.first_eight_floats.2 | 4f }}, {{ 06-chunk-embed.embedding.first_eight_floats.3 | 4f }}, {{ 06-chunk-embed.embedding.first_eight_floats.4 | 4f }}, {{ 06-chunk-embed.embedding.first_eight_floats.5 | 4f }}, {{ 06-chunk-embed.embedding.first_eight_floats.6 | 4f }}, {{ 06-chunk-embed.embedding.first_eight_floats.7 | 4f }}, … ]</pre></div>
+  <figcaption>{{ 06-chunk-embed.embedding.dims }} of these per sentence. no single one
+  of them means anything on its own</figcaption>
+</figure>
+
+<figure>
+{{ chart:similarity-pairs }}
+<figcaption>cosine similarity, computed by hand from a dot product and two lengths</figcaption>
+</figure>
+
+<p>The chart holds two results, and the second one matters more than the first.</p>
+
+<ul>
+  <li><strong>The promise is kept.</strong> The cat sentence and the feline sentence
+  share {{ 06-chunk-embed.embedding.shared_words_cat_feline | json }}, meaning no words
+  at all, and they still score {{ 06-chunk-embed.similarity.cat_feline | 3f }}. The
+  unrelated business sentence scores
+  {{ 06-chunk-embed.similarity.cat_unrelated | 3f }}. Word matching would have called
+  the first pair completely dissimilar, and the model saw through that.</li>
+  <li><strong>The promise has a boundary.</strong>
+  <em>{{ 06-chunk-embed.embedding.sentences.3 }}</em> is a flat denial of the first
+  sentence, and it scores {{ 06-chunk-embed.similarity.cat_contradiction | 3f }}. That
+  is higher than the true paraphrase. The model was never asked to encode truth. It
+  encodes what a sentence is about, and a denial is about exactly the same thing as the
+  claim it denies.</li>
+</ul>
+
+<h3>What embedding costs at scale</h3>
+
+<div class="table-wrap">
+<table>
+  <caption>measured on {{ 06-chunk-embed.throughput.n_passages | int }} MS MARCO
+  passages, {{ 06-chunk-embed.embedding.model }} on
+  {{ 06-chunk-embed.throughput.device }}</caption>
+  <thead><tr><th>quantity</th><th class="num">measured</th></tr></thead>
+  <tbody>
+    <tr><td>passages embedded per second</td><td class="num">{{ 06-chunk-embed.throughput.per_second | int }}</td></tr>
+    <tr><td>vectors for {{ 06-chunk-embed.throughput.n_passages | int }} passages</td><td class="num">{{ 06-chunk-embed.throughput.total_bytes | bytes }}</td></tr>
+    <tr><td>vectors per million passages</td><td class="num">{{ 06-chunk-embed.throughput.bytes_per_million | bytes }}</td></tr>
+    <tr><td>time to embed a million, at this rate</td><td class="num">{{ 06-chunk-embed.throughput.per_second | int }}/s</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Keep the middle row in mind.
+{{ 06-chunk-embed.throughput.bytes_per_million | bytes }} of vectors per million
+passages is the number that decides, in module 12, whether an index fits in memory.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>An <span class="term">embedding</span> is a learned convention for turning text into
+a point in space, chosen so that nearness of points tracks nearness of meaning. The
+model itself is the agreement. Nothing else in the pipeline knows what the numbers
+mean. They mean whatever the training made them mean.</p>
+
+<p>Follow the path your sentence took. It became
+{{ 06-chunk-embed.tokens.n_tokens }} integers through a lookup table, which is an
+agreement learned from a corpus rather than published by a standards body, and the
+<code>##</code> pieces are how that table copes with words it never saw. Those integers
+went through the network and came out as
+{{ 06-chunk-embed.embedding.dims }} floats. Each float is an IEEE 754 approximation,
+which was module 3's subject, so the similarity between two sentences is really a sum
+of {{ 06-chunk-embed.embedding.dims }} approximate products. That is why two
+mathematically identical ways of computing the same similarity can disagree in the last
+decimal place.</p>
+
+<p>Cosine similarity measures the angle between two of these points and ignores their
+length. That choice is deliberate. It means a long document and a short one about the
+same subject can score alike, which is usually what you want, and occasionally the
+reason a one-line chunk beats a full paragraph.</p>
+
+<h3>What an embedding promises, exactly</h3>
+
+<p>The negation result is the one to hold onto, because it defines the boundary of the
+whole technique. The model puts
+<em>{{ 06-chunk-embed.embedding.sentences.0 }}</em> and
+<em>{{ 06-chunk-embed.embedding.sentences.3 }}</em> almost on top of each other, at
+{{ 06-chunk-embed.similarity.cat_contradiction | 3f }}, because both sentences are
+about the same cat, the same mat, and the same sitting. Truth is not part of the
+arrangement. Neither is quantity, neither is exactness, and neither is any relation
+between one document and another.</p>
+
+<p>So state the promise precisely. An embedding promises that text about similar things
+lands in similar places. It promises nothing else. It does not promise that near things
+agree with each other, that near things are true, or that anything can be counted.
+Module 14 is what happens when a question needs one of those, and this is the sentence
+it cashes out.</p>
+
+<h3>Chunking decides what gets a vector at all</h3>
+
+<p>Now put the two halves of this module together, because they are not separate
+topics.</p>
+
+<p>Embedding turns a chunk into one point, so everything inside the chunk gets averaged
+into a single position. That means the chunk boundary decides what counts as "a thing"
+in your system. The {{ 06-chunk-embed.chunking.fixed_broken_ratio | pct0 }} of
+boundaries that fell inside a word are the small version of the problem. The large
+version is the table above: half a row, with its header in a different chunk, embedded
+as a point that is about nothing in particular, and still returned to users as a
+confident match.</p>
+
+<p>Fixed-size chunking is not a neutral default. It is a decision to cut wherever the
+character count runs out, and its one real virtue is that it needs no knowledge of the
+document. Every alternative, whether sentences, paragraphs, headings, or table rows, is
+a bet that you can detect a structure in the text. Module 5 has already shown you how
+reliably you can detect structure in a PDF.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>split()</code> and <code>embed()</code> are two
+decisions dressed up as two function calls. One picks what a unit of meaning is, and
+the other picks what meaning is. <strong>Backward:</strong> module 2 said text is a
+convention over bytes, and module 3 said numbers are. This module is both at once. Text
+goes in under a learned table, and numbers come out under a published float format.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Ahead: module 7 takes these {{ 06-chunk-embed.embedding.dims }}-dimensional points
+and asks what it costs to find the nearest one. Module 12 finds out what you give up
+when there are a million of them.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Grainger, Turnbull &amp; Irwin,
+  <span class="title">AI-Powered Search</span>, the dense-retrieval chapters.</strong>
+  Expect them to treat the embedding model as one component among several rather than
+  as the whole system, which is the framing module 14 will need.</p>
+
+  <ol>
+    <li>Two sentences share no words and score
+    {{ 06-chunk-embed.similarity.cat_feline | 3f }}. Explain to a colleague what is
+    being compared, without using the word "semantic".</li>
+    <li>A denial scores higher than a paraphrase. Is the model broken? Say what it was
+    actually asked to do.</li>
+    <li>Your chunks are 500 characters. Someone proposes 2000 to "keep more context".
+    Name one thing that improves and one that gets worse, in terms of what a single
+    vector can represent.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your cosine values differ from these in the third decimal place, that is
+    expected. Versions of <code>sentence-transformers</code> and different hardware
+    backends round differently, and module 3 explains why. The <em>ordering</em> should
+    hold: paraphrase well above unrelated, negation high.</p>
+    <p>If the negation does <em>not</em> score above the paraphrase for you, try a
+    different model. Some are trained on natural-language-inference data and handle
+    negation better. The finding is about what a given model promises, not about all
+    models, so check yours rather than assuming.</p>
+    <p>If your hand-written cosine disagrees with numpy's, the usual cause is integer
+    division or summing in a different order. <code>verify.py</code> compares against
+    <code>numpy</code> to a tolerance of 1e-6 and prints both values.</p>
+  </div>
+</div>

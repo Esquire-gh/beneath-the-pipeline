@@ -1,0 +1,185 @@
+{
+  "_generated_unix": 1785265486,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "best": "large_buffer",
+  "big_buffer_cost_many_files": 1.7207837217276953,
+  "big_buffer_speedup_many_files": 0.5811305554401592,
+  "big_buffer_speedup_one_file": 1.8831585432294737,
+  "cold": false,
+  "cold_run": {
+    "best": "large_buffer",
+    "big_buffer_cost_many_files": 1.6610375766300696,
+    "big_buffer_speedup_many_files": 0.6020333399252836,
+    "big_buffer_speedup_one_file": 2.01104828875259,
+    "cold": true,
+    "corpus_bytes": 39007000,
+    "crossings_worst_vs_best": 3076.923076923077,
+    "files_allocated_bytes": 50810880,
+    "mean_file_bytes": 3900.7,
+    "n_files": 10000,
+    "runs": 3,
+    "strategies": {
+      "file_by_file": {
+        "all_seconds": [
+          0.1510718329809606,
+          0.15049799997359514,
+          0.15102724987082183
+        ],
+        "bytes": 39007000,
+        "closes": 10000,
+        "crossings": 40000,
+        "label": "file by file, 64 KB buffer",
+        "microseconds_per_crossing": 3.7624499993398786,
+        "opens": 10000,
+        "reads": 20000,
+        "seconds": 0.15049799997359514,
+        "throughput_bytes_per_second": 259186168.63243216,
+        "vs_best": 37.40010026067312
+      },
+      "files_large_buffer": {
+        "all_seconds": [
+          0.2549993749707937,
+          0.24998283316381276,
+          0.25622029206715524
+        ],
+        "bytes": 39007000,
+        "closes": 10000,
+        "crossings": 40000,
+        "label": "file by file, 4 MB buffer",
+        "microseconds_per_crossing": 6.249570829095319,
+        "opens": 10000,
+        "reads": 20000,
+        "seconds": 0.24998283316381276,
+        "throughput_bytes_per_second": 156038714.7642209,
+        "vs_best": 62.12297190271012
+      },
+      "large_buffer": {
+        "all_seconds": [
+          0.005063542164862156,
+          0.004686000058427453,
+          0.004023999907076359
+        ],
+        "bytes": 39007000,
+        "closes": 1,
+        "crossings": 13,
+        "label": "one file, 4 MB buffer",
+        "microseconds_per_crossing": 309.53845439048916,
+        "opens": 1,
+        "reads": 11,
+        "seconds": 0.004023999907076359,
+        "throughput_bytes_per_second": 9693588693.032694,
+        "vs_best": 1.0
+      },
+      "small_buffer": {
+        "all_seconds": [
+          0.008526541059836745,
+          0.008092458127066493,
+          0.008168957894667983
+        ],
+        "bytes": 39007000,
+        "closes": 1,
+        "crossings": 9527,
+        "label": "one file, 4 KB buffer",
+        "microseconds_per_crossing": 0.8494235464539197,
+        "opens": 1,
+        "reads": 9525,
+        "seconds": 0.008092458127066493,
+        "throughput_bytes_per_second": 4820167047.826294,
+        "vs_best": 2.01104828875259
+      }
+    },
+    "worst": "files_large_buffer",
+    "worst_vs_best": 62.12297190271012
+  },
+  "corpus_bytes": 39007000,
+  "crossings_worst_vs_best": 3076.923076923077,
+  "files_allocated_bytes": 50810880,
+  "mean_file_bytes": 3900.7,
+  "n_files": 10000,
+  "runs": 3,
+  "strategies": {
+    "file_by_file": {
+      "all_seconds": [
+        0.1408764577936381,
+        0.1393219588790089,
+        0.14322562492452562
+      ],
+      "bytes": 39007000,
+      "closes": 10000,
+      "crossings": 40000,
+      "label": "file by file, 64 KB buffer",
+      "microseconds_per_crossing": 3.4830489719752222,
+      "opens": 10000,
+      "reads": 20000,
+      "seconds": 0.1393219588790089,
+      "throughput_bytes_per_second": 279977401.36481124,
+      "vs_best": 38.06740772530441
+    },
+    "files_large_buffer": {
+      "all_seconds": [
+        0.24402416707016528,
+        0.23974295891821384,
+        0.24803316593170166
+      ],
+      "bytes": 39007000,
+      "closes": 10000,
+      "crossings": 40000,
+      "label": "file by file, 4 MB buffer",
+      "microseconds_per_crossing": 5.993573972955346,
+      "opens": 10000,
+      "reads": 20000,
+      "seconds": 0.23974295891821384,
+      "throughput_bytes_per_second": 162703422.76582515,
+      "vs_best": 65.50577554207496
+    },
+    "large_buffer": {
+      "all_seconds": [
+        0.004466999787837267,
+        0.0036598751321434975,
+        0.0039652499835938215
+      ],
+      "bytes": 39007000,
+      "closes": 1,
+      "crossings": 13,
+      "label": "one file, 4 MB buffer",
+      "microseconds_per_crossing": 281.52885631873056,
+      "opens": 1,
+      "reads": 11,
+      "seconds": 0.0036598751321434975,
+      "throughput_bytes_per_second": 10658013891.625471,
+      "vs_best": 1.0
+    },
+    "small_buffer": {
+      "all_seconds": [
+        0.00755033316090703,
+        0.007111249957233667,
+        0.0068921251222491264
+      ],
+      "bytes": 39007000,
+      "closes": 1,
+      "crossings": 9527,
+      "label": "one file, 4 KB buffer",
+      "microseconds_per_crossing": 0.7234307885220035,
+      "opens": 1,
+      "reads": 9525,
+      "seconds": 0.0068921251222491264,
+      "throughput_bytes_per_second": 5659647686.034861,
+      "vs_best": 1.8831585432294737
+    }
+  },
+  "worst": "files_large_buffer",
+  "worst_vs_best": 65.50577554207496
+}

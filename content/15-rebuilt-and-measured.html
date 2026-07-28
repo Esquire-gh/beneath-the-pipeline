@@ -1,0 +1,335 @@
+<p class="kicker">Part III · module 15 · build · 60–90 minutes · the last module</p>
+<h1><span class="num">15 ·</span> The pipeline, rebuilt and measured</h1>
+<p class="hook">All thirty lines of Part 0, now from parts you made. And then the
+reckoning: the same pipeline run on documents that fight back.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>This is the module where the parts come back together. You assemble a complete
+retrieval pipeline from what you built: module 8's BM25, module 6's embeddings,
+module 7's index, and module 8's evaluation harness. Then you add the two upgrades that
+every production system reaches for. The first combines your two retrievers, because
+BM25 and dense retrieval win different queries and the standard advice is to fuse their
+rankings. The second is a reranker, a slower and more accurate model that reorders a
+shortlist the cheap stages produced.</p>
+
+<p>Then comes the honest part, and it is the reason this module exists. Every
+evaluation so far, every number in Part II and Part III, ran on clean text that nobody
+had to fight for. Real corpora contain scans, hard layouts, and documents that extract
+to nothing, silently. So the final experiment runs your <em>entire</em> pipeline on a
+corpus built to fight back, three times, changing only which program turns the PDFs
+into text, and compares how much that choice matters against how much the retrieval
+architecture matters. The answer decides where your effort should actually go.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>BM25 wins some queries. Dense retrieval wins others. Every guide says to fuse
+  them, so you fuse them. Does the combined ranking actually beat the better of the
+  two?</p>
+  <p>And the larger question underneath it: after fourteen modules of tuning what
+  happens <em>after</em> the text exists, how much do any of those decisions matter,
+  compared with the decision of how the text got extracted in the first place?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<figure>
+  <div class="code"><pre>python data/make_eval_docs.py
+python exercises/15-rebuilt-and-measured/solution.py --scale part2</pre></div>
+</figure>
+
+<p>Assemble the pipeline from what you built, then add the two new pieces.</p>
+
+<p><span class="term">Reciprocal rank fusion</span> combines two ranked lists without
+needing their scores to be comparable, and BM25 scores and cosine similarities are not
+comparable; they live on different scales entirely. Ranks are comparable. A document's
+fused score is the sum of <code>1/(60 + its rank)</code> across the lists.</p>
+
+<p>Then a <span class="term">cross-encoder</span>: a model that reads the query and one
+document <em>together</em> and scores the pair. That is why it is accurate, and it is
+also why it cannot be an index. There is nothing to precompute, so it can only be run
+over a shortlist that something cheaper produced.</p>
+
+<h2 id="table1">What each stage added, measured</h2>
+
+<figure>
+{{ chart:staged-gains }}
+<figcaption>{{ 15-rebuilt-and-measured.stages.bm25.label }} through
+{{ 15-rebuilt-and-measured.stages.reranked.label }}, on
+{{ 15-rebuilt-and-measured.n_passages | int }} MS MARCO passages</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/15-rebuilt-and-measured/solution.py</caption>
+  <thead><tr><th>stage</th><th class="num">NDCG@10</th><th class="num">change</th>
+    <th class="num">P@10</th><th class="num">median per query</th></tr></thead>
+  <tbody>
+    <tr><td>BM25 alone</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.bm25.ndcg_at_10 | 4f }}</td>
+      <td class="num">—</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.bm25.p_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.bm25.median_seconds | time }}</td></tr>
+    <tr><td>dense alone</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.dense.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.dense.gain_over_previous | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.dense.p_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.dense.median_seconds | time }}</td></tr>
+    <tr class="lose"><td>fused</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.fused.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.fused.gain_over_previous | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.fused.p_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.fused.median_seconds | time }}</td></tr>
+    <tr class="win"><td>fused, then reranked over {{ 15-rebuilt-and-measured.rerank_pool }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.reranked.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.reranked.gain_over_previous | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.reranked.p_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.stages.reranked.median_seconds | time }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Read the third row again. <strong>Fusion made things worse.</strong> Dense alone
+scored {{ 15-rebuilt-and-measured.stages.dense.ndcg_at_10 | 4f }}, and fusing BM25 into
+it gave {{ 15-rebuilt-and-measured.stages.fused.ndcg_at_10 | 4f }}, a loss of
+{{ 15-rebuilt-and-measured.stages.fused.gain_over_previous | 4f }}.</p>
+
+<p>That is not a bug in the fusion, and it is not a mistake in the measurement. Fusion
+combines two rankings as equals. On this benchmark dense retrieval is far stronger than
+BM25, {{ 15-rebuilt-and-measured.stages.dense.ndcg_at_10 | 4f }} against
+{{ 15-rebuilt-and-measured.stages.bm25.ndcg_at_10 | 4f }}, so averaging their ranks
+drags the strong one down toward the weak one. Fusion pays when the two are comparable
+in strength and disagree about <em>which</em> queries they win. Here they are not
+comparable, and it costs.</p>
+
+<p>Module 8's lesson arrives one last time: <em>the change that everyone recommends is
+still a hypothesis until you measure it on your corpus.</em> Had this page reported the
+staged gains everyone expects, it would have been reporting a story rather than a
+measurement.</p>
+
+<p>The reranker then earns its place, taking the fused list to
+{{ 15-rebuilt-and-measured.stages.reranked.ndcg_at_10 | 4f }}, the best number on the
+page and above dense alone. It reads each query and document together instead of
+comparing precomputed points, which is exactly what an index cannot do.</p>
+
+<figure>
+{{ chart:staged-latency }}
+<figcaption>what each stage costs</figcaption>
+</figure>
+
+<p>And it costs {{ 15-rebuilt-and-measured.rerank_cost | x0 }} the fused query it
+reorders. That is the shape of every production ranking stack: something cheap and
+approximate produces a shortlist, and something expensive and accurate reorders it.
+Module 12's approximate index is the cheap stage, and this is the expensive one.</p>
+
+<h2 id="table2">Then the documents fight back</h2>
+
+<p>Everything above ran on clean text. Now take twenty documents whose true text is
+known, because the repository wrote it, draw them in four different layouts, and print
+half of them to images the way a scanner would. Then run the <em>entire</em> pipeline,
+extract, chunk, embed, index, retrieve, rerank, evaluate, three times, changing only
+one thing: which program turns the PDFs into text.</p>
+
+<figure>
+{{ chart:extraction-spread }}
+<figcaption>three extractors × four retrieval architectures, on the same twenty
+documents and the same sixty queries</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>{{ 15-rebuilt-and-measured.extractions.pymupdf.stages.bm25.label }} through
+  {{ 15-rebuilt-and-measured.extractions.pymupdf.stages.reranked.label }}, for each
+  extraction. {{ 15-rebuilt-and-measured.scanned_share | pct0 }} of these documents are
+  scans</caption>
+  <thead><tr><th>extractor</th><th class="num">documents with no text</th>
+    <th class="num">BM25</th><th class="num">dense</th><th class="num">fused</th>
+    <th class="num">reranked</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td>{{ 15-rebuilt-and-measured.extractions.pymupdf.label }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.pymupdf.empty_documents }} of 20</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.pymupdf.stages.bm25.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.pymupdf.stages.dense.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.pymupdf.stages.fused.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.pymupdf.stages.reranked.ndcg_at_10 | 4f }}</td></tr>
+    <tr class="lose"><td>{{ 15-rebuilt-and-measured.extractions.pdfplumber.label }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.pdfplumber.empty_documents }} of 20</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.pdfplumber.stages.bm25.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.pdfplumber.stages.dense.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.pdfplumber.stages.fused.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.pdfplumber.stages.reranked.ndcg_at_10 | 4f }}</td></tr>
+    <tr class="win"><td>{{ 15-rebuilt-and-measured.extractions.ocr_fallback.label }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.ocr_fallback.empty_documents }} of 20</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.ocr_fallback.stages.bm25.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.ocr_fallback.stages.dense.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.ocr_fallback.stages.fused.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 15-rebuilt-and-measured.extractions.ocr_fallback.stages.reranked.ndcg_at_10 | 4f }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+{{ chart:scanned-vs-text }}
+<figcaption>where the difference actually is: the scanned half of the corpus</figcaption>
+</figure>
+
+<p>Every number in the first two rows is dragged down by the same fact: those
+extractors returned <em>nothing</em> for
+{{ 15-rebuilt-and-measured.extractions.pymupdf.empty_documents }} of the 20 documents,
+so half the corpus was invisible to the pipeline. Not badly indexed.
+<strong>Absent</strong>, silently, with no error anywhere. The third row detects that
+failure and falls back to OCR, and recovers those documents at
+{{ 15-rebuilt-and-measured.extractions.ocr_fallback.stages.reranked.scanned_accuracy | pct0 }}.</p>
+
+<h2 id="finding">The finding</h2>
+
+<figure>
+{{ chart:the-finding }}
+<figcaption>the range each choice moves NDCG@10, on the same corpus and the same
+queries</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>the choice</th><th class="num">range it moves NDCG@10</th></tr></thead>
+  <tbody>
+    <tr class="win"><td>which extractor turns PDFs into text</td>
+      <td class="num">{{ 15-rebuilt-and-measured.spread.across_extractors | 4f }}</td></tr>
+    <tr><td>which retrieval architecture, given a good extraction</td>
+      <td class="num">{{ 15-rebuilt-and-measured.spread.across_architectures_within_best_extractor | 4f }}</td></tr>
+    <tr><td>the same architecture range on clean MS MARCO text</td>
+      <td class="num">{{ 15-rebuilt-and-measured.architecture_spread | 4f }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>The spread between extractors is
+{{ 15-rebuilt-and-measured.spread.ratio | x }} the spread between retrieval
+architectures.</strong></p>
+
+<p>And here is the sharpest form of it, because it is the one that should change what
+you do next:</p>
+
+<div class="callout">
+  <p>The <em>worst</em> retrieval architecture on the good extraction,
+  {{ 15-rebuilt-and-measured.crossover.worst_architecture_name }} with no fusion and no
+  reranker, scores
+  {{ 15-rebuilt-and-measured.crossover.worst_architecture_good_extraction | 4f }}.</p>
+  <p>The <em>best</em> retrieval architecture on the broken extraction,
+  {{ 15-rebuilt-and-measured.crossover.best_architecture_name }} with everything
+  switched on, scores
+  {{ 15-rebuilt-and-measured.crossover.best_architecture_bad_extraction | 4f }}.</p>
+  <p>That is a gap of {{ 15-rebuilt-and-measured.crossover.gap | 4f }} that no
+  retrieval architecture closes, because the documents were not there to retrieve.</p>
+</div>
+
+<div class="aside">
+  <span class="aside-label">be precise about what this shows</span>
+  {{ 15-rebuilt-and-measured.scanned_share | pct0 }} of this corpus is scanned, which is
+  a choice made to put the effect where it can be seen. On a corpus of clean digital
+  PDFs the extractor choice would matter far less, and on a corpus of archived paper it
+  would matter more. <strong>The magnitude depends on your documents; the direction does
+  not.</strong> The measurement you owe your own corpus is the one on the left of that
+  table — how many documents yield no text — and almost nobody takes it.
+</div>
+
+<h2 id="close">Where this leaves you</h2>
+
+<p>Two findings, both earned with your own numbers.</p>
+
+<h3>The pipeline's quality is decided upstream, at <code>parse()</code></h3>
+
+<p>The line every tutorial spends the least time on. The one with no canonical book
+behind it. The one whose difficulty module 13 gave you four mechanisms for, and which
+this module shows outweighs every retrieval decision downstream of it.</p>
+
+<p>It is also the only stage that fails <em>silently</em>. A bad chunk size shows up in
+your evaluation. A wrong <code>ef_search</code> shows up as recall. A document that
+extracted to an empty string shows up as nothing at all. The corpus is quietly smaller
+than you think, and every metric you compute is computed over the documents that
+survived.</p>
+
+<h3>And the pipeline's <em>shape</em> is a choice</h3>
+
+<p>Module 14 showed a whole class of question that similarity search cannot answer at
+any level of quality, because nearness was the only promise the convention ever made.
+Facts, counts, totals and relationships want data structured at ingestion: records,
+tables, and for questions that hop between things, graphs.</p>
+
+<p>Production systems are routers over differently shaped stores.
+"Retrieval-augmented" never had to mean "similarity search". It meant fetch the right
+context, and similarity is one way to decide what right means.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> there is nothing above this. You have rebuilt Part 0's
+{{ 00-pipeline.pipeline_lines.code_lines }} lines from parts you wrote, measured what
+each one costs, and found the one that matters most.</p>
+
+<p><strong>Backward:</strong> all of it. Module 1's blocks under module 4's syscalls
+under module 9's spill-and-merge. Module 2's agreements under module 5's parsing under
+module 13's ladder. Module 3's floats under module 6's embeddings under module 12's
+approximation. Module 7's arrangement under module 8's measurement under everything
+that claimed an improvement afterwards.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Every module was one more place where that was true, and you have the numbers for
+all of them.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Lin, Nogueira &amp; Yates,
+  <span class="title">Pretrained Transformers for Text Ranking</span>.</strong> The
+  cross-encoder you just used, properly: why reading query and document together beats
+  comparing precomputed points, and why that means it can only ever be a second
+  stage.</p>
+
+  <p class="book"><strong>Huyen, <span class="title">AI Engineering</span>.</strong>
+  The operational envelope around all of it: evaluation you can run continuously,
+  drift, cost, and the parts of a system that are neither model nor index.</p>
+
+  <p class="book"><strong>Next step beyond this site:</strong>
+  <span class="title">Designing Data-Intensive Applications</span>, 2nd edition, on
+  replication and partitioning. Everything here ran on one machine, deliberately,
+  because that constraint is what kept the mechanisms visible. Growth past one machine
+  is the named next subject.</p>
+
+  <ol>
+    <li>Fusion lowered NDCG on this benchmark. Describe the corpus and query mix where
+    you would expect it to help, and the measurement that would tell you which case you
+    are in.</li>
+    <li>Your retrieval quality is disappointing on a new corpus. Name the first three
+    measurements you would take, in order, and say what each would rule out.</li>
+    <li>A colleague proposes switching embedding models to fix quality. Given the table
+    above, what would you ask them before agreeing?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If fusion <em>helps</em> on your run, that is a legitimate result and the more
+    common one in the literature. It means your BM25 and dense retrievers are closer in
+    strength than these are. Check their individual scores before concluding anything
+    about fusion in general; the mechanism in the explanation predicts both
+    outcomes.</p>
+    <p>If all three extractors score the same, check the empty-documents column. If it
+    reads 0 for all of them, your corpus has no scanned documents in it and the
+    module's second table has nothing to measure. Run
+    <code>python data/make_eval_docs.py</code> to build the mixed set.</p>
+    <p>If the reranker is very slow, remember it is reading
+    {{ 15-rebuilt-and-measured.rerank_pool }} query-document pairs per query through a
+    transformer. Lower <code>--rerank-pool</code>, or accept it: the cost is the point,
+    and it is why reranking is always a second stage over a shortlist.</p>
+    <p>If your absolute NDCG values differ from these, compare shapes rather than
+    numbers. The ordering of the extractor rows, and the fact that the gap between them
+    exceeds the gap between architectures, is what the module claims.</p>
+  </div>
+</div>
+
+<div style="margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--rule-hard)">
+  <p class="lede">A reader who holds both findings is no longer following tutorials.
+  They are designing systems.</p>
+  <p><a href="../reading-list.html">The reading list →</a></p>
+</div>

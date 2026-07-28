@@ -1,0 +1,290 @@
+<p class="kicker learn">Part II · module 8 · build · 60–90 minutes</p>
+<h1><span class="num">08 ·</span> Retrieve — how results get ranked</h1>
+<p class="hook">This module opens up <code>retrieve()</code>'s silent ranking, and asks
+the question every tutorial skips: how would you know if the ranking is bad?</p>
+
+<h2 id="what">What ranking is, and why it needs measuring</h2>
+
+<p>Module 7 made finding cheap. Ask the index for a word and it hands you every passage
+containing it, instantly. But "every passage containing it" is thousands of passages,
+and the user gets ten. So something has to put the thousands in order, and that
+something is a <span class="term">scorer</span>: a function that takes the query and a
+document and returns a number, where a higher number is supposed to mean more relevant.
+Sort by the number, return the top of the list, and that is retrieval.</p>
+
+<p>The whole question is what function to use. In this module you build four, in
+increasing order of sophistication: counting the query's words in each document,
+weighting those counts by how rare each word is, the tuned version of that idea the
+field settled on after forty years, and module 6's cosine similarity over vectors.</p>
+
+<p>And then you build the more important thing, which is the instrument that says
+whether any of them works. Ranking functions are easy to have opinions about and hard
+to be right about, so the field measures them: take real queries where a human has
+marked which passage answers each one, run the scorer, and check where the marked
+passages landed. The second half of this module builds that harness, and the harness is
+what every later module in the site uses to keep itself honest.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>A median query in this corpus matches
+  {{ 08-retrieve.matching_docs.median | int }} passages. Some queries match
+  {{ 08-retrieve.matching_docs.max | int }}.</p>
+  <p>The pipeline returns {{ 08-retrieve.matching_docs.returned }} of them.</p>
+  <p>Which {{ 08-retrieve.matching_docs.returned }}, decided by whom? And if the
+  decision were bad, how would you ever find out?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/08-retrieve/starter.py</code>. It has five
+<code>TODO</code>s: three scorers, then the two measurements that tell you whether a
+scorer is any good. The measurements are the module.</p>
+
+<figure>
+  <div class="code"><pre>python exercises/08-retrieve/starter.py --queries 200
+python exercises/08-retrieve/verify.py</pre></div>
+</figure>
+
+<h3>Write three scorers</h3>
+
+<p>Start with the obvious one: add up how often the query's words appear in each
+document. Then write <span class="term">tf-idf</span>, which fixes two things at once.
+It damps repeated occurrences, so the tenth counts for less than the first, and it
+weights each word by how rare it is, because a word in every document tells you
+nothing. Then write <span class="term">BM25</span>, the same two ideas tuned by forty
+years of measurement, with two knobs: <code>k1</code> for how fast extra occurrences
+stop helping, and <code>b</code> for how hard long documents are penalised.</p>
+
+<h3>Then build the measuring instrument</h3>
+
+<p>Build the harness. <span class="term">Precision@10</span> asks what fraction of the
+ten you returned were relevant. <span class="term">NDCG@10</span> asks the same thing
+but pays more for being right early, discounting each position logarithmically. Both
+need <span class="term">relevance judgments</span>, which are records of a human
+saying, for a real query, which passages actually answer it. MS MARCO ships
+{{ 08-retrieve.n_queries_available | int }} of them for this corpus, which is the
+reason the site uses it.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>Where the four scorers land</h3>
+
+<figure>
+{{ chart:retrieve-scorers }}
+<figcaption>NDCG@10 over {{ 08-retrieve.n_queries | int }} judged queries at
+{{ 08-retrieve.n_passages | int }} passages</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/08-retrieve/solution.py</caption>
+  <thead><tr><th>scorer</th><th class="num">P@10</th><th class="num">NDCG@10</th>
+    <th class="num">MRR@10</th><th class="num">median per query</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td>raw term counts</td>
+      <td class="num">{{ 08-retrieve.runs.term_counts.p_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.term_counts.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.term_counts.mrr_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.term_counts.median_seconds | time }}</td></tr>
+    <tr><td>tf-idf</td>
+      <td class="num">{{ 08-retrieve.runs.tfidf.p_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.tfidf.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.tfidf.mrr_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.tfidf.median_seconds | time }}</td></tr>
+    <tr><td>BM25</td>
+      <td class="num">{{ 08-retrieve.runs.bm25.p_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.bm25.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.bm25.mrr_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.bm25.median_seconds | time }}</td></tr>
+    <tr class="win"><td>dense vectors, brute force</td>
+      <td class="num">{{ 08-retrieve.runs.dense.p_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.dense.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.dense.mrr_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.runs.dense.median_seconds | time }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="aside">
+  <span class="aside-label">read the last row carefully</span>
+  {{ 08-retrieve.dense_caveat }}
+</div>
+
+<h3>What raw term counts actually gets wrong</h3>
+
+<p>The textbook complaint is that long documents win. Check it here before repeating
+it. These passages run from {{ 08-retrieve.length_distribution.p10 }} tokens at the
+tenth percentile to {{ 08-retrieve.length_distribution.p90 }} at the ninetieth, and the
+top ten by raw term count average
+{{ 08-retrieve.length_bias.term_counts.mean_top10_length | 0f }} tokens against a
+corpus average of
+{{ 08-retrieve.length_bias.term_counts.corpus_mean_length | 0f }}. <strong>On this
+corpus, there is no length bias to see.</strong> The passages are too uniform for it to
+bite.</p>
+
+<p>So the collapse to
+{{ 08-retrieve.runs.term_counts.ndcg_at_10 | 4f }} has a different cause, and it is
+measurable: <strong>{{ 08-retrieve.stopword_share.mean | pct0 }} of a raw term-count
+score comes from stopwords.</strong> Words like <em>the</em> and <em>of</em> appear in
+almost every passage, many times each, so a scorer that counts occurrences is mostly
+ranking by how often a document says "the".</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">query: {{ 08-retrieve.length_bias.query }}</div>
+<pre class="out">raw term counts, top hit
+  {{ 08-retrieve.length_bias.term_counts.top1_text }}…
+
+BM25, top hit
+  {{ 08-retrieve.length_bias.bm25.top1_text }}…</pre>
+  </div>
+</figure>
+
+<h3>The changes that sound better and rank worse</h3>
+
+<figure>
+{{ chart:retrieve-tuning }}
+<figcaption>change in NDCG@10 against the BM25 baseline of
+{{ 08-retrieve.tuning_summary.baseline_ndcg | 4f }}. magenta is worse</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>the change</th><th>the reasoning</th><th class="num">NDCG@10</th><th class="num">Δ</th></tr></thead>
+  <tbody>
+    <tr><td>drop stopwords</td><td>"stopwords are noise"</td>
+      <td class="num">{{ 08-retrieve.tuning.drop_stopwords.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.tuning.drop_stopwords.delta_ndcg | 4f }}</td></tr>
+    <tr class="lose"><td>raise <code>k1</code> to 2.5</td><td>"reward repeated terms more"</td>
+      <td class="num">{{ 08-retrieve.tuning.k1_high.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.tuning.k1_high.delta_ndcg | 4f }}</td></tr>
+    <tr class="lose"><td>set <code>b</code> to 0</td><td>"stop penalising long documents"</td>
+      <td class="num">{{ 08-retrieve.tuning.b_zero.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.tuning.b_zero.delta_ndcg | 4f }}</td></tr>
+    <tr class="lose"><td>set <code>b</code> to 1</td><td>"penalise long documents fully"</td>
+      <td class="num">{{ 08-retrieve.tuning.b_one.ndcg_at_10 | 4f }}</td>
+      <td class="num">{{ 08-retrieve.tuning.b_one.delta_ndcg | 4f }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>{{ 08-retrieve.tuning_summary.n_hurt }} of
+{{ 08-retrieve.tuning_summary.n_tried }} plausible improvements made the ranking
+worse.</strong> Every one of them has a story you could tell a colleague, and three of
+the four stories are wrong on this corpus. Notice also that the one change that helped,
+dropping stopwords, helped by
+{{ 08-retrieve.tuning.drop_stopwords.delta_ndcg | 4f }}, which is smaller than the
+damage any of the others did.</p>
+
+<p>That moment is the point of the module. Without the harness, all four of those
+changes ship.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Work backwards from the collapse. Raw term counts scored
+{{ 08-retrieve.runs.term_counts.ndcg_at_10 | 4f }} because it treats every word as
+equally informative, and {{ 08-retrieve.stopword_share.mean | pct0 }} of the words in a
+query are not informative at all. tf-idf fixed that with one idea, weighting each word
+by its rarity, and the score went to
+{{ 08-retrieve.runs.tfidf.ndcg_at_10 | 4f }}. A word appearing in every document gets a
+weight near zero, so <em>the</em> stops voting.</p>
+
+<p>BM25 added the second idea. Occurrences should have diminishing returns, because a
+document saying "block" ten times is not ten times more about blocks than one saying it
+once. <code>k1</code> controls how fast that curve flattens, and <code>b</code>
+controls how much a document's length discounts its term counts. Those two knobs took
+the score to {{ 08-retrieve.runs.bm25.ndcg_at_10 | 4f }}. BM25 also ran faster here,
+{{ 08-retrieve.runs.tfidf.median_seconds | time }} down to
+{{ 08-retrieve.runs.bm25.median_seconds | time }} per query, because the vectorised
+version does one array operation per query term.</p>
+
+<p>Then the vectors. Dense retrieval scored
+{{ 08-retrieve.runs.dense.ndcg_at_10 | 4f }}, and it does something the word scorers
+structurally cannot: it finds passages that answer the question in different words. It
+also costs {{ 08-retrieve.runs.dense.median_seconds | time }} per query against BM25's
+{{ 08-retrieve.runs.bm25.median_seconds | time }}, because it compares against every
+vector in the corpus. Module 12 is about buying that time back and what the purchase
+costs.</p>
+
+<h3>Relevance is measured, not asserted</h3>
+
+<p>Here is the sentence to take out of this module.</p>
+
+<p>Every ranking decision you make is a hypothesis. "Rare words matter more" is a
+hypothesis. "Long documents should be penalised" is a hypothesis. "Dense beats sparse"
+is a hypothesis. Each one is plausible, each one has a mechanism behind it, and you
+just watched three plausible hypotheses with good mechanisms behind them make things
+worse.</p>
+
+<p>Without judgments, you cannot tell the difference between a change that helped and a
+change you like. You tune by anecdote: you try a query you remember, the result looks
+better, you ship. The harness replaces that with a number over
+{{ 08-retrieve.n_queries | int }} queries you did not choose.</p>
+
+<p>It has limits, and they are worth stating. NDCG@10 on MS MARCO measures one
+population of queries against one set of judgments, and a system that wins here can
+lose on your documents. The judgments are sparse. Most queries have exactly one passage
+marked relevant, so a genuinely good answer that nobody judged counts as a miss, which
+is why absolute P@10 looks low even for the best scorer. The right conclusion is not
+"0.68 is the truth" but "these two systems were compared on the same
+{{ 08-retrieve.n_queries | int }} queries and one won".</p>
+
+<p>This harness is the instrument for the whole of Part III. Modules 11, 12 and 15 all
+import <code>evaluate</code> and <code>ndcg_at_k</code> from your solution file,
+because every claim they make about speed has to be paired with what it did to
+quality.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>retrieve(db, model, q, k=4)</code> ranks by cosine
+similarity, silently, and returns four. You now know what the alternatives are,
+roughly what each scores, and how to find out for your own corpus.
+<strong>Backward:</strong> module 7 built the arrangement, and this module chose what
+to do with what it finds. Module 6's cosine is now one scorer among several rather than
+the definition of relevance.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>And a third thing, which the site says once, here: <em>quality is a
+measurement</em>. Everything after this module reports what it did to NDCG.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Manning, Raghavan &amp; Schütze,
+  <span class="title">Introduction to Information Retrieval</span>, chapters
+  6–8.</strong> Chapter 6 is the weighting you just built, and chapter 8 is the
+  evaluation you just built, including why precision and recall pull against each
+  other. Expect chapter 8 to be more careful than this page about what a judgment does
+  and does not mean.</p>
+
+  <ol>
+    <li>Raw term counts scored {{ 08-retrieve.runs.term_counts.ndcg_at_10 | 4f }} on a
+    corpus with no length bias. Explain the failure without using the phrase "long
+    documents".</li>
+    <li>Setting <code>b</code> to 0 and setting it to 1 both lowered NDCG. What does
+    that tell you about the default of 0.75, and about tuning by intuition?</li>
+    <li>Your P@10 is {{ 08-retrieve.runs.bm25.p_at_10 | 4f }} while MRR@10 is
+    {{ 08-retrieve.runs.bm25.mrr_at_10 | 4f }}. Why are those so far apart, and which
+    one would you report to a colleague?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If every scorer reports NDCG near 0, your document ids are probably not lining
+    up. The judgments name MS MARCO passage ids, and your scorers rank corpus
+    <em>positions</em>. The starter builds <code>pid_to_doc</code> for exactly this;
+    make sure the relevant set is mapped through it before comparing.</p>
+    <p>If BM25 scores below tf-idf, check the sign inside the idf logarithm.
+    <code>log(1 + (N - df + 0.5) / (df + 0.5))</code> stays positive for every term.
+    The older form without the <code>1 +</code> goes negative for terms in more than
+    half the corpus, and those negative weights will scramble your ranking.</p>
+    <p>If your absolute numbers are higher than this page's, you may be scoring fewer
+    queries. The first few hundred qids are not a random sample, so compare like with
+    like: same query count, same corpus size.</p>
+    <p>If dense retrieval loses to BM25 on your machine, that is a legitimate result on
+    a different corpus and a reason to read the caveat above again. On MS MARCO with
+    this model, expect dense to win.</p>
+  </div>
+</div>

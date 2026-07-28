@@ -1,0 +1,186 @@
+{
+  "_generated_unix": 1785267641,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "block_size": 10000,
+  "compression": {
+    "bytes_per_posting_raw": 4.0,
+    "bytes_per_posting_varbyte": 1.384601389708214,
+    "gaps_int32_bytes": 161223484,
+    "gaps_varbyte_bytes": 55807565,
+    "postings": 40305871,
+    "ratio": 2.8889180884347847,
+    "raw_int32_bytes": 161223484,
+    "terms": 447782
+  },
+  "corpus_span": 100,
+  "curve": {
+    "in_memory": [
+      {
+        "baseline_rss": 13664256,
+        "index_bytes": 12582912,
+        "peak_rss": 26247168,
+        "seconds": 0.12101991707459092,
+        "terms": 37247
+      },
+      {
+        "baseline_rss": 13828096,
+        "index_bytes": 26361856,
+        "peak_rss": 40189952,
+        "seconds": 0.3002805409487337,
+        "terms": 60246
+      },
+      {
+        "baseline_rss": 13844480,
+        "index_bytes": 45793280,
+        "peak_rss": 59637760,
+        "seconds": 0.6138124580029398,
+        "terms": 87191
+      },
+      {
+        "baseline_rss": 13991936,
+        "index_bytes": 85245952,
+        "peak_rss": 99237888,
+        "seconds": 1.229897417128086,
+        "terms": 125662
+      },
+      {
+        "baseline_rss": 13664256,
+        "index_bytes": 191021056,
+        "peak_rss": 204685312,
+        "seconds": 3.1641385830007493,
+        "terms": 207814
+      },
+      {
+        "baseline_rss": 13664256,
+        "index_bytes": 316751872,
+        "peak_rss": 330416128,
+        "seconds": 6.4015000408980995,
+        "terms": 304080
+      },
+      {
+        "baseline_rss": 13991936,
+        "index_bytes": 602685440,
+        "peak_rss": 616677376,
+        "seconds": 12.819189165951684,
+        "terms": 447782
+      }
+    ],
+    "sizes": [
+      10000,
+      25000,
+      50000,
+      100000,
+      250000,
+      500000,
+      1000000
+    ],
+    "spimi": [
+      {
+        "baseline_rss": 13959168,
+        "blocks": 1,
+        "build_index_bytes": 12632064,
+        "build_peak_rss": 26591232,
+        "index_bytes": 12632064,
+        "on_disk_bytes": 4505704,
+        "peak_rss": 26591232,
+        "seconds": 0.2346914999652654,
+        "terms": 37247
+      },
+      {
+        "baseline_rss": 13664256,
+        "blocks": 3,
+        "build_index_bytes": 18137088,
+        "build_peak_rss": 31801344,
+        "index_bytes": 18137088,
+        "on_disk_bytes": 12460158,
+        "peak_rss": 31801344,
+        "seconds": 0.6169130420312285,
+        "terms": 60246
+      },
+      {
+        "baseline_rss": 13795328,
+        "blocks": 5,
+        "build_index_bytes": 23642112,
+        "build_peak_rss": 37437440,
+        "index_bytes": 25313280,
+        "on_disk_bytes": 25510121,
+        "peak_rss": 39108608,
+        "seconds": 1.216237791115418,
+        "terms": 87191
+      },
+      {
+        "baseline_rss": 13664256,
+        "blocks": 10,
+        "build_index_bytes": 28377088,
+        "build_peak_rss": 42041344,
+        "index_bytes": 31883264,
+        "on_disk_bytes": 51497105,
+        "peak_rss": 45547520,
+        "seconds": 2.373965541133657,
+        "terms": 125662
+      },
+      {
+        "baseline_rss": 13926400,
+        "blocks": 25,
+        "build_index_bytes": 29392896,
+        "build_peak_rss": 43319296,
+        "index_bytes": 63668224,
+        "on_disk_bytes": 141523424,
+        "peak_rss": 77594624,
+        "seconds": 6.1074497499503195,
+        "terms": 207814
+      },
+      {
+        "baseline_rss": 13828096,
+        "blocks": 50,
+        "build_index_bytes": 35930112,
+        "build_peak_rss": 49758208,
+        "index_bytes": 109723648,
+        "on_disk_bytes": 290801728,
+        "peak_rss": 123551744,
+        "seconds": 12.214253750164062,
+        "terms": 304080
+      },
+      {
+        "baseline_rss": 13664256,
+        "blocks": 100,
+        "build_index_bytes": 39682048,
+        "build_peak_rss": 53346304,
+        "index_bytes": 198656000,
+        "on_disk_bytes": 588608454,
+        "peak_rss": 212320256,
+        "seconds": 24.615148290991783,
+        "terms": 447782
+      }
+    ]
+  },
+  "decode_cost": {
+    "decode_seconds": 1.145342635398265,
+    "plain_seconds": 0.0745019125053659,
+    "postings_sampled": 17208613,
+    "slowdown": 15.373331997561447,
+    "terms_sampled": 200
+  },
+  "in_memory_bytes_per_passage": 596.0631595959596,
+  "in_memory_growth": 47.897135416666664,
+  "in_memory_spread": 47.897135416666664,
+  "n_passages": 1000000,
+  "passages_until_ram_full": 230556725.99050447,
+  "ram_bytes": 137438953472,
+  "spimi_build_spread": 3.1413748378728923,
+  "spimi_flat": false,
+  "spimi_peak_spread": 15.726329442282749
+}

@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · What is a file, actually? — Beneath the Pipeline</title>
+<meta name="description" content="A file of three characters occupies 4096 bytes. Where did the rest go?">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead"><div class="masthead-inner"><div class="brandrow"><a class="brand" href="../index.html"><b>Beneath the Pipeline</b> &nbsp;/&nbsp; part i · the floor</a><span class="progress-label">01 / 15</span></div><nav class="strip" aria-label="the pipeline"><a class="stage" href="04-load.html" title="load() — built in module 4; stressed in module 9"><span class="n">04·09</span>load</a><a class="stage" href="05-parse.html" title="parse() — built in module 5; stressed in module 13"><span class="n">05·13</span>parse</a><a class="stage" href="06-chunk-embed.html" title="chunk() — built in module 6"><span class="n">06</span>chunk</a><a class="stage" href="06-chunk-embed.html" title="embed() — built in module 6; stressed in module 12"><span class="n">06·12</span>embed</a><a class="stage" href="07-index.html" title="index() — built in module 7; stressed in module 9, 10, 12"><span class="n">07·09·10·12</span>index</a><a class="stage" href="08-retrieve.html" title="retrieve() — built in module 8; stressed in module 11, 14"><span class="n">08·11·14</span>retrieve</a></nav><div class="lane2"><span class="spacer"></span><a class="branch" href="14-what-vectors-cant-answer.html" title="module 14 — the structured path">14 · structured</a></div></div></header><div class="wrap"><div class="layout"><div class="gutter" aria-hidden="true"><div class="marks"><div>0000</div><div>0010</div><div>0020</div><div>0030</div><div>0040</div><div>0050</div><div>0060</div><div>0070</div><div>0080</div><div>0090</div><div>00a0</div><div>00b0</div><div>00c0</div><div>00d0</div><div>00e0</div><div>00f0</div><div>0100</div><div>0110</div><div>0120</div><div>0130</div><div>0140</div><div>0150</div><div>0160</div><div>0170</div><div>0180</div><div>0190</div><div>01a0</div><div>01b0</div><div>01c0</div><div>01d0</div><div>01e0</div><div>01f0</div><div>0200</div><div>0210</div><div>0220</div><div>0230</div><div>0240</div><div>0250</div><div>0260</div><div>0270</div><div>0280</div><div>0290</div><div>02a0</div><div>02b0</div><div>02c0</div><div>02d0</div><div>02e0</div><div>02f0</div><div>0300</div><div>0310</div><div>0320</div><div>0330</div><div>0340</div><div>0350</div><div>0360</div><div>0370</div><div>0380</div><div>0390</div><div>03a0</div><div>03b0</div><div>03c0</div><div>03d0</div><div>03e0</div><div>03f0</div><div>0400</div><div>0410</div><div>0420</div><div>0430</div><div>0440</div><div>0450</div><div>0460</div><div>0470</div><div>0480</div><div>0490</div><div>04a0</div><div>04b0</div><div>04c0</div><div>04d0</div><div>04e0</div><div>04f0</div><div>0500</div><div>0510</div><div>0520</div><div>0530</div><div>0540</div><div>0550</div><div>0560</div><div>0570</div><div>0580</div><div>0590</div><div>05a0</div><div>05b0</div><div>05c0</div><div>05d0</div><div>05e0</div><div>05f0</div><div>0600</div><div>0610</div><div>0620</div><div>0630</div><div>0640</div><div>0650</div><div>0660</div><div>0670</div><div>0680</div><div>0690</div><div>06a0</div><div>06b0</div><div>06c0</div><div>06d0</div><div>06e0</div><div>06f0</div><div>0700</div><div>0710</div><div>0720</div><div>0730</div><div>0740</div><div>0750</div><div>0760</div><div>0770</div><div>0780</div><div>0790</div><div>07a0</div><div>07b0</div><div>07c0</div><div>07d0</div><div>07e0</div><div>07f0</div><div>0800</div><div>0810</div><div>0820</div><div>0830</div><div>0840</div><div>0850</div><div>0860</div><div>0870</div><div>0880</div><div>0890</div><div>08a0</div><div>08b0</div><div>08c0</div><div>08d0</div><div>08e0</div><div>08f0</div><div>0900</div><div>0910</div><div>0920</div><div>0930</div><div>0940</div><div>0950</div><div>0960</div><div>0970</div><div>0980</div><div>0990</div><div>09a0</div><div>09b0</div><div>09c0</div><div>09d0</div><div>09e0</div><div>09f0</div><div>0a00</div><div>0a10</div><div>0a20</div><div>0a30</div><div>0a40</div><div>0a50</div><div>0a60</div><div>0a70</div><div>0a80</div><div>0a90</div><div>0aa0</div><div>0ab0</div><div>0ac0</div><div>0ad0</div><div>0ae0</div><div>0af0</div><div>0b00</div><div>0b10</div><div>0b20</div><div>0b30</div><div>0b40</div><div>0b50</div><div>0b60</div><div>0b70</div><div>0b80</div><div>0b90</div><div>0ba0</div><div>0bb0</div><div>0bc0</div><div>0bd0</div><div>0be0</div><div>0bf0</div><div>0c00</div><div>0c10</div><div>0c20</div><div>0c30</div><div>0c40</div><div>0c50</div><div>0c60</div><div>0c70</div><div>0c80</div><div>0c90</div><div>0ca0</div><div>0cb0</div><div>0cc0</div><div>0cd0</div><div>0ce0</div><div>0cf0</div><div>0d00</div><div>0d10</div><div>0d20</div><div>0d30</div><div>0d40</div><div>0d50</div><div>0d60</div><div>0d70</div><div>0d80</div><div>0d90</div><div>0da0</div><div>0db0</div><div>0dc0</div><div>0dd0</div><div>0de0</div><div>0df0</div><div>0e00</div><div>0e10</div><div>0e20</div><div>0e30</div><div>0e40</div><div>0e50</div><div>0e60</div><div>0e70</div><div>0e80</div><div>0e90</div><div>0ea0</div><div>0eb0</div><div>0ec0</div><div>0ed0</div><div>0ee0</div><div>0ef0</div><div>0f00</div><div>0f10</div><div>0f20</div><div>0f30</div><div>0f40</div><div>0f50</div><div>0f60</div><div>0f70</div><div>0f80</div><div>0f90</div><div>0fa0</div><div>0fb0</div><div>0fc0</div><div>0fd0</div><div>0fe0</div><div>0ff0</div><div>1000</div><div>1010</div><div>1020</div><div>1030</div><div>1040</div><div>1050</div><div>1060</div><div>1070</div><div>1080</div><div>1090</div><div>10a0</div><div>10b0</div><div>10c0</div><div>10d0</div><div>10e0</div><div>10f0</div><div>1100</div><div>1110</div><div>1120</div><div>1130</div><div>1140</div><div>1150</div><div>1160</div><div>1170</div><div>1180</div><div>1190</div><div>11a0</div><div>11b0</div><div>11c0</div><div>11d0</div><div>11e0</div><div>11f0</div><div>1200</div><div>1210</div><div>1220</div><div>1230</div><div>1240</div><div>1250</div><div>1260</div><div>1270</div><div>1280</div><div>1290</div><div>12a0</div><div>12b0</div><div>12c0</div><div>12d0</div><div>12e0</div><div>12f0</div><div>1300</div><div>1310</div><div>1320</div><div>1330</div><div>1340</div><div>1350</div><div>1360</div><div>1370</div><div>1380</div><div>1390</div><div>13a0</div><div>13b0</div><div>13c0</div><div>13d0</div><div>13e0</div><div>13f0</div><div>1400</div><div>1410</div><div>1420</div><div>1430</div><div>1440</div><div>1450</div><div>1460</div><div>1470</div><div>1480</div><div>1490</div><div>14a0</div><div>14b0</div><div>14c0</div><div>14d0</div><div>14e0</div><div>14f0</div><div>1500</div><div>1510</div><div>1520</div><div>1530</div><div>1540</div><div>1550</div><div>1560</div><div>1570</div><div>1580</div><div>1590</div><div>15a0</div><div>15b0</div><div>15c0</div><div>15d0</div><div>15e0</div><div>15f0</div><div>1600</div><div>1610</div><div>1620</div><div>1630</div><div>1640</div><div>1650</div><div>1660</div><div>1670</div><div>1680</div><div>1690</div><div>16a0</div><div>16b0</div><div>16c0</div><div>16d0</div><div>16e0</div><div>16f0</div><div>1700</div><div>1710</div><div>1720</div><div>1730</div><div>1740</div><div>1750</div><div>1760</div><div>1770</div><div>1780</div><div>1790</div><div>17a0</div><div>17b0</div><div>17c0</div><div>17d0</div><div>17e0</div><div>17f0</div><div>1800</div><div>1810</div><div>1820</div><div>1830</div><div>1840</div><div>1850</div><div>1860</div><div>1870</div><div>1880</div><div>1890</div><div>18a0</div><div>18b0</div><div>18c0</div><div>18d0</div><div>18e0</div><div>18f0</div><div>1900</div><div>1910</div><div>1920</div><div>1930</div><div>1940</div><div>1950</div><div>1960</div><div>1970</div><div>1980</div><div>1990</div><div>19a0</div><div>19b0</div><div>19c0</div><div>19d0</div><div>19e0</div><div>19f0</div><div>1a00</div><div>1a10</div><div>1a20</div><div>1a30</div><div>1a40</div><div>1a50</div><div>1a60</div><div>1a70</div><div>1a80</div><div>1a90</div><div>1aa0</div><div>1ab0</div><div>1ac0</div><div>1ad0</div><div>1ae0</div><div>1af0</div><div>1b00</div><div>1b10</div><div>1b20</div><div>1b30</div><div>1b40</div><div>1b50</div><div>1b60</div><div>1b70</div><div>1b80</div><div>1b90</div><div>1ba0</div><div>1bb0</div><div>1bc0</div><div>1bd0</div><div>1be0</div><div>1bf0</div><div>1c00</div><div>1c10</div><div>1c20</div><div>1c30</div><div>1c40</div><div>1c50</div><div>1c60</div><div>1c70</div><div>1c80</div><div>1c90</div><div>1ca0</div><div>1cb0</div><div>1cc0</div><div>1cd0</div><div>1ce0</div><div>1cf0</div><div>1d00</div><div>1d10</div><div>1d20</div><div>1d30</div><div>1d40</div><div>1d50</div><div>1d60</div><div>1d70</div><div>1d80</div><div>1d90</div><div>1da0</div><div>1db0</div><div>1dc0</div><div>1dd0</div><div>1de0</div><div>1df0</div><div>1e00</div><div>1e10</div><div>1e20</div><div>1e30</div><div>1e40</div><div>1e50</div><div>1e60</div><div>1e70</div><div>1e80</div><div>1e90</div><div>1ea0</div><div>1eb0</div><div>1ec0</div><div>1ed0</div><div>1ee0</div><div>1ef0</div><div>1f00</div><div>1f10</div><div>1f20</div><div>1f30</div><div>1f40</div><div>1f50</div><div>1f60</div><div>1f70</div><div>1f80</div><div>1f90</div><div>1fa0</div><div>1fb0</div><div>1fc0</div><div>1fd0</div><div>1fe0</div><div>1ff0</div><div>2000</div><div>2010</div><div>2020</div><div>2030</div><div>2040</div><div>2050</div><div>2060</div><div>2070</div><div>2080</div><div>2090</div><div>20a0</div><div>20b0</div><div>20c0</div><div>20d0</div><div>20e0</div><div>20f0</div><div>2100</div><div>2110</div><div>2120</div><div>2130</div><div>2140</div><div>2150</div><div>2160</div><div>2170</div><div>2180</div><div>2190</div><div>21a0</div><div>21b0</div><div>21c0</div><div>21d0</div><div>21e0</div><div>21f0</div><div>2200</div><div>2210</div><div>2220</div><div>2230</div><div>2240</div><div>2250</div><div>2260</div><div>2270</div><div>2280</div><div>2290</div><div>22a0</div><div>22b0</div><div>22c0</div><div>22d0</div><div>22e0</div><div>22f0</div><div>2300</div><div>2310</div><div>2320</div><div>2330</div><div>2340</div><div>2350</div><div>2360</div><div>2370</div><div>2380</div><div>2390</div><div>23a0</div><div>23b0</div><div>23c0</div><div>23d0</div><div>23e0</div><div>23f0</div><div>2400</div><div>2410</div><div>2420</div><div>2430</div><div>2440</div><div>2450</div><div>2460</div><div>2470</div><div>2480</div><div>2490</div><div>24a0</div><div>24b0</div><div>24c0</div><div>24d0</div><div>24e0</div><div>24f0</div><div>2500</div><div>2510</div><div>2520</div><div>2530</div><div>2540</div><div>2550</div><div>2560</div><div>2570</div><div>2580</div><div>2590</div><div>25a0</div><div>25b0</div><div>25c0</div><div>25d0</div><div>25e0</div><div>25f0</div><div>2600</div><div>2610</div><div>2620</div><div>2630</div><div>2640</div><div>2650</div><div>2660</div><div>2670</div><div>2680</div><div>2690</div><div>26a0</div><div>26b0</div><div>26c0</div><div>26d0</div><div>26e0</div><div>26f0</div><div>2700</div><div>2710</div><div>2720</div><div>2730</div><div>2740</div><div>2750</div><div>2760</div><div>2770</div><div>2780</div><div>2790</div><div>27a0</div><div>27b0</div><div>27c0</div><div>27d0</div><div>27e0</div><div>27f0</div><div>2800</div><div>2810</div><div>2820</div><div>2830</div><div>2840</div><div>2850</div><div>2860</div><div>2870</div><div>2880</div><div>2890</div><div>28a0</div><div>28b0</div><div>28c0</div><div>28d0</div><div>28e0</div><div>28f0</div><div>2900</div><div>2910</div><div>2920</div><div>2930</div><div>2940</div><div>2950</div><div>2960</div><div>2970</div><div>2980</div><div>2990</div><div>29a0</div><div>29b0</div><div>29c0</div><div>29d0</div><div>29e0</div><div>29f0</div><div>2a00</div><div>2a10</div><div>2a20</div><div>2a30</div><div>2a40</div><div>2a50</div><div>2a60</div><div>2a70</div><div>2a80</div><div>2a90</div><div>2aa0</div><div>2ab0</div><div>2ac0</div><div>2ad0</div><div>2ae0</div><div>2af0</div><div>2b00</div><div>2b10</div><div>2b20</div><div>2b30</div><div>2b40</div><div>2b50</div><div>2b60</div><div>2b70</div><div>2b80</div><div>2b90</div><div>2ba0</div><div>2bb0</div><div>2bc0</div><div>2bd0</div><div>2be0</div><div>2bf0</div><div>2c00</div><div>2c10</div><div>2c20</div><div>2c30</div><div>2c40</div><div>2c50</div><div>2c60</div><div>2c70</div><div>2c80</div><div>2c90</div><div>2ca0</div><div>2cb0</div><div>2cc0</div><div>2cd0</div><div>2ce0</div><div>2cf0</div><div>2d00</div><div>2d10</div><div>2d20</div><div>2d30</div><div>2d40</div><div>2d50</div><div>2d60</div><div>2d70</div><div>2d80</div><div>2d90</div><div>2da0</div><div>2db0</div><div>2dc0</div><div>2dd0</div><div>2de0</div><div>2df0</div><div>2e00</div><div>2e10</div><div>2e20</div><div>2e30</div><div>2e40</div><div>2e50</div><div>2e60</div><div>2e70</div><div>2e80</div><div>2e90</div><div>2ea0</div><div>2eb0</div><div>2ec0</div><div>2ed0</div><div>2ee0</div><div>2ef0</div><div>2f00</div><div>2f10</div><div>2f20</div><div>2f30</div><div>2f40</div><div>2f50</div><div>2f60</div><div>2f70</div><div>2f80</div><div>2f90</div><div>2fa0</div><div>2fb0</div><div>2fc0</div><div>2fd0</div><div>2fe0</div><div>2ff0</div><div>3000</div><div>3010</div><div>3020</div><div>3030</div><div>3040</div><div>3050</div><div>3060</div><div>3070</div><div>3080</div><div>3090</div><div>30a0</div><div>30b0</div><div>30c0</div><div>30d0</div><div>30e0</div><div>30f0</div><div>3100</div><div>3110</div><div>3120</div><div>3130</div><div>3140</div><div>3150</div><div>3160</div><div>3170</div><div>3180</div><div>3190</div><div>31a0</div><div>31b0</div><div>31c0</div><div>31d0</div><div>31e0</div><div>31f0</div><div>3200</div><div>3210</div><div>3220</div><div>3230</div><div>3240</div><div>3250</div><div>3260</div><div>3270</div><div>3280</div><div>3290</div><div>32a0</div><div>32b0</div><div>32c0</div><div>32d0</div><div>32e0</div><div>32f0</div><div>3300</div><div>3310</div><div>3320</div><div>3330</div><div>3340</div><div>3350</div><div>3360</div><div>3370</div><div>3380</div><div>3390</div><div>33a0</div><div>33b0</div><div>33c0</div><div>33d0</div><div>33e0</div><div>33f0</div><div>3400</div><div>3410</div><div>3420</div><div>3430</div><div>3440</div><div>3450</div><div>3460</div><div>3470</div><div>3480</div><div>3490</div><div>34a0</div><div>34b0</div><div>34c0</div><div>34d0</div><div>34e0</div><div>34f0</div><div>3500</div><div>3510</div><div>3520</div><div>3530</div><div>3540</div><div>3550</div><div>3560</div><div>3570</div><div>3580</div><div>3590</div><div>35a0</div><div>35b0</div><div>35c0</div><div>35d0</div><div>35e0</div><div>35f0</div><div>3600</div><div>3610</div><div>3620</div><div>3630</div><div>3640</div><div>3650</div><div>3660</div><div>3670</div><div>3680</div><div>3690</div><div>36a0</div><div>36b0</div><div>36c0</div><div>36d0</div><div>36e0</div><div>36f0</div><div>3700</div><div>3710</div><div>3720</div><div>3730</div><div>3740</div><div>3750</div><div>3760</div><div>3770</div><div>3780</div><div>3790</div><div>37a0</div><div>37b0</div><div>37c0</div><div>37d0</div><div>37e0</div><div>37f0</div><div>3800</div><div>3810</div><div>3820</div><div>3830</div></div></div><main class="col"><p class="kicker learn">Part I · module 1 · investigate · 15–25 minutes · nothing to install</p>
+<h1><span class="num">01 ·</span> What is a file, actually?</h1>
+<p class="hook">This module sits three floors under <code>loader.load()</code>. Your
+pipeline's first line opens PDF files, and before you can say what opening one costs,
+you have to say what a file is.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>You use files every day, and you carry a picture of them in your head: a file is a
+thing with a name, a size, and an icon, sitting in a folder. That picture is drawn for
+you by the operating system, and it hides almost everything about how the thing
+actually works. This module replaces the picture with the machinery underneath, because
+the machinery is what your pipeline pays for.</p>
+
+<p>The short version, which the rest of the module earns: a disk only stores bytes, in
+fixed-size batches. Everything else you associate with a file, its name, its size, its
+type, the folder it lives in, is bookkeeping that the operating system writes onto the
+same disk, next to your data. Once you can see the bookkeeping as a separate thing from
+the bytes, a whole family of confusing behaviors becomes predictable: files that take
+more space than they contain, deletes that free no space, gigabyte files that occupy
+almost nothing, and load times that depend on how many files you have rather than how
+much data.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Write three characters into a file. Ask your system how big the file is and it
+  says 3 bytes. Ask how much disk the file takes and it says
+  4,096 bytes.</p>
+  <p>Both answers come from the same operating system, about the same file, at the same
+  moment. Where did the other 4,096 minus
+  3 bytes go?</p>
+</div>
+
+<h2 id="mental-model">The mental model: a disk, and a database about it</h2>
+
+<p>A hard disk or SSD does not know what a file is. It knows one thing: it has a very
+long row of numbered slots, and you can ask for the contents of a slot or ask to put
+something in one.</p>
+
+<p>The slots are not individual bytes. The disk hands out its contents in fixed-size
+batches. 4,096 bytes is a common size, and it
+is the size on this machine. Such a batch is called a
+<span class="term">block</span>, and it is the smallest amount of disk a file can
+occupy. If you want to store one byte, you get four thousand and change, and the rest
+sits unused.</p>
+
+<p>So the disk is a row of numbered blocks and nothing more. No names, no folders, no
+file types, no dates. Which raises a question: you have a folder on your screen with
+files in it that have names and sizes and icons. Where is any of that?</p>
+
+<p>The answer is that it is on the disk too, written into some of those same blocks.
+Some blocks do not hold your documents. They hold bookkeeping <em>about</em> your
+documents: which blocks belong together, what name points at them, how they should be
+read. Think of it as a small database the operating system keeps about your bytes. That
+bookkeeping scheme is called a <span class="term">filesystem</span>. The files and
+folders you see on your desktop, on a Mac or on Windows alike, are not things sitting
+on a disk. They are that database, drawn on a screen.</p>
+
+<h3>Every file is a record in that database</h3>
+
+<p>The database has one central kind of entry. For every file, the filesystem keeps a
+small record holding the file's size, who owns it, when it was last changed, and, the
+part that matters here, the list of block numbers holding its contents. That record is
+called an <span class="term">inode</span>. It has a number, and that number is how the
+filesystem refers to the file internally.</p>
+
+<p>Read that list again and notice what is missing from it. The record holds the size,
+the dates, the owner, and the blocks. It does not hold the name.</p>
+
+<h3>The name lives in the folder, not in the file</h3>
+
+<p>The name lives in the folder. And a folder, it turns out, is a file too: a file
+whose contents are a list of pairs, each pair being a name and a record number. That is
+all a folder is. When you ask for <code>report.pdf</code>, the operating system reads
+the folder's contents, finds the pair whose name is <code>report.pdf</code>, takes the
+record number next to it, reads that record, gets the list of blocks, and asks the disk
+for those blocks.</p>
+
+<p>This has a consequence you can see with two commands, and it is the payoff of this
+module: <strong>the name and the contents are separate things.</strong> They are stored
+in different places, they are edited by different operations, and either one can exist
+without the other making any sense.</p>
+
+<p>Two names can point at the same record. Then the file has two names, both equally
+real, and there is no fact of the matter about which one is "the" file. Deleting a name
+removes one pair from one folder's list, and it does not touch the bytes. The bytes go
+away when the last name pointing at them is gone and the record says nobody is looking
+any more.</p>
+
+<h3>The record has no "type" field</h3>
+
+<p>One more thing is missing from that record: what the file <em>is</em>. There is no
+type field. A photo, a PDF, and a program are, on disk, a record and a list of blocks,
+with no difference in kind. The <code>.pdf</code> at the end of a name is part of the
+name, a hint to humans and to programs that trust hints. Rename it and nothing
+underneath changes, because there is nothing underneath to change.</p>
+
+<p>What makes a PDF a PDF is not where it lives or what it is called. It is that the
+bytes inside follow a convention that a reader can honour. That sentence is module 2's
+whole subject, and it is the floor the parsing modules stand on.</p>
+
+<h3>Why a retrieval pipeline cares</h3>
+
+<p>Everything above is why a call like <code>loader.load()</code> has a cost that has
+nothing to do with how many bytes you asked for. Reading a file means reading a folder,
+reading a record, and then asking for blocks. That is three trips before a single byte
+of your document arrives. Do it for ten thousand files and you pay for ten thousand
+folder lookups and ten thousand records. Module 4 measures exactly that.</p>
+
+<p>And storage engines, the things inside every database and every vector store, mostly
+decline to play this game. They keep one enormous file and do their own bookkeeping
+inside it, because the filesystem's bookkeeping is arranged for a different access
+pattern than theirs. You will build that kind of bookkeeping yourself in module 10.</p>
+
+<h2 id="do">Investigate it yourself</h2>
+
+<p>Every command below runs on macOS and Linux, and where the two differ, both are
+shown. On Windows, use WSL. Work in a scratch directory, for example
+<code>mkdir /tmp/floor &amp;&amp; cd /tmp/floor</code>, because you are about to make a
+file that claims to be a gigabyte.</p>
+
+<p>Or run all of it at once, which also records the numbers this page prints:</p>
+
+<figure>
+  <div class="code"><pre>python exercises/01-what-is-a-file/investigate.py</pre></div>
+</figure>
+
+<h3>1 · See the gap between size and space</h3>
+
+<div class="dual">
+  <div class="term-block">
+    <div class="term-head">macOS</div>
+<pre><span class="prompt">$</span> printf 'abc' > three.txt
+<span class="prompt">$</span> stat -x three.txt
+<span class="prompt">$</span> stat -f %k .</pre>
+  </div>
+  <div class="term-block">
+    <div class="term-head">Linux</div>
+<pre><span class="prompt">$</span> printf 'abc' > three.txt
+<span class="prompt">$</span> stat three.txt
+<span class="prompt">$</span> stat -f -c %s .</pre>
+  </div>
+</div>
+
+<p>Read the size and read the blocks. The size is 3. The blocks are counted in
+512-byte units, so multiply them out: this machine reserved
+4,096 bytes for three characters. Say the
+gap out loud: 4,096 reserved,
+3 used.</p>
+
+<h3>2 · Append a character and watch which number moves</h3>
+
+<figure>
+  <div class="code"><pre>printf 'd' >> three.txt
+stat -x three.txt      # macOS       (stat three.txt on Linux)</pre></div>
+</figure>
+
+<p>The size moves from 3 to 4. Watch what the blocks do. Then find the edge: write a
+file of exactly 4,096 bytes, then one of
+4,097, and compare the two.</p>
+
+<h3>3 · Give one file two names</h3>
+
+<figure>
+  <div class="code"><pre>ls -i three.txt              # the record number
+ln three.txt also-three.txt  # a second name for the same record
+ls -li three.txt also-three.txt</pre></div>
+</figure>
+
+<p>Both names show one record number. Which one is "the" file?</p>
+
+<h3>4 · Delete one of the names</h3>
+
+<figure>
+  <div class="code"><pre>rm three.txt
+cat also-three.txt</pre></div>
+</figure>
+
+<p>The other name still works. Ask yourself what <code>rm</code> actually removed.</p>
+
+<h3>5 · Make a file that claims a gigabyte</h3>
+
+<div class="dual">
+  <div class="term-block">
+    <div class="term-head">macOS &amp; Linux (coreutils)</div>
+<pre><span class="prompt">$</span> truncate -s 1G big.img
+<span class="prompt">$</span> ls -l big.img
+<span class="prompt">$</span> du -h big.img</pre>
+  </div>
+  <div class="term-block">
+    <div class="term-head">macOS without coreutils</div>
+<pre><span class="prompt">$</span> mkfile -n 1g big.img
+<span class="prompt">$</span> ls -l big.img
+<span class="prompt">$</span> du -h big.img</pre>
+  </div>
+</div>
+
+<p><code>ls</code> reads the size field in the record. <code>du</code> adds up the
+blocks. They disagree by a gigabyte.</p>
+
+<h3>6 · Rename a PNG and see who notices</h3>
+
+<figure>
+  <div class="code"><pre>file icon.png
+mv icon.png notes.txt
+file notes.txt
+head -c 8 notes.txt | xxd       # or: head -c 8 notes.txt | hexdump -C</pre></div>
+</figure>
+
+<p><code>file</code> gives the same answer both times, because it never looked at the
+name. It looked at the first few bytes.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<p>Your absolute numbers depend on your filesystem. The shapes below do not.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/01-what-is-a-file/investigate.py on this machine</caption>
+  <thead><tr><th>what you did</th><th class="num">size says</th><th class="num">disk reserved</th></tr></thead>
+  <tbody>
+    <tr><td>wrote 3 characters</td>
+        <td class="num">3 B</td>
+        <td class="num">4,096 B</td></tr>
+    <tr><td>appended a 4th character</td>
+        <td class="num">4 B</td>
+        <td class="num">4,096 B</td></tr>
+    <tr><td>filled the block exactly</td>
+        <td class="num">4,096 B</td>
+        <td class="num">4,096 B</td></tr>
+    <tr><td>wrote one byte past it</td>
+        <td class="num">4,097 B</td>
+        <td class="num">8,192 B</td></tr>
+    <tr class="lose"><td>claimed a gigabyte with <code>truncate</code></td>
+        <td class="num">1.0GB</td>
+        <td class="num">0B</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Four things to have seen:</p>
+
+<ul>
+  <li><strong>The gap.</strong> Three characters reserved
+  4,096 bytes, which is one whole block.
+  The disk will not hand out less.</li>
+  <li><strong>Size moved, blocks didn't.</strong> Appending a character changed the
+  size field in the record and nothing else, because the byte fit in a block that was
+  already reserved. The reservation moves at exactly one byte past the block: at
+  4,096 bytes of content the file still
+  holds 4,096 bytes of disk, and at
+  4,097 it holds
+  8,192.</li>
+  <li><strong>Two names, one record.</strong> After <code>ln</code>, both names showed
+  the same number and the record said
+  2 names point here. After <code>rm</code>
+  it said 1, and the surviving name still read
+  the same bytes.</li>
+  <li><strong>A gigabyte that isn't there.</strong> The size field says
+  1.0GB, and <code>du</code> says
+  0B. Nothing was written, so no blocks were taken. The
+  record is a claim, not the contents.</li>
+</ul>
+
+<p>And here is the ratio to keep, because your pipeline lives in it. The corpus in
+<code>data/corpus_small/files</code> holds
+37.2MB of text in
+10,000 files averaging
+3.8KB each. Those files reserve
+48.5MB of disk, which is
+1.30× the text, because every file rounds up
+to a whole number of blocks.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Work backwards from the gap. Three characters took a whole block because a block is
+the unit the hardware trades in. The filesystem cannot reserve part of one, so it
+reserves one, writes three bytes into the front of it, and records in the file's own
+record that the useful length is 3. Two numbers are doing two different jobs: one says
+how much space is held, and the other says how much of that space means anything.</p>
+
+<p>That is also why the fourth character was free. The block was already yours. The
+write went into space already reserved, and the only thing that changed was the length
+field. Fill the block exactly, all
+4,096 bytes of it, and you still hold
+one block. Write one more byte and you hold
+8,192. The reservation does
+not grow gradually. It doubles in a single step, because half a block is not a thing
+the hardware trades in.</p>
+
+<p>Now the gigabyte. <code>truncate</code> set the length field to a billion and wrote
+nothing. <code>ls -l</code> printed the length field, so it reported a gigabyte.
+<code>du</code> added up the blocks, found almost none, and reported almost nothing.
+Neither tool is lying. They read different fields, because a file's stated length and
+its actual occupancy were never the same fact. Files like this are called
+<span class="term">sparse</span>, and they are how a virtual machine can have a 500 GB
+disk image on a 256 GB laptop.</p>
+
+<p>The hard link is the sharpest of the four. <code>ln</code> did not copy anything. It
+added one pair, a name and a record number, to a folder's list, and bumped the count in
+the record that says how many names point here. Two entries, one record, one set of
+blocks. Nothing in the system marks one as the original, because nothing in the system
+needs to. <code>rm</code> removed a pair from a list and decremented the count. The
+contents only become free when that count reaches zero.</p>
+
+<p>Which is why "the file" is a slightly wrong idea. There is a record, and there are
+names pointing at it. Usually there is one name, and the shorthand does no harm, until
+you meet a link, or a delete that frees no space, and the shorthand stops predicting
+what you see.</p>
+
+<p>Then the rename. Nothing about a file's contents is recorded anywhere except in the
+contents. The <code>.png</code> was a hint in a folder's list. <code>file</code>
+ignores hints. It reads the first bytes and compares them against a table of known
+openings, and the bytes it found, <code>89 50 4e 47</code>, are the PNG signature that
+the PNG specification says every PNG starts with. The name changed, the bytes did not,
+and only one of those two things was ever the evidence.</p>
+
+<p>All of which sets up the number you will care about most. Your corpus wastes
+11.3MB on block rounding, but that is the small
+cost. The large one is that opening each of those
+10,000 files means walking this machinery from the
+top: find the folder, read the list, get the record, get the block list, ask for
+blocks. Ten thousand times over. Module 4 puts a stopwatch on it.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>loader.load()</code> now has a floor under it. It
+does not "get the file". It consults a database the operating system keeps about your
+bytes, and then asks the hardware for specific numbered blocks.
+<strong>Backward:</strong> there is nothing behind this module yet, because it is the
+floor. Ahead, the same move repeats at bigger radius three times: the filesystem keeps
+bookkeeping so a name becomes cheap to resolve, module 7's index keeps bookkeeping so a
+word becomes cheap to find, and module 14's tables keep bookkeeping so a total becomes
+cheap to compute.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Both halves of that sentence are already here. The bytes
+<code>89 50 4e 47</code> mean "PNG" only by agreement. The block is the cost of
+arranging anything at all.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Petrov, <span class="title">Database Internals</span>, Part I
+  opening.</strong> Read the first pages on blocks and pages. Expect it to explain why
+  database engines keep their own bookkeeping inside one large file instead of trusting
+  the filesystem's. You have just seen the bookkeeping they decline to use.</p>
+
+  <ol>
+    <li>A file reports a size of 10 bytes and reserves
+    4,096. You append 10 more bytes. What
+    changes on disk, and what changes in the record?</li>
+    <li>You delete a 4 GB file and free space does not go up. Give two explanations
+    consistent with what you saw in this module.</li>
+    <li>Someone hands you a file called <code>data.csv</code>. What is the cheapest way
+    to find out whether it really is one, and why is the name not evidence?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If <code>stat</code> reports blocks that don't multiply out to a multiple of
+    4,096, your filesystem may store very
+    small files inside the record itself rather than in a separate block. APFS, ext4
+    and Btrfs all do a version of this. The gap is then smaller than shown here, and
+    the lesson is unchanged: the length field and the occupancy are separate facts.</p>
+    <p>If <code>ln</code> fails with "Operation not permitted", you are probably on a
+    filesystem that doesn't support hard links, such as an exFAT or FAT32 drive. Run it
+    under <code>/tmp</code> instead.</p>
+    <p>If <code>du</code> reports the full gigabyte, your filesystem does not do sparse
+    files, and some do not. Compare <code>ls -l</code> against <code>du</code> on a
+    normal file instead: they will agree, and that agreement is the thing to
+    notice.</p>
+  </div>
+</div>
+<button class="done-toggle" type="button" aria-pressed="false" data-module="01-what-is-a-file"><span class="box"></span><span class="label">mark this module complete</span></button><nav class="modnav"><a class="prev" href="../index.html"><span class="dir">previous</span><span class="name">00 · The pipeline, working</span></a><a class="next" href="02-bytes-text.html"><span class="dir">next</span><span class="name">02 · How text becomes bytes</span></a></nav></main></div></div><script src="../assets/site.js"></script>
+</body>
+</html>

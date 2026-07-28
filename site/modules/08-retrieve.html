@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 · Retrieve — how results get ranked — Beneath the Pipeline</title>
+<meta name="description" content="Four thousand passages match. The pipeline returns four. Which four?">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead"><div class="masthead-inner"><div class="brandrow"><a class="brand" href="../index.html"><b>Beneath the Pipeline</b> &nbsp;/&nbsp; part ii · the pipeline, one line at a time</a><span class="progress-label">08 / 15</span></div><nav class="strip" aria-label="the pipeline"><a class="stage done" href="04-load.html" title="load() — built in module 4; stressed in module 9"><span class="n">04·09</span>load</a><a class="stage done" href="05-parse.html" title="parse() — built in module 5; stressed in module 13"><span class="n">05·13</span>parse</a><a class="stage done" href="06-chunk-embed.html" title="chunk() — built in module 6"><span class="n">06</span>chunk</a><a class="stage done" href="06-chunk-embed.html" title="embed() — built in module 6; stressed in module 12"><span class="n">06·12</span>embed</a><a class="stage done" href="07-index.html" title="index() — built in module 7; stressed in module 9, 10, 12"><span class="n">07·09·10·12</span>index</a><a class="stage here" href="08-retrieve.html" title="retrieve() — built in module 8; stressed in module 11, 14"><span class="n">08·11·14</span>retrieve</a></nav><div class="lane2"><span class="spacer"></span><a class="branch" href="14-what-vectors-cant-answer.html" title="module 14 — the structured path">14 · structured</a></div></div></header><div class="wrap"><div class="layout"><div class="gutter" aria-hidden="true"><div class="marks"><div>0000</div><div>0010</div><div>0020</div><div>0030</div><div>0040</div><div>0050</div><div>0060</div><div>0070</div><div>0080</div><div>0090</div><div>00a0</div><div>00b0</div><div>00c0</div><div>00d0</div><div>00e0</div><div>00f0</div><div>0100</div><div>0110</div><div>0120</div><div>0130</div><div>0140</div><div>0150</div><div>0160</div><div>0170</div><div>0180</div><div>0190</div><div>01a0</div><div>01b0</div><div>01c0</div><div>01d0</div><div>01e0</div><div>01f0</div><div>0200</div><div>0210</div><div>0220</div><div>0230</div><div>0240</div><div>0250</div><div>0260</div><div>0270</div><div>0280</div><div>0290</div><div>02a0</div><div>02b0</div><div>02c0</div><div>02d0</div><div>02e0</div><div>02f0</div><div>0300</div><div>0310</div><div>0320</div><div>0330</div><div>0340</div><div>0350</div><div>0360</div><div>0370</div><div>0380</div><div>0390</div><div>03a0</div><div>03b0</div><div>03c0</div><div>03d0</div><div>03e0</div><div>03f0</div><div>0400</div><div>0410</div><div>0420</div><div>0430</div><div>0440</div><div>0450</div><div>0460</div><div>0470</div><div>0480</div><div>0490</div><div>04a0</div><div>04b0</div><div>04c0</div><div>04d0</div><div>04e0</div><div>04f0</div><div>0500</div><div>0510</div><div>0520</div><div>0530</div><div>0540</div><div>0550</div><div>0560</div><div>0570</div><div>0580</div><div>0590</div><div>05a0</div><div>05b0</div><div>05c0</div><div>05d0</div><div>05e0</div><div>05f0</div><div>0600</div><div>0610</div><div>0620</div><div>0630</div><div>0640</div><div>0650</div><div>0660</div><div>0670</div><div>0680</div><div>0690</div><div>06a0</div><div>06b0</div><div>06c0</div><div>06d0</div><div>06e0</div><div>06f0</div><div>0700</div><div>0710</div><div>0720</div><div>0730</div><div>0740</div><div>0750</div><div>0760</div><div>0770</div><div>0780</div><div>0790</div><div>07a0</div><div>07b0</div><div>07c0</div><div>07d0</div><div>07e0</div><div>07f0</div><div>0800</div><div>0810</div><div>0820</div><div>0830</div><div>0840</div><div>0850</div><div>0860</div><div>0870</div><div>0880</div><div>0890</div><div>08a0</div><div>08b0</div><div>08c0</div><div>08d0</div><div>08e0</div><div>08f0</div><div>0900</div><div>0910</div><div>0920</div><div>0930</div><div>0940</div><div>0950</div><div>0960</div><div>0970</div><div>0980</div><div>0990</div><div>09a0</div><div>09b0</div><div>09c0</div><div>09d0</div><div>09e0</div><div>09f0</div><div>0a00</div><div>0a10</div><div>0a20</div><div>0a30</div><div>0a40</div><div>0a50</div><div>0a60</div><div>0a70</div><div>0a80</div><div>0a90</div><div>0aa0</div><div>0ab0</div><div>0ac0</div><div>0ad0</div><div>0ae0</div><div>0af0</div><div>0b00</div><div>0b10</div><div>0b20</div><div>0b30</div><div>0b40</div><div>0b50</div><div>0b60</div><div>0b70</div><div>0b80</div><div>0b90</div><div>0ba0</div><div>0bb0</div><div>0bc0</div><div>0bd0</div><div>0be0</div><div>0bf0</div><div>0c00</div><div>0c10</div><div>0c20</div><div>0c30</div><div>0c40</div><div>0c50</div><div>0c60</div><div>0c70</div><div>0c80</div><div>0c90</div><div>0ca0</div><div>0cb0</div><div>0cc0</div><div>0cd0</div><div>0ce0</div><div>0cf0</div><div>0d00</div><div>0d10</div><div>0d20</div><div>0d30</div><div>0d40</div><div>0d50</div><div>0d60</div><div>0d70</div><div>0d80</div><div>0d90</div><div>0da0</div><div>0db0</div><div>0dc0</div><div>0dd0</div><div>0de0</div><div>0df0</div><div>0e00</div><div>0e10</div><div>0e20</div><div>0e30</div><div>0e40</div><div>0e50</div><div>0e60</div><div>0e70</div><div>0e80</div><div>0e90</div><div>0ea0</div><div>0eb0</div><div>0ec0</div><div>0ed0</div><div>0ee0</div><div>0ef0</div><div>0f00</div><div>0f10</div><div>0f20</div><div>0f30</div><div>0f40</div><div>0f50</div><div>0f60</div><div>0f70</div><div>0f80</div><div>0f90</div><div>0fa0</div><div>0fb0</div><div>0fc0</div><div>0fd0</div><div>0fe0</div><div>0ff0</div><div>1000</div><div>1010</div><div>1020</div><div>1030</div><div>1040</div><div>1050</div><div>1060</div><div>1070</div><div>1080</div><div>1090</div><div>10a0</div><div>10b0</div><div>10c0</div><div>10d0</div><div>10e0</div><div>10f0</div><div>1100</div><div>1110</div><div>1120</div><div>1130</div><div>1140</div><div>1150</div><div>1160</div><div>1170</div><div>1180</div><div>1190</div><div>11a0</div><div>11b0</div><div>11c0</div><div>11d0</div><div>11e0</div><div>11f0</div><div>1200</div><div>1210</div><div>1220</div><div>1230</div><div>1240</div><div>1250</div><div>1260</div><div>1270</div><div>1280</div><div>1290</div><div>12a0</div><div>12b0</div><div>12c0</div><div>12d0</div><div>12e0</div><div>12f0</div><div>1300</div><div>1310</div><div>1320</div><div>1330</div><div>1340</div><div>1350</div><div>1360</div><div>1370</div><div>1380</div><div>1390</div><div>13a0</div><div>13b0</div><div>13c0</div><div>13d0</div><div>13e0</div><div>13f0</div><div>1400</div><div>1410</div><div>1420</div><div>1430</div><div>1440</div><div>1450</div><div>1460</div><div>1470</div><div>1480</div><div>1490</div><div>14a0</div><div>14b0</div><div>14c0</div><div>14d0</div><div>14e0</div><div>14f0</div><div>1500</div><div>1510</div><div>1520</div><div>1530</div><div>1540</div><div>1550</div><div>1560</div><div>1570</div><div>1580</div><div>1590</div><div>15a0</div><div>15b0</div><div>15c0</div><div>15d0</div><div>15e0</div><div>15f0</div><div>1600</div><div>1610</div><div>1620</div><div>1630</div><div>1640</div><div>1650</div><div>1660</div><div>1670</div><div>1680</div><div>1690</div><div>16a0</div><div>16b0</div><div>16c0</div><div>16d0</div><div>16e0</div><div>16f0</div><div>1700</div><div>1710</div><div>1720</div><div>1730</div><div>1740</div><div>1750</div><div>1760</div><div>1770</div><div>1780</div><div>1790</div><div>17a0</div><div>17b0</div><div>17c0</div><div>17d0</div><div>17e0</div><div>17f0</div><div>1800</div><div>1810</div><div>1820</div><div>1830</div><div>1840</div><div>1850</div><div>1860</div><div>1870</div><div>1880</div><div>1890</div><div>18a0</div><div>18b0</div><div>18c0</div><div>18d0</div><div>18e0</div><div>18f0</div><div>1900</div><div>1910</div><div>1920</div><div>1930</div><div>1940</div><div>1950</div><div>1960</div><div>1970</div><div>1980</div><div>1990</div><div>19a0</div><div>19b0</div><div>19c0</div><div>19d0</div><div>19e0</div><div>19f0</div><div>1a00</div><div>1a10</div><div>1a20</div><div>1a30</div><div>1a40</div><div>1a50</div><div>1a60</div><div>1a70</div><div>1a80</div><div>1a90</div><div>1aa0</div><div>1ab0</div><div>1ac0</div><div>1ad0</div><div>1ae0</div><div>1af0</div><div>1b00</div><div>1b10</div><div>1b20</div><div>1b30</div><div>1b40</div><div>1b50</div><div>1b60</div><div>1b70</div><div>1b80</div><div>1b90</div><div>1ba0</div><div>1bb0</div><div>1bc0</div><div>1bd0</div><div>1be0</div><div>1bf0</div><div>1c00</div><div>1c10</div><div>1c20</div><div>1c30</div><div>1c40</div><div>1c50</div><div>1c60</div><div>1c70</div><div>1c80</div><div>1c90</div><div>1ca0</div><div>1cb0</div><div>1cc0</div><div>1cd0</div><div>1ce0</div><div>1cf0</div><div>1d00</div><div>1d10</div><div>1d20</div><div>1d30</div><div>1d40</div><div>1d50</div><div>1d60</div><div>1d70</div><div>1d80</div><div>1d90</div><div>1da0</div><div>1db0</div><div>1dc0</div><div>1dd0</div><div>1de0</div><div>1df0</div><div>1e00</div><div>1e10</div><div>1e20</div><div>1e30</div><div>1e40</div><div>1e50</div><div>1e60</div><div>1e70</div><div>1e80</div><div>1e90</div><div>1ea0</div><div>1eb0</div><div>1ec0</div><div>1ed0</div><div>1ee0</div><div>1ef0</div><div>1f00</div><div>1f10</div><div>1f20</div><div>1f30</div><div>1f40</div><div>1f50</div><div>1f60</div><div>1f70</div><div>1f80</div><div>1f90</div><div>1fa0</div><div>1fb0</div><div>1fc0</div><div>1fd0</div><div>1fe0</div><div>1ff0</div><div>2000</div><div>2010</div><div>2020</div><div>2030</div><div>2040</div><div>2050</div><div>2060</div><div>2070</div><div>2080</div><div>2090</div><div>20a0</div><div>20b0</div><div>20c0</div><div>20d0</div><div>20e0</div><div>20f0</div><div>2100</div><div>2110</div><div>2120</div><div>2130</div><div>2140</div><div>2150</div><div>2160</div><div>2170</div><div>2180</div><div>2190</div><div>21a0</div><div>21b0</div><div>21c0</div><div>21d0</div><div>21e0</div><div>21f0</div><div>2200</div><div>2210</div><div>2220</div><div>2230</div><div>2240</div><div>2250</div><div>2260</div><div>2270</div><div>2280</div><div>2290</div><div>22a0</div><div>22b0</div><div>22c0</div><div>22d0</div><div>22e0</div><div>22f0</div><div>2300</div><div>2310</div><div>2320</div><div>2330</div><div>2340</div><div>2350</div><div>2360</div><div>2370</div><div>2380</div><div>2390</div><div>23a0</div><div>23b0</div><div>23c0</div><div>23d0</div><div>23e0</div><div>23f0</div><div>2400</div><div>2410</div><div>2420</div><div>2430</div><div>2440</div><div>2450</div><div>2460</div><div>2470</div><div>2480</div><div>2490</div><div>24a0</div><div>24b0</div><div>24c0</div><div>24d0</div><div>24e0</div><div>24f0</div><div>2500</div><div>2510</div><div>2520</div><div>2530</div><div>2540</div><div>2550</div><div>2560</div><div>2570</div><div>2580</div><div>2590</div><div>25a0</div><div>25b0</div><div>25c0</div><div>25d0</div><div>25e0</div><div>25f0</div><div>2600</div><div>2610</div><div>2620</div><div>2630</div><div>2640</div><div>2650</div><div>2660</div><div>2670</div><div>2680</div><div>2690</div><div>26a0</div><div>26b0</div><div>26c0</div><div>26d0</div><div>26e0</div><div>26f0</div><div>2700</div><div>2710</div><div>2720</div><div>2730</div><div>2740</div><div>2750</div><div>2760</div><div>2770</div><div>2780</div><div>2790</div><div>27a0</div><div>27b0</div><div>27c0</div><div>27d0</div><div>27e0</div><div>27f0</div><div>2800</div><div>2810</div><div>2820</div><div>2830</div><div>2840</div><div>2850</div><div>2860</div><div>2870</div><div>2880</div><div>2890</div><div>28a0</div><div>28b0</div><div>28c0</div><div>28d0</div><div>28e0</div><div>28f0</div><div>2900</div><div>2910</div><div>2920</div><div>2930</div><div>2940</div><div>2950</div><div>2960</div><div>2970</div><div>2980</div><div>2990</div><div>29a0</div><div>29b0</div><div>29c0</div><div>29d0</div><div>29e0</div><div>29f0</div><div>2a00</div><div>2a10</div><div>2a20</div><div>2a30</div><div>2a40</div><div>2a50</div><div>2a60</div><div>2a70</div><div>2a80</div><div>2a90</div><div>2aa0</div><div>2ab0</div><div>2ac0</div><div>2ad0</div><div>2ae0</div><div>2af0</div><div>2b00</div><div>2b10</div><div>2b20</div><div>2b30</div><div>2b40</div><div>2b50</div><div>2b60</div><div>2b70</div><div>2b80</div><div>2b90</div><div>2ba0</div><div>2bb0</div><div>2bc0</div><div>2bd0</div><div>2be0</div><div>2bf0</div><div>2c00</div><div>2c10</div><div>2c20</div><div>2c30</div><div>2c40</div><div>2c50</div><div>2c60</div><div>2c70</div><div>2c80</div><div>2c90</div><div>2ca0</div><div>2cb0</div><div>2cc0</div><div>2cd0</div><div>2ce0</div><div>2cf0</div><div>2d00</div><div>2d10</div><div>2d20</div><div>2d30</div><div>2d40</div><div>2d50</div><div>2d60</div><div>2d70</div><div>2d80</div><div>2d90</div><div>2da0</div><div>2db0</div><div>2dc0</div><div>2dd0</div><div>2de0</div><div>2df0</div><div>2e00</div><div>2e10</div><div>2e20</div><div>2e30</div><div>2e40</div><div>2e50</div><div>2e60</div><div>2e70</div><div>2e80</div><div>2e90</div><div>2ea0</div><div>2eb0</div><div>2ec0</div><div>2ed0</div><div>2ee0</div><div>2ef0</div><div>2f00</div><div>2f10</div><div>2f20</div><div>2f30</div><div>2f40</div><div>2f50</div><div>2f60</div><div>2f70</div><div>2f80</div><div>2f90</div><div>2fa0</div><div>2fb0</div><div>2fc0</div><div>2fd0</div><div>2fe0</div><div>2ff0</div><div>3000</div><div>3010</div><div>3020</div><div>3030</div><div>3040</div><div>3050</div><div>3060</div><div>3070</div><div>3080</div><div>3090</div><div>30a0</div><div>30b0</div><div>30c0</div><div>30d0</div><div>30e0</div><div>30f0</div><div>3100</div><div>3110</div><div>3120</div><div>3130</div><div>3140</div><div>3150</div><div>3160</div><div>3170</div><div>3180</div><div>3190</div><div>31a0</div><div>31b0</div><div>31c0</div><div>31d0</div><div>31e0</div><div>31f0</div><div>3200</div><div>3210</div><div>3220</div><div>3230</div><div>3240</div><div>3250</div><div>3260</div><div>3270</div><div>3280</div><div>3290</div><div>32a0</div><div>32b0</div><div>32c0</div><div>32d0</div><div>32e0</div><div>32f0</div><div>3300</div><div>3310</div><div>3320</div><div>3330</div><div>3340</div><div>3350</div><div>3360</div><div>3370</div><div>3380</div><div>3390</div><div>33a0</div><div>33b0</div><div>33c0</div><div>33d0</div><div>33e0</div><div>33f0</div><div>3400</div><div>3410</div><div>3420</div><div>3430</div><div>3440</div><div>3450</div><div>3460</div><div>3470</div><div>3480</div><div>3490</div><div>34a0</div><div>34b0</div><div>34c0</div><div>34d0</div><div>34e0</div><div>34f0</div><div>3500</div><div>3510</div><div>3520</div><div>3530</div><div>3540</div><div>3550</div><div>3560</div><div>3570</div><div>3580</div><div>3590</div><div>35a0</div><div>35b0</div><div>35c0</div><div>35d0</div><div>35e0</div><div>35f0</div><div>3600</div><div>3610</div><div>3620</div><div>3630</div><div>3640</div><div>3650</div><div>3660</div><div>3670</div><div>3680</div><div>3690</div><div>36a0</div><div>36b0</div><div>36c0</div><div>36d0</div><div>36e0</div><div>36f0</div><div>3700</div><div>3710</div><div>3720</div><div>3730</div><div>3740</div><div>3750</div><div>3760</div><div>3770</div><div>3780</div><div>3790</div><div>37a0</div><div>37b0</div><div>37c0</div><div>37d0</div><div>37e0</div><div>37f0</div><div>3800</div><div>3810</div><div>3820</div><div>3830</div></div></div><main class="col"><p class="kicker learn">Part II · module 8 · build · 60–90 minutes</p>
+<h1><span class="num">08 ·</span> Retrieve — how results get ranked</h1>
+<p class="hook">This module opens up <code>retrieve()</code>'s silent ranking, and asks
+the question every tutorial skips: how would you know if the ranking is bad?</p>
+
+<h2 id="what">What ranking is, and why it needs measuring</h2>
+
+<p>Module 7 made finding cheap. Ask the index for a word and it hands you every passage
+containing it, instantly. But "every passage containing it" is thousands of passages,
+and the user gets ten. So something has to put the thousands in order, and that
+something is a <span class="term">scorer</span>: a function that takes the query and a
+document and returns a number, where a higher number is supposed to mean more relevant.
+Sort by the number, return the top of the list, and that is retrieval.</p>
+
+<p>The whole question is what function to use. In this module you build four, in
+increasing order of sophistication: counting the query's words in each document,
+weighting those counts by how rare each word is, the tuned version of that idea the
+field settled on after forty years, and module 6's cosine similarity over vectors.</p>
+
+<p>And then you build the more important thing, which is the instrument that says
+whether any of them works. Ranking functions are easy to have opinions about and hard
+to be right about, so the field measures them: take real queries where a human has
+marked which passage answers each one, run the scorer, and check where the marked
+passages landed. The second half of this module builds that harness, and the harness is
+what every later module in the site uses to keep itself honest.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>A median query in this corpus matches
+  41,070 passages. Some queries match
+  98,758.</p>
+  <p>The pipeline returns 10 of them.</p>
+  <p>Which 10, decided by whom? And if the
+  decision were bad, how would you ever find out?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/08-retrieve/starter.py</code>. It has five
+<code>TODO</code>s: three scorers, then the two measurements that tell you whether a
+scorer is any good. The measurements are the module.</p>
+
+<figure>
+  <div class="code"><pre>python exercises/08-retrieve/starter.py --queries 200
+python exercises/08-retrieve/verify.py</pre></div>
+</figure>
+
+<h3>Write three scorers</h3>
+
+<p>Start with the obvious one: add up how often the query's words appear in each
+document. Then write <span class="term">tf-idf</span>, which fixes two things at once.
+It damps repeated occurrences, so the tenth counts for less than the first, and it
+weights each word by how rare it is, because a word in every document tells you
+nothing. Then write <span class="term">BM25</span>, the same two ideas tuned by forty
+years of measurement, with two knobs: <code>k1</code> for how fast extra occurrences
+stop helping, and <code>b</code> for how hard long documents are penalised.</p>
+
+<h3>Then build the measuring instrument</h3>
+
+<p>Build the harness. <span class="term">Precision@10</span> asks what fraction of the
+ten you returned were relevant. <span class="term">NDCG@10</span> asks the same thing
+but pays more for being right early, discounting each position logarithmically. Both
+need <span class="term">relevance judgments</span>, which are records of a human
+saying, for a real query, which passages actually answer it. MS MARCO ships
+6,980 of them for this corpus, which is the
+reason the site uses it.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>Where the four scorers land</h3>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 138" preserveAspectRatio="xMinYMin meet" role="img" aria-label="NDCG@10 by scorer"><text class="lbl" x="0" y="21">term counts</text><rect class="bar alt" x="118" y="11" width="36.9" height="14"></rect><text x="160.9" y="22">0.0872</text><text class="lbl" x="0" y="47">tf-idf</text><rect class="bar" x="118" y="37" width="259.5" height="14"></rect><text x="383.5" y="48">0.6138</text><text class="lbl" x="0" y="73">BM25</text><rect class="bar" x="118" y="63" width="288.7" height="14"></rect><text x="412.7" y="74">0.6829</text><text class="lbl" x="0" y="99">dense vectors</text><rect class="bar" x="118" y="89" width="368.0" height="14"></rect><text x="492.0" y="100">0.8704</text><line class="base" x1="118" y1="8" x2="118" y2="112"></line><text class="axis-title" x="118" y="132">NDCG@10 over 1,000 judged queries — higher is better</text></svg>
+<figcaption>NDCG@10 over 1,000 judged queries at
+100,000 passages</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/08-retrieve/solution.py</caption>
+  <thead><tr><th>scorer</th><th class="num">P@10</th><th class="num">NDCG@10</th>
+    <th class="num">MRR@10</th><th class="num">median per query</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td>raw term counts</td>
+      <td class="num">0.0162</td>
+      <td class="num">0.0872</td>
+      <td class="num">0.0675</td>
+      <td class="num">22.9ms</td></tr>
+    <tr><td>tf-idf</td>
+      <td class="num">0.0833</td>
+      <td class="num">0.6138</td>
+      <td class="num">0.5700</td>
+      <td class="num">39.6ms</td></tr>
+    <tr><td>BM25</td>
+      <td class="num">0.0871</td>
+      <td class="num">0.6829</td>
+      <td class="num">0.6487</td>
+      <td class="num">1.6ms</td></tr>
+    <tr class="win"><td>dense vectors, brute force</td>
+      <td class="num">0.1035</td>
+      <td class="num">0.8704</td>
+      <td class="num">0.8464</td>
+      <td class="num">4.2ms</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="aside">
+  <span class="aside-label">read the last row carefully</span>
+  all-MiniLM-L6-v2 was trained on data that includes MS MARCO, so its score here flatters it relative to a corpus it has never seen. The comparison is honest about ordering on THIS benchmark and should not be read as &#x27;dense beats BM25 by 0.19 everywhere&#x27;.
+</div>
+
+<h3>What raw term counts actually gets wrong</h3>
+
+<p>The textbook complaint is that long documents win. Check it here before repeating
+it. These passages run from 35 tokens at the
+tenth percentile to 93 at the ninetieth, and the
+top ten by raw term count average
+59 tokens against a
+corpus average of
+58. <strong>On this
+corpus, there is no length bias to see.</strong> The passages are too uniform for it to
+bite.</p>
+
+<p>So the collapse to
+0.0872 has a different cause, and it is
+measurable: <strong>53% of a raw term-count
+score comes from stopwords.</strong> Words like <em>the</em> and <em>of</em> appear in
+almost every passage, many times each, so a scorer that counts occurrences is mostly
+ranking by how often a document says "the".</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">query: Androgen receptor define</div>
+<pre class="out">raw term counts, top hit
+  We created define nutrition for one reason: To help others Fulfill Their Potential. Therefore, at define nutrition, we only make supplements that work. define[isolate] fruit punch. define[isolate] strawberry kiwi. define[isolate] …
+
+BM25, top hit
+  The androgen receptor (AR), also known as NR3C4 (nuclear receptor subfamily 3, group C, member 4), is a type of nuclear receptor that is activated by binding either of the androgenic hormones, testosterone, or dihydrotestosterone …</pre>
+  </div>
+</figure>
+
+<h3>The changes that sound better and rank worse</h3>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 138" preserveAspectRatio="xMinYMin meet" role="img" aria-label="change in NDCG@10 from four plausible tweaks"><text class="lbl" x="0" y="21">drop stopwords</text><rect class="bar" x="321.0" y="11" width="25.0" height="14"></rect><text x="352.0" y="22" text-anchor="start">+0.0052</text><text class="lbl" x="0" y="47">b 0.75 → 1</text><rect class="bar alt" x="282.8" y="37" width="38.2" height="14"></rect><text x="276.8" y="48" text-anchor="end">-0.0080</text><text class="lbl" x="0" y="73">k1 1.2 → 2.5</text><rect class="bar alt" x="154.1" y="63" width="166.9" height="14"></rect><text x="148.1" y="74" text-anchor="end">-0.0349</text><text class="lbl" x="0" y="99">b 0.75 → 0</text><rect class="bar alt" x="150.0" y="89" width="171.0" height="14"></rect><text x="144.0" y="100" text-anchor="end">-0.0357</text><line class="base" x1="321.0" y1="8" x2="321.0" y2="112"></line><text class="axis-title" x="0" y="132">change in NDCG@10 against the BM25 baseline</text></svg>
+<figcaption>change in NDCG@10 against the BM25 baseline of
+0.6829. magenta is worse</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>the change</th><th>the reasoning</th><th class="num">NDCG@10</th><th class="num">Δ</th></tr></thead>
+  <tbody>
+    <tr><td>drop stopwords</td><td>"stopwords are noise"</td>
+      <td class="num">0.6881</td>
+      <td class="num">0.0052</td></tr>
+    <tr class="lose"><td>raise <code>k1</code> to 2.5</td><td>"reward repeated terms more"</td>
+      <td class="num">0.6480</td>
+      <td class="num">-0.0349</td></tr>
+    <tr class="lose"><td>set <code>b</code> to 0</td><td>"stop penalising long documents"</td>
+      <td class="num">0.6471</td>
+      <td class="num">-0.0357</td></tr>
+    <tr class="lose"><td>set <code>b</code> to 1</td><td>"penalise long documents fully"</td>
+      <td class="num">0.6749</td>
+      <td class="num">-0.0080</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>3 of
+4 plausible improvements made the ranking
+worse.</strong> Every one of them has a story you could tell a colleague, and three of
+the four stories are wrong on this corpus. Notice also that the one change that helped,
+dropping stopwords, helped by
+0.0052, which is smaller than the
+damage any of the others did.</p>
+
+<p>That moment is the point of the module. Without the harness, all four of those
+changes ship.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Work backwards from the collapse. Raw term counts scored
+0.0872 because it treats every word as
+equally informative, and 53% of the words in a
+query are not informative at all. tf-idf fixed that with one idea, weighting each word
+by its rarity, and the score went to
+0.6138. A word appearing in every document gets a
+weight near zero, so <em>the</em> stops voting.</p>
+
+<p>BM25 added the second idea. Occurrences should have diminishing returns, because a
+document saying "block" ten times is not ten times more about blocks than one saying it
+once. <code>k1</code> controls how fast that curve flattens, and <code>b</code>
+controls how much a document's length discounts its term counts. Those two knobs took
+the score to 0.6829. BM25 also ran faster here,
+39.6ms down to
+1.6ms per query, because the vectorised
+version does one array operation per query term.</p>
+
+<p>Then the vectors. Dense retrieval scored
+0.8704, and it does something the word scorers
+structurally cannot: it finds passages that answer the question in different words. It
+also costs 4.2ms per query against BM25's
+1.6ms, because it compares against every
+vector in the corpus. Module 12 is about buying that time back and what the purchase
+costs.</p>
+
+<h3>Relevance is measured, not asserted</h3>
+
+<p>Here is the sentence to take out of this module.</p>
+
+<p>Every ranking decision you make is a hypothesis. "Rare words matter more" is a
+hypothesis. "Long documents should be penalised" is a hypothesis. "Dense beats sparse"
+is a hypothesis. Each one is plausible, each one has a mechanism behind it, and you
+just watched three plausible hypotheses with good mechanisms behind them make things
+worse.</p>
+
+<p>Without judgments, you cannot tell the difference between a change that helped and a
+change you like. You tune by anecdote: you try a query you remember, the result looks
+better, you ship. The harness replaces that with a number over
+1,000 queries you did not choose.</p>
+
+<p>It has limits, and they are worth stating. NDCG@10 on MS MARCO measures one
+population of queries against one set of judgments, and a system that wins here can
+lose on your documents. The judgments are sparse. Most queries have exactly one passage
+marked relevant, so a genuinely good answer that nobody judged counts as a miss, which
+is why absolute P@10 looks low even for the best scorer. The right conclusion is not
+"0.68 is the truth" but "these two systems were compared on the same
+1,000 queries and one won".</p>
+
+<p>This harness is the instrument for the whole of Part III. Modules 11, 12 and 15 all
+import <code>evaluate</code> and <code>ndcg_at_k</code> from your solution file,
+because every claim they make about speed has to be paired with what it did to
+quality.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>retrieve(db, model, q, k=4)</code> ranks by cosine
+similarity, silently, and returns four. You now know what the alternatives are,
+roughly what each scores, and how to find out for your own corpus.
+<strong>Backward:</strong> module 7 built the arrangement, and this module chose what
+to do with what it finds. Module 6's cosine is now one scorer among several rather than
+the definition of relevance.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>And a third thing, which the site says once, here: <em>quality is a
+measurement</em>. Everything after this module reports what it did to NDCG.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Manning, Raghavan &amp; Schütze,
+  <span class="title">Introduction to Information Retrieval</span>, chapters
+  6–8.</strong> Chapter 6 is the weighting you just built, and chapter 8 is the
+  evaluation you just built, including why precision and recall pull against each
+  other. Expect chapter 8 to be more careful than this page about what a judgment does
+  and does not mean.</p>
+
+  <ol>
+    <li>Raw term counts scored 0.0872 on a
+    corpus with no length bias. Explain the failure without using the phrase "long
+    documents".</li>
+    <li>Setting <code>b</code> to 0 and setting it to 1 both lowered NDCG. What does
+    that tell you about the default of 0.75, and about tuning by intuition?</li>
+    <li>Your P@10 is 0.0871 while MRR@10 is
+    0.6487. Why are those so far apart, and which
+    one would you report to a colleague?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If every scorer reports NDCG near 0, your document ids are probably not lining
+    up. The judgments name MS MARCO passage ids, and your scorers rank corpus
+    <em>positions</em>. The starter builds <code>pid_to_doc</code> for exactly this;
+    make sure the relevant set is mapped through it before comparing.</p>
+    <p>If BM25 scores below tf-idf, check the sign inside the idf logarithm.
+    <code>log(1 + (N - df + 0.5) / (df + 0.5))</code> stays positive for every term.
+    The older form without the <code>1 +</code> goes negative for terms in more than
+    half the corpus, and those negative weights will scramble your ranking.</p>
+    <p>If your absolute numbers are higher than this page's, you may be scoring fewer
+    queries. The first few hundred qids are not a random sample, so compare like with
+    like: same query count, same corpus size.</p>
+    <p>If dense retrieval loses to BM25 on your machine, that is a legitimate result on
+    a different corpus and a reason to read the caveat above again. On MS MARCO with
+    this model, expect dense to win.</p>
+  </div>
+</div>
+<button class="done-toggle" type="button" aria-pressed="false" data-module="08-retrieve"><span class="box"></span><span class="label">mark this module complete</span></button><nav class="modnav"><a class="prev" href="07-index.html"><span class="dir">previous</span><span class="name">07 · Index — how search gets fast</span></a><a class="next" href="09-index-that-doesnt-fit.html"><span class="dir">next</span><span class="name">09 · When the index doesn&#x27;t fit in memory</span></a></nav></main></div></div><script src="../assets/site.js"></script>
+</body>
+</html>

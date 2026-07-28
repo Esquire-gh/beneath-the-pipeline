@@ -1,0 +1,223 @@
+{
+  "_generated_unix": 1785269873,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "architecture_spread": 0.2271076677448075,
+  "crossover": {
+    "best_architecture_bad_extraction": 0.49384882922619094,
+    "best_architecture_name": "reranked",
+    "gap": 0.35569716150255465,
+    "worst_architecture_good_extraction": 0.8495459907287456,
+    "worst_architecture_name": "dense"
+  },
+  "extractions": {
+    "ocr_fallback": {
+      "characters": 25338,
+      "empty_documents": 0,
+      "empty_list": [],
+      "extract_seconds": 8.1745613750536,
+      "label": "PyMuPDF, OCR when it returns nothing",
+      "stages": {
+        "bm25": {
+          "accuracy_at_1": 0.85,
+          "accuracy_at_10": 0.9833333333333333,
+          "label": "BM25",
+          "ndcg_at_10": 0.9089823207008147,
+          "scanned_accuracy": 0.9666666666666667,
+          "text_accuracy": 1.0
+        },
+        "dense": {
+          "accuracy_at_1": 0.7333333333333333,
+          "accuracy_at_10": 0.9666666666666667,
+          "label": "dense",
+          "ndcg_at_10": 0.8495459907287456,
+          "scanned_accuracy": 0.9666666666666667,
+          "text_accuracy": 0.9666666666666667
+        },
+        "fused": {
+          "accuracy_at_1": 0.8666666666666667,
+          "accuracy_at_10": 0.9833333333333333,
+          "label": "fused",
+          "ndcg_at_10": 0.9325732595393205,
+          "scanned_accuracy": 0.9666666666666667,
+          "text_accuracy": 1.0
+        },
+        "reranked": {
+          "accuracy_at_1": 0.95,
+          "accuracy_at_10": 1.0,
+          "label": "reranked",
+          "ndcg_at_10": 0.9782089344202718,
+          "scanned_accuracy": 1.0,
+          "text_accuracy": 1.0
+        }
+      }
+    },
+    "pdfplumber": {
+      "characters": 12328,
+      "empty_documents": 10,
+      "empty_list": [
+        "clock-skew",
+        "cold-start",
+        "field-boosting",
+        "mmap-tradeoffs",
+        "negative-sampling",
+        "readahead",
+        "shard-routing",
+        "snapshot-isolation",
+        "stop-list",
+        "term-dictionaries"
+      ],
+      "extract_seconds": 0.40841245790943503,
+      "label": "pdfplumber",
+      "stages": {
+        "bm25": {
+          "accuracy_at_1": 0.4166666666666667,
+          "accuracy_at_10": 0.5,
+          "label": "BM25",
+          "ndcg_at_10": 0.44994999393843577,
+          "scanned_accuracy": 0.0,
+          "text_accuracy": 1.0
+        },
+        "dense": {
+          "accuracy_at_1": 0.36666666666666664,
+          "accuracy_at_10": 0.4666666666666667,
+          "label": "dense",
+          "ndcg_at_10": 0.41292173128371573,
+          "scanned_accuracy": 0.0,
+          "text_accuracy": 0.9333333333333333
+        },
+        "fused": {
+          "accuracy_at_1": 0.4166666666666667,
+          "accuracy_at_10": 0.5,
+          "label": "fused",
+          "ndcg_at_10": 0.4582047144953041,
+          "scanned_accuracy": 0.0,
+          "text_accuracy": 1.0
+        },
+        "reranked": {
+          "accuracy_at_1": 0.5,
+          "accuracy_at_10": 0.5,
+          "label": "reranked",
+          "ndcg_at_10": 0.5,
+          "scanned_accuracy": 0.0,
+          "text_accuracy": 1.0
+        }
+      }
+    },
+    "pymupdf": {
+      "characters": 12338,
+      "empty_documents": 10,
+      "empty_list": [
+        "clock-skew",
+        "cold-start",
+        "field-boosting",
+        "mmap-tradeoffs",
+        "negative-sampling",
+        "readahead",
+        "shard-routing",
+        "snapshot-isolation",
+        "stop-list",
+        "term-dictionaries"
+      ],
+      "extract_seconds": 0.13001704192720354,
+      "label": "PyMuPDF",
+      "stages": {
+        "bm25": {
+          "accuracy_at_1": 0.4166666666666667,
+          "accuracy_at_10": 0.5,
+          "label": "BM25",
+          "ndcg_at_10": 0.44994999393843577,
+          "scanned_accuracy": 0.0,
+          "text_accuracy": 1.0
+        },
+        "dense": {
+          "accuracy_at_1": 0.36666666666666664,
+          "accuracy_at_10": 0.48333333333333334,
+          "label": "dense",
+          "ndcg_at_10": 0.41770312703673934,
+          "scanned_accuracy": 0.0,
+          "text_accuracy": 0.9666666666666667
+        },
+        "fused": {
+          "accuracy_at_1": 0.4166666666666667,
+          "accuracy_at_10": 0.5,
+          "label": "fused",
+          "ndcg_at_10": 0.46154226775360513,
+          "scanned_accuracy": 0.0,
+          "text_accuracy": 1.0
+        },
+        "reranked": {
+          "accuracy_at_1": 0.48333333333333334,
+          "accuracy_at_10": 0.5,
+          "label": "reranked",
+          "ndcg_at_10": 0.49384882922619094,
+          "scanned_accuracy": 0.0,
+          "text_accuracy": 1.0
+        }
+      }
+    }
+  },
+  "n_passages": 100000,
+  "rerank_cost": 4.015546334341323,
+  "rerank_pool": 50,
+  "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+  "scanned_share": 0.5,
+  "spread": {
+    "across_architectures_within_best_extractor": 0.1286629436915262,
+    "across_architectures_worst_extractor": 0.43662425944502986,
+    "across_extractors": 0.48436010519408085,
+    "extractor_beats_architecture": true,
+    "msmarco_architecture_spread": 0.2271076677448075,
+    "ratio": 3.764565703978845
+  },
+  "stages": {
+    "bm25": {
+      "gain_over_previous": null,
+      "label": "BM25 alone",
+      "median_seconds": 0.017309291055426,
+      "mrr_at_10": 0.6260734126984127,
+      "ndcg_at_10": 0.6648689545588503,
+      "p99_seconds": 0.10859066713601351,
+      "p_at_10": 0.08399999999999987
+    },
+    "dense": {
+      "gain_over_previous": 0.18988416757968962,
+      "label": "dense alone",
+      "median_seconds": 0.0020163750741630793,
+      "mrr_at_10": 0.8350416666666667,
+      "ndcg_at_10": 0.8547531221385399,
+      "p99_seconds": 0.0025915000587701797,
+      "p_at_10": 0.09850000000000003
+    },
+    "fused": {
+      "gain_over_previous": -0.0651582631745391,
+      "label": "fused (reciprocal rank fusion)",
+      "median_seconds": 0.02080875006504357,
+      "mrr_at_10": 0.7550932539682539,
+      "ndcg_at_10": 0.7895948589640008,
+      "p99_seconds": 0.11161274998448789,
+      "p_at_10": 0.09700000000000003
+    },
+    "reranked": {
+      "gain_over_previous": 0.10238176333965698,
+      "label": "fused, then reranked over 50",
+      "median_seconds": 0.08355850004591048,
+      "mrr_at_10": 0.8697559523809523,
+      "ndcg_at_10": 0.8919766223036578,
+      "p99_seconds": 0.19493941706605256,
+      "p_at_10": 0.10250000000000009
+    }
+  }
+}

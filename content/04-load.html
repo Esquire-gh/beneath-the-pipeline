@@ -1,0 +1,274 @@
+<p class="kicker learn">Part II · module 4 · build · 25–40 minutes</p>
+<h1><span class="num">04 ·</span> Load — what reading a file costs</h1>
+<p class="hook">This module cashes out <code>loader.load()</code>, the first line of
+the Part 0 pipeline and the one nobody looks at twice.</p>
+
+<h2 id="what">What loading means, and why it has a cost</h2>
+
+<p>Loading is the plainest stage of the pipeline to describe: bytes sit on the disk,
+your program needs them in memory, and something has to carry them across. Module 3
+made the point that loading changes where bytes are, not what they are. A loaded PDF is
+still PDF bytes, only now in a place your code can reach.</p>
+
+<p>What makes this worth a module is that the carrying is not free, and its cost has a
+surprising shape. The cost does not depend only on how many bytes you move. It depends
+heavily on how the bytes are arranged and on how many times you ask. A library call
+like <code>loader.load()</code> hides all of those asks behind one friendly name, and
+in this module you will count them yourself and watch them turn into time.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>You have {{ 04-load.n_files | int }} small files holding
+  {{ 04-load.corpus_bytes | bytes }} of text. You also have one single file holding the
+  same {{ 04-load.corpus_bytes | bytes }}.</p>
+  <p>Reading the {{ 04-load.n_files | int }} small files takes
+  {{ 04-load.worst_vs_best | x }} as long as reading the one big one. The bytes are the
+  same, and the disk is the same.</p>
+  <p>Where did the extra time go?</p>
+</div>
+
+<h2 id="mental-model">The mental model: every read is a border crossing</h2>
+
+<p>Your program cannot touch the disk. It is not allowed to; only the operating system
+is. So when you want bytes, you ask, and the ask is a
+<span class="term">syscall</span>, which is a function call with a border crossing
+inside it. Your process stops, the processor switches into the mode where the operating
+system's code runs, that code does the work, and control comes back. The crossing costs
+something every single time, no matter how few bytes you asked for.</p>
+
+<p>Reading a file takes at least three of these crossings: one to open the file, one or
+more to read its contents, and one to close it. And the open is the expensive kind,
+because of what module 1 showed it has to do: read the folder, find the name, fetch the
+record, get the block list. That work is charged per file, not per byte.</p>
+
+<p>That is the whole module. You are not measuring the disk. You are counting border
+crossings and watching the bill.</p>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/04-load/starter.py</code>. It has three <code>TODO</code>s,
+about 30 lines of your own work. You need the corpus first:</p>
+
+<figure>
+  <div class="code"><pre>python data/fetch.py --only corpus
+python exercises/04-load/starter.py
+python exercises/04-load/verify.py</pre></div>
+</figure>
+
+<p>Before the TODOs, read the <code>Crossings</code> class at the top of the file. It
+wraps three calls, <code>os.open</code>, <code>os.read</code>, and
+<code>os.close</code>, and counts them. That counter is the whole instrument.</p>
+
+<h3>Write the three loading strategies</h3>
+
+<ol>
+  <li><strong>File by file.</strong> Open each of the
+  {{ 04-load.n_files | int }} files, read it, close it.</li>
+  <li><strong>One file, small mouthfuls.</strong> Open the single large file once and
+  ask for 4 KB at a time. This is what "read it line by line" costs underneath.</li>
+  <li><strong>One file, one big ask.</strong> The same file, 4 MB at a time.</li>
+</ol>
+
+<p>The solution adds a fourth strategy that the starter does not, and it is worth
+predicting before you look: the same {{ 04-load.n_files | int }} files, read with the
+big buffer. Write down what you expect that to do.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<p>Absolute times vary by machine. The column to read is <em>crossings</em>, and the
+ratio between the top row and the bottom.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/04-load/solution.py — best of {{ 04-load.runs }} runs,
+  {{ 04-load.corpus_bytes | bytes }} moved every time</caption>
+  <thead><tr><th>strategy</th><th class="num">opens</th><th class="num">reads</th>
+    <th class="num">crossings</th><th class="num">time</th><th class="num">vs best</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td>{{ 04-load.strategies.file_by_file.label }}</td>
+      <td class="num">{{ 04-load.strategies.file_by_file.opens | int }}</td>
+      <td class="num">{{ 04-load.strategies.file_by_file.reads | int }}</td>
+      <td class="num">{{ 04-load.strategies.file_by_file.crossings | int }}</td>
+      <td class="num">{{ 04-load.strategies.file_by_file.seconds | time }}</td>
+      <td class="num">{{ 04-load.strategies.file_by_file.vs_best | x }}</td></tr>
+    <tr class="lose"><td>{{ 04-load.strategies.files_large_buffer.label }}</td>
+      <td class="num">{{ 04-load.strategies.files_large_buffer.opens | int }}</td>
+      <td class="num">{{ 04-load.strategies.files_large_buffer.reads | int }}</td>
+      <td class="num">{{ 04-load.strategies.files_large_buffer.crossings | int }}</td>
+      <td class="num">{{ 04-load.strategies.files_large_buffer.seconds | time }}</td>
+      <td class="num">{{ 04-load.strategies.files_large_buffer.vs_best | x }}</td></tr>
+    <tr><td>{{ 04-load.strategies.small_buffer.label }}</td>
+      <td class="num">{{ 04-load.strategies.small_buffer.opens | int }}</td>
+      <td class="num">{{ 04-load.strategies.small_buffer.reads | int }}</td>
+      <td class="num">{{ 04-load.strategies.small_buffer.crossings | int }}</td>
+      <td class="num">{{ 04-load.strategies.small_buffer.seconds | time }}</td>
+      <td class="num">{{ 04-load.strategies.small_buffer.vs_best | x }}</td></tr>
+    <tr class="win"><td>{{ 04-load.strategies.large_buffer.label }}</td>
+      <td class="num">{{ 04-load.strategies.large_buffer.opens | int }}</td>
+      <td class="num">{{ 04-load.strategies.large_buffer.reads | int }}</td>
+      <td class="num">{{ 04-load.strategies.large_buffer.crossings | int }}</td>
+      <td class="num">{{ 04-load.strategies.large_buffer.seconds | time }}</td>
+      <td class="num">{{ 04-load.strategies.large_buffer.vs_best | x }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+{{ chart:load-time }}
+<figcaption>wall time — the two file-by-file strategies in magenta</figcaption>
+</figure>
+
+<figure>
+{{ chart:load-crossings }}
+<figcaption>crossings into the operating system, counted exactly. the same shape,
+{{ 04-load.crossings_worst_vs_best | x0 }} steeper</figcaption>
+</figure>
+
+<p>Three things to have seen:</p>
+
+<ul>
+  <li><strong>The ratio.</strong> There is a {{ 04-load.worst_vs_best | x }} gap
+  between slowest and fastest, for the same {{ 04-load.corpus_bytes | bytes }}. The
+  crossings ratio is {{ 04-load.crossings_worst_vs_best | x0 }}.</li>
+  <li><strong>A bigger buffer helped one file and hurt many.</strong> On the single
+  file, going from 4 KB to 4 MB was {{ 04-load.big_buffer_speedup_one_file | x }}
+  faster. On the {{ 04-load.n_files | int }} files, the same change was
+  {{ 04-load.big_buffer_cost_many_files | x }} <em>slower</em>. If your model of the
+  problem is "use a bigger buffer", that second result has no explanation.</li>
+  <li><strong>Cost per crossing is not constant.</strong> File-by-file spent
+  {{ 04-load.strategies.file_by_file.microseconds_per_crossing | 2f }} µs per crossing,
+  while the small-buffer read spent
+  {{ 04-load.strategies.small_buffer.microseconds_per_crossing | 2f }} µs. Not all
+  crossings cost the same, and the expensive ones are the ones that involve the
+  filesystem's bookkeeping.</li>
+</ul>
+
+<h3>And the disk barely participated</h3>
+
+<p>Every number above was measured with the data already in memory. The operating
+system keeps recently read blocks in a <span class="term">page cache</span>, so a
+second read does not touch the hardware. Run it again with that cache bypassed and
+almost nothing changes:</p>
+
+<figure>
+{{ chart:load-cold-warm }}
+<figcaption><code>solution.py --cold</code> asks the OS not to cache these reads
+(macOS <code>F_NOCACHE</code>). the gap you measured is not the disk</figcaption>
+</figure>
+
+<p>File-by-file went from {{ 04-load.strategies.file_by_file.seconds | time }} warm to
+{{ 04-load.cold_run.strategies.file_by_file.seconds | time }} cold. The whole
+{{ 04-load.worst_vs_best | x }} penalty survives with the media taken out of the
+picture, because it was never about the media.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Work backwards from the crossings column, because it explains every row.</p>
+
+<p>Reading {{ 04-load.n_files | int }} files cost
+{{ 04-load.strategies.file_by_file.crossings | int }} crossings:
+{{ 04-load.strategies.file_by_file.opens | int }} opens,
+{{ 04-load.strategies.file_by_file.reads | int }} reads, and
+{{ 04-load.strategies.file_by_file.opens | int }} closes. That is two reads per file,
+because you cannot know you have reached the end until a read comes back empty. Reading
+the same bytes from one file cost
+{{ 04-load.strategies.large_buffer.crossings | int }} crossings in total.</p>
+
+<p>Now recall from module 1 what an <code>open</code> actually does. It reads the
+folder's contents, finds the pair whose name matches, takes the record number, reads
+that record, and gets the list of blocks. That is real work, and it is charged per
+file, not per byte. It is why the two file-by-file rows cost about the same as each
+other regardless of buffer size: the buffer was never the expensive part.</p>
+
+<p>So why was the big buffer <em>slower</em> on many files? Because asking for 4 MB
+from a {{ 04-load.mean_file_bytes | bytes }} file still means preparing to receive
+4 MB. The runtime sets aside that much room, the kernel copies
+{{ 04-load.mean_file_bytes | bytes }} into it, and the rest of the preparation is
+wasted, {{ 04-load.n_files | int }} times over. A buffer is a bet about how much data
+is coming. Bet too small and you pay in crossings. Bet too large and you pay in
+preparation. Neither is free, which is why "increase the buffer size" is not advice on
+its own.</p>
+
+<p>The single-file rows show the other half. Going from 4 KB to 4 MB cut crossings from
+{{ 04-load.strategies.small_buffer.crossings | int }} to
+{{ 04-load.strategies.large_buffer.crossings | int }} and cut time by
+{{ 04-load.big_buffer_speedup_one_file | x }}. Here the buffer was the only variable,
+so making it larger did exactly what it should.</p>
+
+<h3>What loading actually is</h3>
+
+<p>Put the whole thing in one list, and notice that no step is mysterious:</p>
+
+<ol>
+  <li>Consult the database the operating system keeps about your bytes, first the
+  folder and then the record, to find which blocks belong to this file. That is
+  module 1.</li>
+  <li>Ask for those blocks, in as few crossings as you can manage.</li>
+  <li>Decode the bytes under an agreed convention. That is module 2, and it is where a
+  wrong guess about encoding enters your corpus.</li>
+  <li>Hold the result in memory.</li>
+</ol>
+
+<p>That is <code>loader.load()</code>. There is no fifth step. What a library adds is
+defaults for the choices in steps 2 and 3, namely how much to ask for at a time and
+which encoding to assume, and it does not tell you what it chose.</p>
+
+<p>One consequence is worth carrying forward. A corpus arriving as
+{{ 04-load.n_files | int }} files is not the same problem as a corpus arriving as one
+file, even when the bytes are identical. Every production ingestion pipeline you will
+meet has an answer to this, usually "combine small files into large ones before doing
+anything else". Now you know what that is buying.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> the first line of the Part 0 pipeline is a folder lookup, a
+record read, some number of block requests, and a decode. You can now count each of
+those, and you know which one dominates. <strong>Backward:</strong> module 1 said the
+filesystem keeps bookkeeping about your bytes. This module is the invoice for
+consulting it {{ 04-load.n_files | int }} times.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>The bytes were arranged as {{ 04-load.n_files | int }} files instead of one. Nothing
+about their meaning changed. The cost changed by {{ 04-load.worst_vs_best | x }}.</p>
+
+<p>Module 9 runs this lesson backwards: when an index is too large to hold in memory,
+you deliberately write it out in pieces and merge them, and the reason that works is
+this same arithmetic. Few large transfers beat many small ones.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Petrov, <span class="title">Database Internals</span>,
+  Part I.</strong> Read it for one thing: how storage engines batch their work
+  specifically to stay off the boundary you just measured. Expect the phrase "one large
+  file" to keep appearing, and now you will know why.</p>
+
+  <ol>
+    <li>Your corpus is {{ 04-load.corpus_bytes | bytes }} either way. Explain, in terms
+    a colleague could act on, why the arrangement into files changed the cost by
+    {{ 04-load.worst_vs_best | x }}.</li>
+    <li>A 4 MB buffer helped on one file and hurt on {{ 04-load.n_files | int }}. Give
+    the rule that predicts both.</li>
+    <li>You are handed a corpus of a million 2 KB files. Name the first thing you would
+    do, and what it costs you.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your ratio is under 5×, your files may be larger than this corpus's
+    {{ 04-load.mean_file_bytes | bytes }} average. The per-file cost is fixed, so the
+    bigger each file is, the less it matters. Check
+    <code>data/corpus_small/.complete</code> for the size the corpus was built at.</p>
+    <p>If the big buffer does <em>not</em> slow down the many-files case on your
+    machine, that is a legitimate difference: it depends on how your runtime allocates
+    the receiving buffer. The crossing counts will still be identical between those two
+    rows, and that identity is the finding. The buffer changed nothing about the number
+    of asks.</p>
+    <p>If <code>--cold</code> makes no difference at all, you are on Linux, where
+    <code>F_NOCACHE</code> does not exist and the flag is ignored. Drop the cache with
+    <code>sync &amp;&amp; echo 3 | sudo tee /proc/sys/vm/drop_caches</code> instead, or
+    skip it, since the warm numbers already carry the argument.</p>
+  </div>
+</div>

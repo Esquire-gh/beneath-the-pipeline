@@ -1,0 +1,54 @@
+{
+  "_generated_unix": 1785264322,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "chunk_overlap": 200,
+  "chunk_size": 1000,
+  "dims": 384,
+  "embed_seconds": 0.30602979217655957,
+  "index_seconds": 0.12959670880809426,
+  "k": 4,
+  "load_seconds": 0.0025574169121682644,
+  "mean_chunk_chars": 979.0060606060606,
+  "model_load_seconds": 1.172831041039899,
+  "model_name": "all-MiniLM-L6-v2",
+  "n_chars": 129591,
+  "n_chunks": 165,
+  "n_pages": 44,
+  "n_pdfs": 5,
+  "n_vectors": 165,
+  "parse_seconds": 0.26029654196463525,
+  "pdf_bytes": 3692862,
+  "pdf_dir": "pipeline/sample_pdfs",
+  "pipeline_lines": {
+    "code_lines": 30,
+    "total_lines": 44
+  },
+  "pipeline_seconds": 0.7316970436368138,
+  "question": "what does the paper say about attention?",
+  "retrieve_seconds": 0.03312120889313519,
+  "sources": [
+    "acl-2col-01.pdf",
+    "arxiv-adam.pdf",
+    "arxiv-transformer.pdf",
+    "gen-clean-1col.pdf",
+    "gen-tables.pdf"
+  ],
+  "split_seconds": 9.537488222122192e-05,
+  "top_hit_excerpt": "missing , in my opinion . <EOS> <pad> Figure 5: Many of the attention heads exhibit behaviour that seems related to the structure of the sentence. We give two such examples above, from two different heads from the encode",
+  "top_hit_source": "arxiv-transformer.pdf",
+  "total_seconds": 1.9045280846767128,
+  "vector_bytes": 253440
+}

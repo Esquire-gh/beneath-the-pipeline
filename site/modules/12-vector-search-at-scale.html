@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 · How vector search scales — Beneath the Pipeline</title>
+<meta name="description" content="HNSW is a hundred times faster and quietly stops being right.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead"><div class="masthead-inner"><div class="brandrow"><a class="brand" href="../index.html"><b>Beneath the Pipeline</b> &nbsp;/&nbsp; part iii · when reality arrives</a><span class="progress-label">12 / 15</span></div><nav class="strip" aria-label="the pipeline"><a class="stage reinforced" href="04-load.html" title="load() — built in module 4; stressed in module 9"><span class="n">04·09</span>load</a><a class="stage done" href="05-parse.html" title="parse() — built in module 5; stressed in module 13"><span class="n">05·13</span>parse</a><a class="stage done" href="06-chunk-embed.html" title="chunk() — built in module 6"><span class="n">06</span>chunk</a><a class="stage stressed" href="06-chunk-embed.html" title="embed() — built in module 6; stressed in module 12"><span class="n">06·12</span>embed</a><a class="stage stressed" href="07-index.html" title="index() — built in module 7; stressed in module 9, 10, 12"><span class="n">07·09·10·12</span>index</a><a class="stage reinforced" href="08-retrieve.html" title="retrieve() — built in module 8; stressed in module 11, 14"><span class="n">08·11·14</span>retrieve</a></nav><div class="lane2"><span class="spacer"></span><a class="branch" href="14-what-vectors-cant-answer.html" title="module 14 — the structured path">14 · structured</a></div></div></header><div class="wrap"><div class="layout"><div class="gutter" aria-hidden="true"><div class="marks"><div>0000</div><div>0010</div><div>0020</div><div>0030</div><div>0040</div><div>0050</div><div>0060</div><div>0070</div><div>0080</div><div>0090</div><div>00a0</div><div>00b0</div><div>00c0</div><div>00d0</div><div>00e0</div><div>00f0</div><div>0100</div><div>0110</div><div>0120</div><div>0130</div><div>0140</div><div>0150</div><div>0160</div><div>0170</div><div>0180</div><div>0190</div><div>01a0</div><div>01b0</div><div>01c0</div><div>01d0</div><div>01e0</div><div>01f0</div><div>0200</div><div>0210</div><div>0220</div><div>0230</div><div>0240</div><div>0250</div><div>0260</div><div>0270</div><div>0280</div><div>0290</div><div>02a0</div><div>02b0</div><div>02c0</div><div>02d0</div><div>02e0</div><div>02f0</div><div>0300</div><div>0310</div><div>0320</div><div>0330</div><div>0340</div><div>0350</div><div>0360</div><div>0370</div><div>0380</div><div>0390</div><div>03a0</div><div>03b0</div><div>03c0</div><div>03d0</div><div>03e0</div><div>03f0</div><div>0400</div><div>0410</div><div>0420</div><div>0430</div><div>0440</div><div>0450</div><div>0460</div><div>0470</div><div>0480</div><div>0490</div><div>04a0</div><div>04b0</div><div>04c0</div><div>04d0</div><div>04e0</div><div>04f0</div><div>0500</div><div>0510</div><div>0520</div><div>0530</div><div>0540</div><div>0550</div><div>0560</div><div>0570</div><div>0580</div><div>0590</div><div>05a0</div><div>05b0</div><div>05c0</div><div>05d0</div><div>05e0</div><div>05f0</div><div>0600</div><div>0610</div><div>0620</div><div>0630</div><div>0640</div><div>0650</div><div>0660</div><div>0670</div><div>0680</div><div>0690</div><div>06a0</div><div>06b0</div><div>06c0</div><div>06d0</div><div>06e0</div><div>06f0</div><div>0700</div><div>0710</div><div>0720</div><div>0730</div><div>0740</div><div>0750</div><div>0760</div><div>0770</div><div>0780</div><div>0790</div><div>07a0</div><div>07b0</div><div>07c0</div><div>07d0</div><div>07e0</div><div>07f0</div><div>0800</div><div>0810</div><div>0820</div><div>0830</div><div>0840</div><div>0850</div><div>0860</div><div>0870</div><div>0880</div><div>0890</div><div>08a0</div><div>08b0</div><div>08c0</div><div>08d0</div><div>08e0</div><div>08f0</div><div>0900</div><div>0910</div><div>0920</div><div>0930</div><div>0940</div><div>0950</div><div>0960</div><div>0970</div><div>0980</div><div>0990</div><div>09a0</div><div>09b0</div><div>09c0</div><div>09d0</div><div>09e0</div><div>09f0</div><div>0a00</div><div>0a10</div><div>0a20</div><div>0a30</div><div>0a40</div><div>0a50</div><div>0a60</div><div>0a70</div><div>0a80</div><div>0a90</div><div>0aa0</div><div>0ab0</div><div>0ac0</div><div>0ad0</div><div>0ae0</div><div>0af0</div><div>0b00</div><div>0b10</div><div>0b20</div><div>0b30</div><div>0b40</div><div>0b50</div><div>0b60</div><div>0b70</div><div>0b80</div><div>0b90</div><div>0ba0</div><div>0bb0</div><div>0bc0</div><div>0bd0</div><div>0be0</div><div>0bf0</div><div>0c00</div><div>0c10</div><div>0c20</div><div>0c30</div><div>0c40</div><div>0c50</div><div>0c60</div><div>0c70</div><div>0c80</div><div>0c90</div><div>0ca0</div><div>0cb0</div><div>0cc0</div><div>0cd0</div><div>0ce0</div><div>0cf0</div><div>0d00</div><div>0d10</div><div>0d20</div><div>0d30</div><div>0d40</div><div>0d50</div><div>0d60</div><div>0d70</div><div>0d80</div><div>0d90</div><div>0da0</div><div>0db0</div><div>0dc0</div><div>0dd0</div><div>0de0</div><div>0df0</div><div>0e00</div><div>0e10</div><div>0e20</div><div>0e30</div><div>0e40</div><div>0e50</div><div>0e60</div><div>0e70</div><div>0e80</div><div>0e90</div><div>0ea0</div><div>0eb0</div><div>0ec0</div><div>0ed0</div><div>0ee0</div><div>0ef0</div><div>0f00</div><div>0f10</div><div>0f20</div><div>0f30</div><div>0f40</div><div>0f50</div><div>0f60</div><div>0f70</div><div>0f80</div><div>0f90</div><div>0fa0</div><div>0fb0</div><div>0fc0</div><div>0fd0</div><div>0fe0</div><div>0ff0</div><div>1000</div><div>1010</div><div>1020</div><div>1030</div><div>1040</div><div>1050</div><div>1060</div><div>1070</div><div>1080</div><div>1090</div><div>10a0</div><div>10b0</div><div>10c0</div><div>10d0</div><div>10e0</div><div>10f0</div><div>1100</div><div>1110</div><div>1120</div><div>1130</div><div>1140</div><div>1150</div><div>1160</div><div>1170</div><div>1180</div><div>1190</div><div>11a0</div><div>11b0</div><div>11c0</div><div>11d0</div><div>11e0</div><div>11f0</div><div>1200</div><div>1210</div><div>1220</div><div>1230</div><div>1240</div><div>1250</div><div>1260</div><div>1270</div><div>1280</div><div>1290</div><div>12a0</div><div>12b0</div><div>12c0</div><div>12d0</div><div>12e0</div><div>12f0</div><div>1300</div><div>1310</div><div>1320</div><div>1330</div><div>1340</div><div>1350</div><div>1360</div><div>1370</div><div>1380</div><div>1390</div><div>13a0</div><div>13b0</div><div>13c0</div><div>13d0</div><div>13e0</div><div>13f0</div><div>1400</div><div>1410</div><div>1420</div><div>1430</div><div>1440</div><div>1450</div><div>1460</div><div>1470</div><div>1480</div><div>1490</div><div>14a0</div><div>14b0</div><div>14c0</div><div>14d0</div><div>14e0</div><div>14f0</div><div>1500</div><div>1510</div><div>1520</div><div>1530</div><div>1540</div><div>1550</div><div>1560</div><div>1570</div><div>1580</div><div>1590</div><div>15a0</div><div>15b0</div><div>15c0</div><div>15d0</div><div>15e0</div><div>15f0</div><div>1600</div><div>1610</div><div>1620</div><div>1630</div><div>1640</div><div>1650</div><div>1660</div><div>1670</div><div>1680</div><div>1690</div><div>16a0</div><div>16b0</div><div>16c0</div><div>16d0</div><div>16e0</div><div>16f0</div><div>1700</div><div>1710</div><div>1720</div><div>1730</div><div>1740</div><div>1750</div><div>1760</div><div>1770</div><div>1780</div><div>1790</div><div>17a0</div><div>17b0</div><div>17c0</div><div>17d0</div><div>17e0</div><div>17f0</div><div>1800</div><div>1810</div><div>1820</div><div>1830</div><div>1840</div><div>1850</div><div>1860</div><div>1870</div><div>1880</div><div>1890</div><div>18a0</div><div>18b0</div><div>18c0</div><div>18d0</div><div>18e0</div><div>18f0</div><div>1900</div><div>1910</div><div>1920</div><div>1930</div><div>1940</div><div>1950</div><div>1960</div><div>1970</div><div>1980</div><div>1990</div><div>19a0</div><div>19b0</div><div>19c0</div><div>19d0</div><div>19e0</div><div>19f0</div><div>1a00</div><div>1a10</div><div>1a20</div><div>1a30</div><div>1a40</div><div>1a50</div><div>1a60</div><div>1a70</div><div>1a80</div><div>1a90</div><div>1aa0</div><div>1ab0</div><div>1ac0</div><div>1ad0</div><div>1ae0</div><div>1af0</div><div>1b00</div><div>1b10</div><div>1b20</div><div>1b30</div><div>1b40</div><div>1b50</div><div>1b60</div><div>1b70</div><div>1b80</div><div>1b90</div><div>1ba0</div><div>1bb0</div><div>1bc0</div><div>1bd0</div><div>1be0</div><div>1bf0</div><div>1c00</div><div>1c10</div><div>1c20</div><div>1c30</div><div>1c40</div><div>1c50</div><div>1c60</div><div>1c70</div><div>1c80</div><div>1c90</div><div>1ca0</div><div>1cb0</div><div>1cc0</div><div>1cd0</div><div>1ce0</div><div>1cf0</div><div>1d00</div><div>1d10</div><div>1d20</div><div>1d30</div><div>1d40</div><div>1d50</div><div>1d60</div><div>1d70</div><div>1d80</div><div>1d90</div><div>1da0</div><div>1db0</div><div>1dc0</div><div>1dd0</div><div>1de0</div><div>1df0</div><div>1e00</div><div>1e10</div><div>1e20</div><div>1e30</div><div>1e40</div><div>1e50</div><div>1e60</div><div>1e70</div><div>1e80</div><div>1e90</div><div>1ea0</div><div>1eb0</div><div>1ec0</div><div>1ed0</div><div>1ee0</div><div>1ef0</div><div>1f00</div><div>1f10</div><div>1f20</div><div>1f30</div><div>1f40</div><div>1f50</div><div>1f60</div><div>1f70</div><div>1f80</div><div>1f90</div><div>1fa0</div><div>1fb0</div><div>1fc0</div><div>1fd0</div><div>1fe0</div><div>1ff0</div><div>2000</div><div>2010</div><div>2020</div><div>2030</div><div>2040</div><div>2050</div><div>2060</div><div>2070</div><div>2080</div><div>2090</div><div>20a0</div><div>20b0</div><div>20c0</div><div>20d0</div><div>20e0</div><div>20f0</div><div>2100</div><div>2110</div><div>2120</div><div>2130</div><div>2140</div><div>2150</div><div>2160</div><div>2170</div><div>2180</div><div>2190</div><div>21a0</div><div>21b0</div><div>21c0</div><div>21d0</div><div>21e0</div><div>21f0</div><div>2200</div><div>2210</div><div>2220</div><div>2230</div><div>2240</div><div>2250</div><div>2260</div><div>2270</div><div>2280</div><div>2290</div><div>22a0</div><div>22b0</div><div>22c0</div><div>22d0</div><div>22e0</div><div>22f0</div><div>2300</div><div>2310</div><div>2320</div><div>2330</div><div>2340</div><div>2350</div><div>2360</div><div>2370</div><div>2380</div><div>2390</div><div>23a0</div><div>23b0</div><div>23c0</div><div>23d0</div><div>23e0</div><div>23f0</div><div>2400</div><div>2410</div><div>2420</div><div>2430</div><div>2440</div><div>2450</div><div>2460</div><div>2470</div><div>2480</div><div>2490</div><div>24a0</div><div>24b0</div><div>24c0</div><div>24d0</div><div>24e0</div><div>24f0</div><div>2500</div><div>2510</div><div>2520</div><div>2530</div><div>2540</div><div>2550</div><div>2560</div><div>2570</div><div>2580</div><div>2590</div><div>25a0</div><div>25b0</div><div>25c0</div><div>25d0</div><div>25e0</div><div>25f0</div><div>2600</div><div>2610</div><div>2620</div><div>2630</div><div>2640</div><div>2650</div><div>2660</div><div>2670</div><div>2680</div><div>2690</div><div>26a0</div><div>26b0</div><div>26c0</div><div>26d0</div><div>26e0</div><div>26f0</div><div>2700</div><div>2710</div><div>2720</div><div>2730</div><div>2740</div><div>2750</div><div>2760</div><div>2770</div><div>2780</div><div>2790</div><div>27a0</div><div>27b0</div><div>27c0</div><div>27d0</div><div>27e0</div><div>27f0</div><div>2800</div><div>2810</div><div>2820</div><div>2830</div><div>2840</div><div>2850</div><div>2860</div><div>2870</div><div>2880</div><div>2890</div><div>28a0</div><div>28b0</div><div>28c0</div><div>28d0</div><div>28e0</div><div>28f0</div><div>2900</div><div>2910</div><div>2920</div><div>2930</div><div>2940</div><div>2950</div><div>2960</div><div>2970</div><div>2980</div><div>2990</div><div>29a0</div><div>29b0</div><div>29c0</div><div>29d0</div><div>29e0</div><div>29f0</div><div>2a00</div><div>2a10</div><div>2a20</div><div>2a30</div><div>2a40</div><div>2a50</div><div>2a60</div><div>2a70</div><div>2a80</div><div>2a90</div><div>2aa0</div><div>2ab0</div><div>2ac0</div><div>2ad0</div><div>2ae0</div><div>2af0</div><div>2b00</div><div>2b10</div><div>2b20</div><div>2b30</div><div>2b40</div><div>2b50</div><div>2b60</div><div>2b70</div><div>2b80</div><div>2b90</div><div>2ba0</div><div>2bb0</div><div>2bc0</div><div>2bd0</div><div>2be0</div><div>2bf0</div><div>2c00</div><div>2c10</div><div>2c20</div><div>2c30</div><div>2c40</div><div>2c50</div><div>2c60</div><div>2c70</div><div>2c80</div><div>2c90</div><div>2ca0</div><div>2cb0</div><div>2cc0</div><div>2cd0</div><div>2ce0</div><div>2cf0</div><div>2d00</div><div>2d10</div><div>2d20</div><div>2d30</div><div>2d40</div><div>2d50</div><div>2d60</div><div>2d70</div><div>2d80</div><div>2d90</div><div>2da0</div><div>2db0</div><div>2dc0</div><div>2dd0</div><div>2de0</div><div>2df0</div><div>2e00</div><div>2e10</div><div>2e20</div><div>2e30</div><div>2e40</div><div>2e50</div><div>2e60</div><div>2e70</div><div>2e80</div><div>2e90</div><div>2ea0</div><div>2eb0</div><div>2ec0</div><div>2ed0</div><div>2ee0</div><div>2ef0</div><div>2f00</div><div>2f10</div><div>2f20</div><div>2f30</div><div>2f40</div><div>2f50</div><div>2f60</div><div>2f70</div><div>2f80</div><div>2f90</div><div>2fa0</div><div>2fb0</div><div>2fc0</div><div>2fd0</div><div>2fe0</div><div>2ff0</div><div>3000</div><div>3010</div><div>3020</div><div>3030</div><div>3040</div><div>3050</div><div>3060</div><div>3070</div><div>3080</div><div>3090</div><div>30a0</div><div>30b0</div><div>30c0</div><div>30d0</div><div>30e0</div><div>30f0</div><div>3100</div><div>3110</div><div>3120</div><div>3130</div><div>3140</div><div>3150</div><div>3160</div><div>3170</div><div>3180</div><div>3190</div><div>31a0</div><div>31b0</div><div>31c0</div><div>31d0</div><div>31e0</div><div>31f0</div><div>3200</div><div>3210</div><div>3220</div><div>3230</div><div>3240</div><div>3250</div><div>3260</div><div>3270</div><div>3280</div><div>3290</div><div>32a0</div><div>32b0</div><div>32c0</div><div>32d0</div><div>32e0</div><div>32f0</div><div>3300</div><div>3310</div><div>3320</div><div>3330</div><div>3340</div><div>3350</div><div>3360</div><div>3370</div><div>3380</div><div>3390</div><div>33a0</div><div>33b0</div><div>33c0</div><div>33d0</div><div>33e0</div><div>33f0</div><div>3400</div><div>3410</div><div>3420</div><div>3430</div><div>3440</div><div>3450</div><div>3460</div><div>3470</div><div>3480</div><div>3490</div><div>34a0</div><div>34b0</div><div>34c0</div><div>34d0</div><div>34e0</div><div>34f0</div><div>3500</div><div>3510</div><div>3520</div><div>3530</div><div>3540</div><div>3550</div><div>3560</div><div>3570</div><div>3580</div><div>3590</div><div>35a0</div><div>35b0</div><div>35c0</div><div>35d0</div><div>35e0</div><div>35f0</div><div>3600</div><div>3610</div><div>3620</div><div>3630</div><div>3640</div><div>3650</div><div>3660</div><div>3670</div><div>3680</div><div>3690</div><div>36a0</div><div>36b0</div><div>36c0</div><div>36d0</div><div>36e0</div><div>36f0</div><div>3700</div><div>3710</div><div>3720</div><div>3730</div><div>3740</div><div>3750</div><div>3760</div><div>3770</div><div>3780</div><div>3790</div><div>37a0</div><div>37b0</div><div>37c0</div><div>37d0</div><div>37e0</div><div>37f0</div><div>3800</div><div>3810</div><div>3820</div><div>3830</div></div></div><main class="col"><p class="kicker">Part III · module 12 · build · 50–80 minutes</p>
+<h1><span class="num">12 ·</span> How vector search scales</h1>
+<p class="hook">This module breaks module 7's brute-force nearest neighbour. This is
+what Chroma was doing in Part 0, and what it decided on your behalf.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>Finding the nearest vectors by brute force means comparing the query against every
+vector in the collection. The cost grows in a straight line with the corpus, and unlike
+the inverted index there is no exact shortcut: nothing about a query vector tells you
+which stored vectors you can safely ignore. A million vectors means a million
+comparisons, every query, forever.</p>
+
+<p>The way out is the same move as module 7, arrangement in advance, applied to a
+harder problem. <span class="term">HNSW</span>, short for hierarchical navigable small
+world, builds a graph over the vectors where each one is connected to some of its
+neighbours, in several layers. The top layer is sparse and lets you cross the whole
+space in a few hops. Each layer down is denser and more local. A search enters at the
+top, greedily walks towards the query, drops a layer, walks again, and finishes with a
+careful local search at the bottom.</p>
+
+<p>Nothing about that walk is guaranteed to arrive at the true nearest neighbours. It
+can head into a region that looks good locally and miss a better one elsewhere. How
+hard it looks before giving up is a parameter called <code>ef_search</code>, and that
+single integer is a dial between speed and correctness. This module has you build the
+graph, sweep the dial, and measure both ends, including the case the sales pages do not
+mention: what happens when someone adds an ordinary filter to the query.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Brute force over 1,000,000 vectors takes
+  21.9ms per query,
+  384,000,000
+  multiply-adds every time, and it is exactly right.</p>
+  <p>HNSW answers the same query in
+  106µs and quietly stops
+  guaranteeing the right answer. At its cheapest setting it returns
+  86% of the ten nearest vectors.</p>
+  <p>Where did the speed come from, and where exactly did the correctness go?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<figure>
+  <div class="code"><pre>pip install hnswlib
+python exercises/12-vector-search-at-scale/starter.py --scale part2
+python exercises/12-vector-search-at-scale/verify.py</pre></div>
+</figure>
+
+<p>There are three things to build. First the truth: brute force over every vector,
+which module 7's TODO 4 already gave you. That is what "right" means here, and you need
+it before you can say anything about approximate. Then an HNSW index over the same
+vectors. Then the measurement that matters,
+<span class="term">recall@10</span>: the fraction of the genuinely nearest ten that the
+index actually returned.</p>
+
+<div class="aside">
+  <span class="aside-label">two different questions</span>
+  Recall here is measured against brute force, not against MS MARCO's judgments. It asks
+  whether the index found what it was <em>asked</em> to find. Module 8's NDCG asks
+  whether that was worth finding. An index can have perfect recall and terrible NDCG:
+  it faithfully returned the ten nearest vectors, and the ten nearest vectors were not
+  the answer. Both numbers appear below, and keeping them apart is the point.
+</div>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>What the graph cost to build</h3>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/12-vector-search-at-scale/solution.py, M =
+  16, ef_construction =
+  200</caption>
+  <thead><tr><th>quantity</th><th class="num">measured</th></tr></thead>
+  <tbody>
+    <tr><td>vectors</td>
+      <td class="num">1,000,000 × 384 dims = 1.4GB</td></tr>
+    <tr><td>time to build the graph</td>
+      <td class="num">3.2min</td></tr>
+    <tr><td>the graph itself</td>
+      <td class="num">1.6GB</td></tr>
+    <tr><td>graph as a multiple of the vectors</td>
+      <td class="num">1.1&times;</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Module 7 said an index is arrangement, paid for in build time and memory. Here is
+the invoice: 3.2min of building and
+1.6GB of graph, on top of vectors
+you already had.</p>
+
+<h3>One integer trades speed against correctness</h3>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 270" preserveAspectRatio="xMinYMin meet" role="img" aria-label="recall against latency as ef_search varies"><line class="grid" x1="54" y1="230.0" x2="544" y2="230.0"></line><text x="48" y="233.5" text-anchor="end">0.00</text><line class="grid" x1="54" y1="186.7" x2="544" y2="186.7"></line><text x="48" y="190.2" text-anchor="end">0.20</text><line class="grid" x1="54" y1="143.3" x2="544" y2="143.3"></line><text x="48" y="146.8" text-anchor="end">0.40</text><line class="grid" x1="54" y1="100.0" x2="544" y2="100.0"></line><text x="48" y="103.5" text-anchor="end">0.60</text><line class="grid" x1="54" y1="56.7" x2="544" y2="56.7"></line><text x="48" y="60.2" text-anchor="end">0.80</text><line class="grid" x1="54" y1="13.4" x2="544" y2="13.4"></line><text x="48" y="16.9" text-anchor="end">1.00</text><text x="158.5" y="246" text-anchor="middle">0.50</text><text x="291.1" y="246" text-anchor="middle">1.00</text><text x="423.7" y="246" text-anchor="middle">1.50</text><line class="base" x1="54" y1="230" x2="544" y2="230"></line><polyline class="line " points="54.0,44.3 62.8,32.8 70.3,26.3 80.1,22.4 101.7,20.6 115.5,18.6 146.2,17.1 178.3,16.7 250.1,15.8 305.6,14.9 544.0,14.0"></polyline><circle class="dot " cx="54.0" cy="44.3" r="2.6"></circle><circle class="dot " cx="62.8" cy="32.8" r="2.6"></circle><circle class="dot " cx="70.3" cy="26.3" r="2.6"></circle><circle class="dot " cx="80.1" cy="22.4" r="2.6"></circle><circle class="dot " cx="101.7" cy="20.6" r="2.6"></circle><circle class="dot " cx="115.5" cy="18.6" r="2.6"></circle><circle class="dot " cx="146.2" cy="17.1" r="2.6"></circle><circle class="dot " cx="178.3" cy="16.7" r="2.6"></circle><circle class="dot " cx="250.1" cy="15.8" r="2.6"></circle><circle class="dot " cx="305.6" cy="14.9" r="2.6"></circle><circle class="dot " cx="544.0" cy="14.0" r="2.6"></circle><text class="lbl" x="540.0" y="5.0" text-anchor="end">HNSW</text><text x="54.0" y="35.3" text-anchor="middle">ef=10</text><text x="80.1" y="13.4" text-anchor="middle">ef=32</text><text x="178.3" y="7.7" text-anchor="middle">ef=128</text><text x="544.0" y="5.0" text-anchor="middle">ef=512</text><text class="axis-title" x="54" y="264">median milliseconds per query</text><text class="axis-title" x="54" y="11">recall@10 against brute force</text></svg>
+<figcaption>every point is one value of <code>ef_search</code>. the curve is the
+product's quality, drawn</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>300 real queries against
+  1,000,000 vectors</caption>
+  <thead><tr><th class="num">ef_search</th><th class="num">recall@10</th>
+    <th class="num">median</th><th class="num">p99</th>
+    <th class="num">vs brute force</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td class="num">10</td>
+      <td class="num">0.8573</td>
+      <td class="num">106µs</td>
+      <td class="num">191µs</td>
+      <td class="num">207&times;</td></tr>
+    <tr><td class="num">32</td>
+      <td class="num">0.9583</td>
+      <td class="num">204µs</td>
+      <td class="num">357µs</td>
+      <td class="num">107&times;</td></tr>
+    <tr class="win"><td class="num">64</td>
+      <td class="num">0.9757</td>
+      <td class="num">338µs</td>
+      <td class="num">569µs</td>
+      <td class="num">65&times;</td></tr>
+    <tr><td class="num">128</td>
+      <td class="num">0.9843</td>
+      <td class="num">575µs</td>
+      <td class="num">893µs</td>
+      <td class="num">38&times;</td></tr>
+    <tr><td class="num">512</td>
+      <td class="num">0.9970</td>
+      <td class="num">2.0ms</td>
+      <td class="num">3.5ms</td>
+      <td class="num">11&times;</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 190" preserveAspectRatio="xMinYMin meet" role="img" aria-label="recall@10 by ef_search"><text class="lbl" x="0" y="21">ef=10</text><rect class="bar alt" x="90" y="11" width="340.5" height="14"></rect><text x="436.5" y="22">0.8573</text><text class="lbl" x="0" y="47">ef=24</text><rect class="bar alt" x="90" y="37" width="373.5" height="14"></rect><text x="469.5" y="48">0.9403</text><text class="lbl" x="0" y="73">ef=48</text><rect class="bar alt" x="90" y="63" width="384.0" height="14"></rect><text x="480.0" y="74">0.9667</text><text class="lbl" x="0" y="99">ef=96</text><rect class="bar alt" x="90" y="89" width="390.3" height="14"></rect><text x="486.3" y="100">0.9827</text><text class="lbl" x="0" y="125">ef=192</text><rect class="bar alt" x="90" y="115" width="392.7" height="14"></rect><text x="488.7" y="126">0.9887</text><text class="lbl" x="0" y="151">ef=512</text><rect class="bar" x="90" y="141" width="396.0" height="14"></rect><text x="492.0" y="152">0.9970</text><line class="base" x1="90" y1="8" x2="90" y2="164"></line><text class="axis-title" x="90" y="184">recall@10 against exact brute-force search</text></svg>
+<figcaption>recall@10 at six settings of one integer</figcaption>
+</figure>
+
+<p>There is no "correct" row in that table. There is a dial, and every position on it
+is a defensible engineering decision. <strong>That is the finding</strong>: search
+quality is not a property of the index, it is a setting, and somebody chose it.</p>
+
+<h3>What the approximation costs where users can feel it</h3>
+
+<div class="table-wrap">
+<table>
+  <caption>the same queries, scored with module 8's harness</caption>
+  <thead><tr><th class="num">ef_search</th><th class="num">recall@10</th>
+    <th class="num">NDCG@10</th></tr></thead>
+  <tbody>
+    <tr><td class="num">10</td>
+      <td class="num">0.8573</td>
+      <td class="num">0.5989</td></tr>
+    <tr><td class="num">32</td>
+      <td class="num">0.9583</td>
+      <td class="num">0.6520</td></tr>
+    <tr><td class="num">128</td>
+      <td class="num">0.9843</td>
+      <td class="num">0.6649</td></tr>
+    <tr class="win"><td class="num">exact</td><td class="num">1.0000</td>
+      <td class="num">0.6693</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Losing 86% of the nearest
+neighbours cost 0.0704 of NDCG.
+Those are not the same size of loss, and the reason is worth holding onto: a "wrong"
+neighbour returned by the graph is usually the eleventh or twelfth nearest, not a
+random document, and the eleventh nearest is often just as good an answer. Recall is
+the strict measure. NDCG is the one your users experience.</p>
+
+<h3>And then somebody asks for a filter</h3>
+
+<p>This is the most ordinary request there is: search only this customer's documents,
+only this year, only this language. Here every vector gets a bucket and the query asks
+for one bucket, 10,035 of
+1,000,000 documents, or
+1.0%.</p>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 190" preserveAspectRatio="xMinYMin meet" role="img" aria-label="recall after filtering to 1% of documents"><text class="lbl" x="0" y="21">graph, ef=10</text><rect class="bar alt" x="124" y="11" width="3.6" height="14"></rect><text x="133.6" y="22">0.010</text><text class="lbl" x="0" y="47">graph, ef=64</text><rect class="bar alt" x="124" y="37" width="25.7" height="14"></rect><text x="155.7" y="48">0.071</text><text class="lbl" x="0" y="73">graph, ef=256</text><rect class="bar alt" x="124" y="63" width="101.6" height="14"></rect><text x="231.6" y="74">0.281</text><text class="lbl" x="0" y="99">graph, ef=1024</text><rect class="bar alt" x="124" y="89" width="329.2" height="14"></rect><text x="459.2" y="100">0.909</text><text class="lbl" x="0" y="125">graph, ef=4096</text><rect class="bar alt" x="124" y="115" width="360.9" height="14"></rect><text x="490.9" y="126">0.997</text><text class="lbl" x="0" y="151">scan the matches</text><rect class="bar" x="124" y="141" width="362.0" height="14"></rect><text x="492.0" y="152">1.000</text><line class="base" x1="124" y1="8" x2="124" y2="164"></line><text class="axis-title" x="124" y="184">recall@10 within the filtered subset — higher is better</text></svg>
+<figcaption>search the graph, then discard what does not match — against
+scanning the documents that do</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>strategy</th><th class="num">results kept of 10</th>
+    <th class="num">recall@10</th><th class="num">median</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td>graph, ef = 10</td>
+      <td class="num">0.10</td>
+      <td class="num">0.0100</td>
+      <td class="num">107µs</td></tr>
+    <tr class="lose"><td>graph, ef = 256</td>
+      <td class="num">2.81</td>
+      <td class="num">0.2807</td>
+      <td class="num">1.1ms</td></tr>
+    <tr><td>graph, ef = 4096</td>
+      <td class="num">10.00</td>
+      <td class="num">0.9970</td>
+      <td class="num">13.6ms</td></tr>
+    <tr class="win"><td>ignore the graph, scan the matches</td>
+      <td class="num">10.00</td>
+      <td class="num">1.0000</td>
+      <td class="num">194µs</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 190" preserveAspectRatio="xMinYMin meet" role="img" aria-label="time per filtered query"><text class="lbl" x="0" y="21">graph, ef=10</text><rect class="bar alt" x="124" y="11" width="21.5" height="14"></rect><text x="151.5" y="22">107µs</text><text class="lbl" x="0" y="47">graph, ef=64</text><rect class="bar alt" x="124" y="37" width="105.3" height="14"></rect><text x="235.3" y="48">358µs</text><text class="lbl" x="0" y="73">graph, ef=256</text><rect class="bar alt" x="124" y="63" width="184.3" height="14"></rect><text x="314.3" y="74">1.1ms</text><text class="lbl" x="0" y="99">graph, ef=1024</text><rect class="bar alt" x="124" y="89" width="269.9" height="14"></rect><text x="399.9" y="100">3.8ms</text><text class="lbl" x="0" y="125">graph, ef=4096</text><rect class="bar alt" x="124" y="115" width="358.0" height="14"></rect><text x="488.0" y="126">13.6ms</text><text class="lbl" x="0" y="151">scan the matches</text><rect class="bar " x="124" y="141" width="62.9" height="14"></rect><text x="192.9" y="152">194µs</text><line class="base" x1="124" y1="8" x2="124" y2="164"></line><text class="axis-title" x="124" y="184">LOGARITHMIC — time per query, lower is better</text></svg>
+<figcaption>time per filtered query. note the logarithmic axis</figcaption>
+</figure>
+
+<p>At the setting that was fine a moment ago, the graph returns
+<strong>0.10 usable
+results out of ten</strong> and recall of
+0.0100. Pushing
+<code>ef_search</code> up to
+4096 recovers
+100% recall
+and costs
+13.6ms per
+query.</p>
+
+<p>And scanning the 10,035
+matching vectors directly, with no graph and no approximation, takes
+194µs and is
+exactly right.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>The filter result is the one to understand, because it is the one that will bite you
+in production, and it has a mechanism, not a mystery.</p>
+
+<p>The graph was built over <em>all</em> the vectors. Its edges encode which vectors
+are near which others across the whole collection, and the walk follows those edges.
+When you filter afterwards, you are asking the graph to find the ten nearest documents
+and then throwing most of them away, and the ten nearest documents overall are hardly
+ever in a bucket holding
+1.0% of the collection. So you must
+ask for far more than ten and hope enough survive, which means walking far more of the
+graph, which is exactly the cost the graph existed to avoid.</p>
+
+<p>Meanwhile, once the filter is selective enough, the honest answer is very cheap.
+There are only
+10,035 candidates, so compare
+against all of them. Brute force over a small set beats a clever structure over a large
+one, and there is a crossover point where that stops being true. Vector databases spend
+real engineering on this: pre-filtering with per-attribute subgraphs, filtered graph
+traversal that only follows edges to matching nodes, or detecting the selective case
+and scanning instead. When a vector database's documentation talks about filter
+strategies or a selectivity threshold, this measurement is what it is about.</p>
+
+<h3>What Part 0 was doing</h3>
+
+<p>Go back to <code>db.add()</code> and <code>db.query()</code>. Chroma built an index
+of this kind, this graph or one very like it, with an <code>M</code>, an
+<code>ef_construction</code>, and an <code>ef_search</code> chosen for you. Your Part 0
+pipeline has a recall number. You have never seen it. It is a specific value on the
+curve above, and it was picked by someone who had never met your corpus.</p>
+
+<p>That is not a criticism of the library. Defaults have to be something, and these are
+reasonable ones. It is a statement about what you now know how to ask: <em>what is my
+recall, and what would it cost me to raise it?</em></p>
+
+<h3>Two kinds of "faster", one module apart</h3>
+
+<p>Module 11's WAND skipped work and returned identical answers, because it could prove
+that what it skipped could not win. This module's graph skips work and returns
+different answers, because it cannot prove anything. It is a walk with a budget.</p>
+
+<p>Both are called making retrieval fast. Only one of them needs a recall measurement
+next to it, and the one that does is the one everybody reaches for first.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> the <code>retrieve()</code> line has a quality setting
+inside it that nothing in the API surfaces. <strong>Backward:</strong> module 6 said
+distance is a promise the model makes, and this module is where the <em>index</em>
+stops keeping that promise exactly. Module 7's brute force is what "exactly" means, and
+module 8's harness is what turns "approximately" into a number.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Here the cost is paid in a currency the earlier modules never used: not time, not
+memory, but <em>correctness</em>, in measured amounts, on purpose.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Grainger, Turnbull &amp; Irwin,
+  <span class="title">AI-Powered Search</span>.</strong> The dense-retrieval and hybrid
+  chapters, for where an approximate index sits in a real system rather than on its
+  own.</p>
+
+  <p class="book"><strong>Lin, Nogueira &amp; Yates,
+  <span class="title">Pretrained Transformers for Text Ranking</span>.</strong> For how
+  a reranker sits on top of an approximate first stage, which is module 15's subject
+  and the standard answer to "my recall is only
+  86%".</p>
+
+  <ol>
+    <li>Recall fell to 86% but NDCG
+    fell by only 0.0704. Explain
+    the gap, and say which number you would put in a service-level objective.</li>
+    <li>A filter matching 1.0% of
+    documents broke the graph. At what selectivity would you expect the graph to become
+    worth using again, and how would you find that point for your own data?</li>
+    <li>Your team wants "the fastest possible vector search". What do you need to know
+    before that request means anything?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your recall is 1.0000 at every setting, your corpus is probably too small for
+    the graph to have any choices to get wrong. Under a few tens of thousands of
+    vectors, HNSW usually finds everything. Run at <code>--scale part2</code> or larger
+    before drawing conclusions from the curve.</p>
+    <p>If HNSW is <em>slower</em> than brute force, that is a real result at small
+    scale and not a mistake. Brute force is one large matrix multiply, which modern
+    hardware is extremely good at. The graph walk is many small dependent lookups,
+    which it is not. The crossover is somewhere in the hundreds of thousands of vectors
+    on most machines. Find yours.</p>
+    <p>If <code>hnswlib</code> will not install on macOS, it compiles C++ and needs the
+    libc++ headers on the compiler's search path. <code>requirements.txt</code> has the
+    one-line export that fixes it.</p>
+    <p>If your filtered recall looks fine at low <code>ef_search</code>, check that
+    your filter is actually selective. A filter matching half the corpus costs the
+    graph almost nothing. The cliff is a property of selectivity, not of
+    filtering.</p>
+  </div>
+</div>
+<button class="done-toggle" type="button" aria-pressed="false" data-module="12-vector-search-at-scale"><span class="box"></span><span class="label">mark this module complete</span></button><nav class="modnav"><a class="prev" href="11-retrieval-at-scale.html"><span class="dir">previous</span><span class="name">11 · How ranking stays fast at scale</span></a><a class="next" href="13-why-parsing-is-hard.html"><span class="dir">next</span><span class="name">13 · Why parsing is a hard problem</span></a></nav></main></div></div><script src="../assets/site.js"></script>
+</body>
+</html>

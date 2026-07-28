@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 · When the index doesn&#x27;t fit in memory — Beneath the Pipeline</title>
+<meta name="description" content="Module 7&#x27;s index at 1M passages, and the memory curve heading off the page.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead"><div class="masthead-inner"><div class="brandrow"><a class="brand" href="../index.html"><b>Beneath the Pipeline</b> &nbsp;/&nbsp; part iii · when reality arrives</a><span class="progress-label">09 / 15</span></div><nav class="strip" aria-label="the pipeline"><a class="stage stressed" href="04-load.html" title="load() — built in module 4; stressed in module 9"><span class="n">04·09</span>load</a><a class="stage done" href="05-parse.html" title="parse() — built in module 5; stressed in module 13"><span class="n">05·13</span>parse</a><a class="stage done" href="06-chunk-embed.html" title="chunk() — built in module 6"><span class="n">06</span>chunk</a><a class="stage done" href="06-chunk-embed.html" title="embed() — built in module 6; stressed in module 12"><span class="n">06·12</span>embed</a><a class="stage stressed" href="07-index.html" title="index() — built in module 7; stressed in module 9, 10, 12"><span class="n">07·09·10·12</span>index</a><a class="stage done" href="08-retrieve.html" title="retrieve() — built in module 8; stressed in module 11, 14"><span class="n">08·11·14</span>retrieve</a></nav><div class="lane2"><span class="spacer"></span><a class="branch" href="14-what-vectors-cant-answer.html" title="module 14 — the structured path">14 · structured</a></div></div></header><div class="wrap"><div class="layout"><div class="gutter" aria-hidden="true"><div class="marks"><div>0000</div><div>0010</div><div>0020</div><div>0030</div><div>0040</div><div>0050</div><div>0060</div><div>0070</div><div>0080</div><div>0090</div><div>00a0</div><div>00b0</div><div>00c0</div><div>00d0</div><div>00e0</div><div>00f0</div><div>0100</div><div>0110</div><div>0120</div><div>0130</div><div>0140</div><div>0150</div><div>0160</div><div>0170</div><div>0180</div><div>0190</div><div>01a0</div><div>01b0</div><div>01c0</div><div>01d0</div><div>01e0</div><div>01f0</div><div>0200</div><div>0210</div><div>0220</div><div>0230</div><div>0240</div><div>0250</div><div>0260</div><div>0270</div><div>0280</div><div>0290</div><div>02a0</div><div>02b0</div><div>02c0</div><div>02d0</div><div>02e0</div><div>02f0</div><div>0300</div><div>0310</div><div>0320</div><div>0330</div><div>0340</div><div>0350</div><div>0360</div><div>0370</div><div>0380</div><div>0390</div><div>03a0</div><div>03b0</div><div>03c0</div><div>03d0</div><div>03e0</div><div>03f0</div><div>0400</div><div>0410</div><div>0420</div><div>0430</div><div>0440</div><div>0450</div><div>0460</div><div>0470</div><div>0480</div><div>0490</div><div>04a0</div><div>04b0</div><div>04c0</div><div>04d0</div><div>04e0</div><div>04f0</div><div>0500</div><div>0510</div><div>0520</div><div>0530</div><div>0540</div><div>0550</div><div>0560</div><div>0570</div><div>0580</div><div>0590</div><div>05a0</div><div>05b0</div><div>05c0</div><div>05d0</div><div>05e0</div><div>05f0</div><div>0600</div><div>0610</div><div>0620</div><div>0630</div><div>0640</div><div>0650</div><div>0660</div><div>0670</div><div>0680</div><div>0690</div><div>06a0</div><div>06b0</div><div>06c0</div><div>06d0</div><div>06e0</div><div>06f0</div><div>0700</div><div>0710</div><div>0720</div><div>0730</div><div>0740</div><div>0750</div><div>0760</div><div>0770</div><div>0780</div><div>0790</div><div>07a0</div><div>07b0</div><div>07c0</div><div>07d0</div><div>07e0</div><div>07f0</div><div>0800</div><div>0810</div><div>0820</div><div>0830</div><div>0840</div><div>0850</div><div>0860</div><div>0870</div><div>0880</div><div>0890</div><div>08a0</div><div>08b0</div><div>08c0</div><div>08d0</div><div>08e0</div><div>08f0</div><div>0900</div><div>0910</div><div>0920</div><div>0930</div><div>0940</div><div>0950</div><div>0960</div><div>0970</div><div>0980</div><div>0990</div><div>09a0</div><div>09b0</div><div>09c0</div><div>09d0</div><div>09e0</div><div>09f0</div><div>0a00</div><div>0a10</div><div>0a20</div><div>0a30</div><div>0a40</div><div>0a50</div><div>0a60</div><div>0a70</div><div>0a80</div><div>0a90</div><div>0aa0</div><div>0ab0</div><div>0ac0</div><div>0ad0</div><div>0ae0</div><div>0af0</div><div>0b00</div><div>0b10</div><div>0b20</div><div>0b30</div><div>0b40</div><div>0b50</div><div>0b60</div><div>0b70</div><div>0b80</div><div>0b90</div><div>0ba0</div><div>0bb0</div><div>0bc0</div><div>0bd0</div><div>0be0</div><div>0bf0</div><div>0c00</div><div>0c10</div><div>0c20</div><div>0c30</div><div>0c40</div><div>0c50</div><div>0c60</div><div>0c70</div><div>0c80</div><div>0c90</div><div>0ca0</div><div>0cb0</div><div>0cc0</div><div>0cd0</div><div>0ce0</div><div>0cf0</div><div>0d00</div><div>0d10</div><div>0d20</div><div>0d30</div><div>0d40</div><div>0d50</div><div>0d60</div><div>0d70</div><div>0d80</div><div>0d90</div><div>0da0</div><div>0db0</div><div>0dc0</div><div>0dd0</div><div>0de0</div><div>0df0</div><div>0e00</div><div>0e10</div><div>0e20</div><div>0e30</div><div>0e40</div><div>0e50</div><div>0e60</div><div>0e70</div><div>0e80</div><div>0e90</div><div>0ea0</div><div>0eb0</div><div>0ec0</div><div>0ed0</div><div>0ee0</div><div>0ef0</div><div>0f00</div><div>0f10</div><div>0f20</div><div>0f30</div><div>0f40</div><div>0f50</div><div>0f60</div><div>0f70</div><div>0f80</div><div>0f90</div><div>0fa0</div><div>0fb0</div><div>0fc0</div><div>0fd0</div><div>0fe0</div><div>0ff0</div><div>1000</div><div>1010</div><div>1020</div><div>1030</div><div>1040</div><div>1050</div><div>1060</div><div>1070</div><div>1080</div><div>1090</div><div>10a0</div><div>10b0</div><div>10c0</div><div>10d0</div><div>10e0</div><div>10f0</div><div>1100</div><div>1110</div><div>1120</div><div>1130</div><div>1140</div><div>1150</div><div>1160</div><div>1170</div><div>1180</div><div>1190</div><div>11a0</div><div>11b0</div><div>11c0</div><div>11d0</div><div>11e0</div><div>11f0</div><div>1200</div><div>1210</div><div>1220</div><div>1230</div><div>1240</div><div>1250</div><div>1260</div><div>1270</div><div>1280</div><div>1290</div><div>12a0</div><div>12b0</div><div>12c0</div><div>12d0</div><div>12e0</div><div>12f0</div><div>1300</div><div>1310</div><div>1320</div><div>1330</div><div>1340</div><div>1350</div><div>1360</div><div>1370</div><div>1380</div><div>1390</div><div>13a0</div><div>13b0</div><div>13c0</div><div>13d0</div><div>13e0</div><div>13f0</div><div>1400</div><div>1410</div><div>1420</div><div>1430</div><div>1440</div><div>1450</div><div>1460</div><div>1470</div><div>1480</div><div>1490</div><div>14a0</div><div>14b0</div><div>14c0</div><div>14d0</div><div>14e0</div><div>14f0</div><div>1500</div><div>1510</div><div>1520</div><div>1530</div><div>1540</div><div>1550</div><div>1560</div><div>1570</div><div>1580</div><div>1590</div><div>15a0</div><div>15b0</div><div>15c0</div><div>15d0</div><div>15e0</div><div>15f0</div><div>1600</div><div>1610</div><div>1620</div><div>1630</div><div>1640</div><div>1650</div><div>1660</div><div>1670</div><div>1680</div><div>1690</div><div>16a0</div><div>16b0</div><div>16c0</div><div>16d0</div><div>16e0</div><div>16f0</div><div>1700</div><div>1710</div><div>1720</div><div>1730</div><div>1740</div><div>1750</div><div>1760</div><div>1770</div><div>1780</div><div>1790</div><div>17a0</div><div>17b0</div><div>17c0</div><div>17d0</div><div>17e0</div><div>17f0</div><div>1800</div><div>1810</div><div>1820</div><div>1830</div><div>1840</div><div>1850</div><div>1860</div><div>1870</div><div>1880</div><div>1890</div><div>18a0</div><div>18b0</div><div>18c0</div><div>18d0</div><div>18e0</div><div>18f0</div><div>1900</div><div>1910</div><div>1920</div><div>1930</div><div>1940</div><div>1950</div><div>1960</div><div>1970</div><div>1980</div><div>1990</div><div>19a0</div><div>19b0</div><div>19c0</div><div>19d0</div><div>19e0</div><div>19f0</div><div>1a00</div><div>1a10</div><div>1a20</div><div>1a30</div><div>1a40</div><div>1a50</div><div>1a60</div><div>1a70</div><div>1a80</div><div>1a90</div><div>1aa0</div><div>1ab0</div><div>1ac0</div><div>1ad0</div><div>1ae0</div><div>1af0</div><div>1b00</div><div>1b10</div><div>1b20</div><div>1b30</div><div>1b40</div><div>1b50</div><div>1b60</div><div>1b70</div><div>1b80</div><div>1b90</div><div>1ba0</div><div>1bb0</div><div>1bc0</div><div>1bd0</div><div>1be0</div><div>1bf0</div><div>1c00</div><div>1c10</div><div>1c20</div><div>1c30</div><div>1c40</div><div>1c50</div><div>1c60</div><div>1c70</div><div>1c80</div><div>1c90</div><div>1ca0</div><div>1cb0</div><div>1cc0</div><div>1cd0</div><div>1ce0</div><div>1cf0</div><div>1d00</div><div>1d10</div><div>1d20</div><div>1d30</div><div>1d40</div><div>1d50</div><div>1d60</div><div>1d70</div><div>1d80</div><div>1d90</div><div>1da0</div><div>1db0</div><div>1dc0</div><div>1dd0</div><div>1de0</div><div>1df0</div><div>1e00</div><div>1e10</div><div>1e20</div><div>1e30</div><div>1e40</div><div>1e50</div><div>1e60</div><div>1e70</div><div>1e80</div><div>1e90</div><div>1ea0</div><div>1eb0</div><div>1ec0</div><div>1ed0</div><div>1ee0</div><div>1ef0</div><div>1f00</div><div>1f10</div><div>1f20</div><div>1f30</div><div>1f40</div><div>1f50</div><div>1f60</div><div>1f70</div><div>1f80</div><div>1f90</div><div>1fa0</div><div>1fb0</div><div>1fc0</div><div>1fd0</div><div>1fe0</div><div>1ff0</div><div>2000</div><div>2010</div><div>2020</div><div>2030</div><div>2040</div><div>2050</div><div>2060</div><div>2070</div><div>2080</div><div>2090</div><div>20a0</div><div>20b0</div><div>20c0</div><div>20d0</div><div>20e0</div><div>20f0</div><div>2100</div><div>2110</div><div>2120</div><div>2130</div><div>2140</div><div>2150</div><div>2160</div><div>2170</div><div>2180</div><div>2190</div><div>21a0</div><div>21b0</div><div>21c0</div><div>21d0</div><div>21e0</div><div>21f0</div><div>2200</div><div>2210</div><div>2220</div><div>2230</div><div>2240</div><div>2250</div><div>2260</div><div>2270</div><div>2280</div><div>2290</div><div>22a0</div><div>22b0</div><div>22c0</div><div>22d0</div><div>22e0</div><div>22f0</div><div>2300</div><div>2310</div><div>2320</div><div>2330</div><div>2340</div><div>2350</div><div>2360</div><div>2370</div><div>2380</div><div>2390</div><div>23a0</div><div>23b0</div><div>23c0</div><div>23d0</div><div>23e0</div><div>23f0</div><div>2400</div><div>2410</div><div>2420</div><div>2430</div><div>2440</div><div>2450</div><div>2460</div><div>2470</div><div>2480</div><div>2490</div><div>24a0</div><div>24b0</div><div>24c0</div><div>24d0</div><div>24e0</div><div>24f0</div><div>2500</div><div>2510</div><div>2520</div><div>2530</div><div>2540</div><div>2550</div><div>2560</div><div>2570</div><div>2580</div><div>2590</div><div>25a0</div><div>25b0</div><div>25c0</div><div>25d0</div><div>25e0</div><div>25f0</div><div>2600</div><div>2610</div><div>2620</div><div>2630</div><div>2640</div><div>2650</div><div>2660</div><div>2670</div><div>2680</div><div>2690</div><div>26a0</div><div>26b0</div><div>26c0</div><div>26d0</div><div>26e0</div><div>26f0</div><div>2700</div><div>2710</div><div>2720</div><div>2730</div><div>2740</div><div>2750</div><div>2760</div><div>2770</div><div>2780</div><div>2790</div><div>27a0</div><div>27b0</div><div>27c0</div><div>27d0</div><div>27e0</div><div>27f0</div><div>2800</div><div>2810</div><div>2820</div><div>2830</div><div>2840</div><div>2850</div><div>2860</div><div>2870</div><div>2880</div><div>2890</div><div>28a0</div><div>28b0</div><div>28c0</div><div>28d0</div><div>28e0</div><div>28f0</div><div>2900</div><div>2910</div><div>2920</div><div>2930</div><div>2940</div><div>2950</div><div>2960</div><div>2970</div><div>2980</div><div>2990</div><div>29a0</div><div>29b0</div><div>29c0</div><div>29d0</div><div>29e0</div><div>29f0</div><div>2a00</div><div>2a10</div><div>2a20</div><div>2a30</div><div>2a40</div><div>2a50</div><div>2a60</div><div>2a70</div><div>2a80</div><div>2a90</div><div>2aa0</div><div>2ab0</div><div>2ac0</div><div>2ad0</div><div>2ae0</div><div>2af0</div><div>2b00</div><div>2b10</div><div>2b20</div><div>2b30</div><div>2b40</div><div>2b50</div><div>2b60</div><div>2b70</div><div>2b80</div><div>2b90</div><div>2ba0</div><div>2bb0</div><div>2bc0</div><div>2bd0</div><div>2be0</div><div>2bf0</div><div>2c00</div><div>2c10</div><div>2c20</div><div>2c30</div><div>2c40</div><div>2c50</div><div>2c60</div><div>2c70</div><div>2c80</div><div>2c90</div><div>2ca0</div><div>2cb0</div><div>2cc0</div><div>2cd0</div><div>2ce0</div><div>2cf0</div><div>2d00</div><div>2d10</div><div>2d20</div><div>2d30</div><div>2d40</div><div>2d50</div><div>2d60</div><div>2d70</div><div>2d80</div><div>2d90</div><div>2da0</div><div>2db0</div><div>2dc0</div><div>2dd0</div><div>2de0</div><div>2df0</div><div>2e00</div><div>2e10</div><div>2e20</div><div>2e30</div><div>2e40</div><div>2e50</div><div>2e60</div><div>2e70</div><div>2e80</div><div>2e90</div><div>2ea0</div><div>2eb0</div><div>2ec0</div><div>2ed0</div><div>2ee0</div><div>2ef0</div><div>2f00</div><div>2f10</div><div>2f20</div><div>2f30</div><div>2f40</div><div>2f50</div><div>2f60</div><div>2f70</div><div>2f80</div><div>2f90</div><div>2fa0</div><div>2fb0</div><div>2fc0</div><div>2fd0</div><div>2fe0</div><div>2ff0</div><div>3000</div><div>3010</div><div>3020</div><div>3030</div><div>3040</div><div>3050</div><div>3060</div><div>3070</div><div>3080</div><div>3090</div><div>30a0</div><div>30b0</div><div>30c0</div><div>30d0</div><div>30e0</div><div>30f0</div><div>3100</div><div>3110</div><div>3120</div><div>3130</div><div>3140</div><div>3150</div><div>3160</div><div>3170</div><div>3180</div><div>3190</div><div>31a0</div><div>31b0</div><div>31c0</div><div>31d0</div><div>31e0</div><div>31f0</div><div>3200</div><div>3210</div><div>3220</div><div>3230</div><div>3240</div><div>3250</div><div>3260</div><div>3270</div><div>3280</div><div>3290</div><div>32a0</div><div>32b0</div><div>32c0</div><div>32d0</div><div>32e0</div><div>32f0</div><div>3300</div><div>3310</div><div>3320</div><div>3330</div><div>3340</div><div>3350</div><div>3360</div><div>3370</div><div>3380</div><div>3390</div><div>33a0</div><div>33b0</div><div>33c0</div><div>33d0</div><div>33e0</div><div>33f0</div><div>3400</div><div>3410</div><div>3420</div><div>3430</div><div>3440</div><div>3450</div><div>3460</div><div>3470</div><div>3480</div><div>3490</div><div>34a0</div><div>34b0</div><div>34c0</div><div>34d0</div><div>34e0</div><div>34f0</div><div>3500</div><div>3510</div><div>3520</div><div>3530</div><div>3540</div><div>3550</div><div>3560</div><div>3570</div><div>3580</div><div>3590</div><div>35a0</div><div>35b0</div><div>35c0</div><div>35d0</div><div>35e0</div><div>35f0</div><div>3600</div><div>3610</div><div>3620</div><div>3630</div><div>3640</div><div>3650</div><div>3660</div><div>3670</div><div>3680</div><div>3690</div><div>36a0</div><div>36b0</div><div>36c0</div><div>36d0</div><div>36e0</div><div>36f0</div><div>3700</div><div>3710</div><div>3720</div><div>3730</div><div>3740</div><div>3750</div><div>3760</div><div>3770</div><div>3780</div><div>3790</div><div>37a0</div><div>37b0</div><div>37c0</div><div>37d0</div><div>37e0</div><div>37f0</div><div>3800</div><div>3810</div><div>3820</div><div>3830</div></div></div><main class="col"><p class="kicker">Part III · module 9 · build · 45–70 minutes</p>
+<h1><span class="num">09 ·</span> When the index doesn't fit in memory</h1>
+<p class="hook">This module breaks module 7's inverted index, and module 4's loading
+with it. Part II worked because everything fitted in memory. This is the module where
+that stops being true, and it is the hinge of Part III.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>Every structure you built in Part II lived comfortably in memory, and that comfort
+was doing quiet work for you. A dict lookup assumes the dict is there. Sorting assumes
+the list is there. Module 7's index assumed the whole corpus could be tokenized into
+one structure that fits in RAM.</p>
+
+<p>But the index grows in a straight line with the corpus, and your RAM does not grow
+at all. At some corpus size the two lines cross, and past that point the naive build is
+not slow, it is impossible. Real search engines index billions of documents on machines
+that could never hold those indexes in memory, so there must be a technique, and there
+is. It is old, general, and worth knowing far beyond search: <strong>never require the
+whole structure to exist at once</strong>. Build a bounded piece in memory, write it to
+disk sorted, forget it, repeat, and at the end merge the sorted pieces with a merge
+that itself only ever holds a sliver. In this module you build that technique, and then
+you shrink what lands on disk with a compression scheme built from module 3's
+observation that small numbers need fewer bytes.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Module 7's index held 100,000 passages in
+  81.3MB. Run the same
+  code at 1,000,000 passages and it holds
+  574.8MB.</p>
+  <p>It grows by 596B per
+  passage, and it does not stop. Notice the other thing that broke on the way: at these
+  sizes you can no longer "load the corpus" either.</p>
+  <p>How do you build an index that is bigger than your memory, using only your
+  memory?</p>
+</div>
+
+<div class="aside">
+  <span class="aside-label">a note on how this module measures</span>
+  Watching a process die is a poor experiment, because when it dies depends entirely on
+  how much memory your machine happens to have. This one measures peak memory at seven
+  corpus sizes for both strategies and plots the curves, so you can read where the line
+  leaves <em>your</em> machine. On the machine that produced these numbers
+  (128.0 GB) the in-memory line reaches physical memory at around
+  230.6M passages.
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/09-index-that-doesnt-fit/starter.py</code>. It has four
+<code>TODO</code>s: two that stop the index needing memory it does not have, and two
+that make what is left smaller.</p>
+
+<figure>
+  <div class="code"><pre>python exercises/09-index-that-doesnt-fit/starter.py --scale small
+python exercises/09-index-that-doesnt-fit/verify.py</pre></div>
+</figure>
+
+<h3>Stream, block, spill, merge</h3>
+
+<p>The technique is called <span class="term">SPIMI</span>, short for single-pass
+in-memory indexing, and it is four rules:</p>
+
+<ol>
+  <li>Read documents one at a time. Never hold the corpus.</li>
+  <li>Accumulate postings in a dict until you have a block's worth of documents.</li>
+  <li>Write that block to disk as a run of lines <em>sorted by term</em>, then throw
+  the dict away.</li>
+  <li>When every block is written, merge the sorted runs into one, taking the smallest
+  term available across all the files at each step.</li>
+</ol>
+
+<p>Peak memory is then set by the block size, which you choose, rather than by the
+corpus size, which you do not.</p>
+
+<h3>Then make the postings smaller</h3>
+
+<p>A posting list is a sorted list of document ids. Sorted means every id is larger
+than the one before, so you can store the <em>differences</em> and lose nothing:</p>
+
+<figure>
+  <div class="code"><pre>ids   [3, 17, 18, 92, 415, 416, 417]
+gaps  [3, 14,  1, 74, 323,   1,   1]</pre></div>
+</figure>
+
+<p>The numbers got much smaller, and module 3 already told you that a small number
+needs fewer bytes. So write each one with as few bytes as it needs. The scheme is
+called <span class="term">varbyte</span>: seven bits of the number per byte, low bits
+first, and the eighth bit of each byte says whether another byte follows. Anything
+under 128 takes one byte instead of four.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>One memory curve climbs, the other stays flat</h3>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 270" preserveAspectRatio="xMinYMin meet" role="img" aria-label="peak memory against corpus size"><line class="grid" x1="62" y1="230.0" x2="544" y2="230.0"></line><text x="56" y="233.5" text-anchor="end">0B</text><line class="grid" x1="62" y1="158.3" x2="544" y2="158.3"></line><text x="56" y="161.8" text-anchor="end">190.7MB</text><line class="grid" x1="62" y1="86.6" x2="544" y2="86.6"></line><text x="56" y="90.1" text-anchor="end">381.5MB</text><line class="grid" x1="62" y1="15.0" x2="544" y2="15.0"></line><text x="56" y="18.5" text-anchor="end">572.2MB</text><text x="62.0" y="246" text-anchor="middle">10k</text><text x="177.0" y="246" text-anchor="middle">30k</text><text x="303.0" y="246" text-anchor="middle">100k</text><text x="418.0" y="246" text-anchor="middle">300k</text><text x="544.0" y="246" text-anchor="middle">1.0M</text><line class="base" x1="62" y1="230" x2="544" y2="230"></line><polyline class="line alt" points="62.0,225.5 157.9,220.6 230.5,213.6 303.0,199.4 398.9,161.5 471.5,116.5 544.0,14.0"></polyline><circle class="dot alt" cx="62.0" cy="225.5" r="2.6"></circle><circle class="dot alt" cx="157.9" cy="220.6" r="2.6"></circle><circle class="dot alt" cx="230.5" cy="213.6" r="2.6"></circle><circle class="dot alt" cx="303.0" cy="199.4" r="2.6"></circle><circle class="dot alt" cx="398.9" cy="161.5" r="2.6"></circle><circle class="dot alt" cx="471.5" cy="116.5" r="2.6"></circle><circle class="dot alt" cx="544.0" cy="14.0" r="2.6"></circle><text class="lbl" x="540.0" y="5.0" text-anchor="end">all in memory</text><polyline class="line " points="62.0,225.5 157.9,223.5 230.5,220.9 303.0,218.6 398.9,207.2 471.5,190.7 544.0,158.8"></polyline><circle class="dot " cx="62.0" cy="225.5" r="2.6"></circle><circle class="dot " cx="157.9" cy="223.5" r="2.6"></circle><circle class="dot " cx="230.5" cy="220.9" r="2.6"></circle><circle class="dot " cx="303.0" cy="218.6" r="2.6"></circle><circle class="dot " cx="398.9" cy="207.2" r="2.6"></circle><circle class="dot " cx="471.5" cy="190.7" r="2.6"></circle><circle class="dot " cx="544.0" cy="158.8" r="2.6"></circle><text class="lbl" x="540.0" y="149.8" text-anchor="end">SPIMI, merge included</text><polyline class="line " points="62.0,225.5 157.9,223.5 230.5,221.5 303.0,219.8 398.9,219.5 471.5,217.1 544.0,215.8"></polyline><circle class="dot " cx="62.0" cy="225.5" r="2.6"></circle><circle class="dot " cx="157.9" cy="223.5" r="2.6"></circle><circle class="dot " cx="230.5" cy="221.5" r="2.6"></circle><circle class="dot " cx="303.0" cy="219.8" r="2.6"></circle><circle class="dot " cx="398.9" cy="219.5" r="2.6"></circle><circle class="dot " cx="471.5" cy="217.1" r="2.6"></circle><circle class="dot " cx="544.0" cy="215.8" r="2.6"></circle><text class="lbl" x="540.0" y="206.8" text-anchor="end">SPIMI, building blocks</text><text class="axis-title" x="62" y="264">passages indexed</text><text class="axis-title" x="62" y="11">peak memory held</text></svg>
+<figcaption>peak memory held while building, measured in a fresh process at each size
+so the high-water mark is real. note the logarithmic horizontal axis</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/09-index-that-doesnt-fit/solution.py, block size
+  10,000</caption>
+  <thead><tr><th class="num">passages</th><th class="num">all in memory</th>
+    <th class="num">SPIMI, building</th><th class="num">SPIMI, with merge</th>
+    <th class="num">in-memory time</th><th class="num">SPIMI time</th></tr></thead>
+  <tbody>
+    <tr><td class="num">10,000</td>
+      <td class="num">12.0MB</td>
+      <td class="num">12.0MB</td>
+      <td class="num">12.0MB</td>
+      <td class="num">121.0ms</td>
+      <td class="num">234.7ms</td></tr>
+    <tr><td class="num">100,000</td>
+      <td class="num">81.3MB</td>
+      <td class="num">27.1MB</td>
+      <td class="num">30.4MB</td>
+      <td class="num">1.23s</td>
+      <td class="num">2.37s</td></tr>
+    <tr><td class="num">500,000</td>
+      <td class="num">302.1MB</td>
+      <td class="num">34.3MB</td>
+      <td class="num">104.6MB</td>
+      <td class="num">6.40s</td>
+      <td class="num">12.21s</td></tr>
+    <tr class="lose"><td class="num">1,000,000</td>
+      <td class="num">574.8MB</td>
+      <td class="num">37.8MB</td>
+      <td class="num">189.5MB</td>
+      <td class="num">12.82s</td>
+      <td class="num">24.62s</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Over a 100× range of corpus sizes:</p>
+
+<ul>
+  <li>the in-memory index grew
+  <strong>47.9&times;</strong>;</li>
+  <li>SPIMI's block-building phase grew
+  <strong>3.1&times;</strong>, because it is
+  bounded by the block size and not by the corpus;</li>
+  <li>SPIMI including the merge grew
+  15.7&times;, and that number is worth
+  explaining rather than hiding.</li>
+</ul>
+
+<p>SPIMI costs about twice the wall time,
+24.62s against
+12.82s at
+1,000,000 passages, because it writes
+everything out and reads it back. That is the price, and it buys a build that does not
+stop working.</p>
+
+<h3>What compression saved, and what it charges</h3>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 112" preserveAspectRatio="xMinYMin meet" role="img" aria-label="posting list size under three encodings"><text class="lbl" x="0" y="21">raw 32-bit ids</text><rect class="bar alt" x="134" y="11" width="352.0" height="14"></rect><text x="492.0" y="22">153.8MB</text><text class="lbl" x="0" y="47">gaps, still 32-bit</text><rect class="bar alt" x="134" y="37" width="352.0" height="14"></rect><text x="492.0" y="48">153.8MB</text><text class="lbl" x="0" y="73">gaps + varbyte</text><rect class="bar" x="134" y="63" width="121.8" height="14"></rect><text x="261.8" y="74">53.2MB</text><line class="base" x1="134" y1="8" x2="134" y2="86"></line><text class="axis-title" x="134" y="106">40,305,871 postings — lower is better</text></svg>
+<figcaption>40,305,871 postings across
+447,782 terms</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>encoding</th><th class="num">total</th>
+    <th class="num">bytes per posting</th></tr></thead>
+  <tbody>
+    <tr><td>raw 32-bit document ids</td>
+      <td class="num">153.8MB</td>
+      <td class="num">4.00</td></tr>
+    <tr><td>gaps, still 32 bits each</td>
+      <td class="num">153.8MB</td>
+      <td class="num">4.00</td></tr>
+    <tr class="win"><td>gaps, varbyte</td>
+      <td class="num">53.2MB</td>
+      <td class="num">1.38</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>2.9&times; smaller</strong>, from
+4.00 bytes per posting
+down to
+1.38.</p>
+
+<p>Look at the middle row, because it is the one that teaches. Converting to gaps saved
+<em>nothing</em> on its own. The numbers got smaller, but each one still sat in four
+bytes. The saving came only when the encoding was allowed to use fewer bytes for
+smaller numbers. Two ideas, and neither works without the other.</p>
+
+<p>And compression charges you back. Reading a posting list that has to be decoded
+costs <strong>15.4&times;</strong> more
+than reading a plain Python list of the same postings. Every compressed index in the
+world makes that trade deliberately: memory and disk are the scarce things, and a few
+extra arithmetic operations per posting are cheap by comparison.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Start with why the in-memory index grows the way it does. Each new passage adds
+roughly 40,305,871 ÷
+100,000 postings, around forty, and each posting is a Python
+integer inside a Python list, which carries far more than four bytes of machinery.
+Measured, the whole structure costs
+596B per passage. Nothing
+about that is fixable by being careful. It is linear in the corpus, and linear growth
+against a fixed amount of memory has exactly one outcome.</p>
+
+<p>SPIMI's answer is not to make the index smaller. It is to stop requiring the whole
+index to exist at once. You hold one block, write it out, and forget it. The finished
+index is assembled by a merge that reads one line at a time from each block file and
+writes one line at a time to the output, so the largest thing in memory during the
+merge is one term's complete posting list, plus one buffered line per file.</p>
+
+<p>Which is exactly why SPIMI's total peak still grew
+15.7&times; while its building phase grew only
+3.1&times;. At a million passages, the
+posting list for a word like <em>the</em> holds hundreds of thousands of ids, and
+assembling it means holding it. Real systems stream that too, writing the merged
+postings out incrementally instead of building the list first. The measurement tells
+you where the remaining cost is, and it is not where the naive version's cost was.</p>
+
+<h3>You have seen this trick before</h3>
+
+<p>Look at what spill-and-merge actually is, because it is not new to you.</p>
+
+<p>Module 4 measured that few large transfers beat many small ones, and concluded that
+you should read in big buffered chunks. This module runs that lesson in reverse. Here
+memory is the scarce resource instead of time, so you deliberately break one enormous
+operation into many bounded ones, and the reason that is affordable is module 4's
+result. Each spill is one large sequential write. Each merge input is one large
+sequential read. If disk transfers were priced per byte rather than per request, SPIMI
+would not be worth doing.</p>
+
+<p>Compression is module 3 applied a few million times. Byte widths, and the
+observation that a small number does not need a large box. Gaps make the numbers small,
+varbyte lets the small numbers use small boxes, and the
+2.9&times; is the compound interest on a
+byte-level decision.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>db.add()</code> at scale does not build the structure
+module 7 built. It streams, spills, merges, and compresses, and every vector database
+and search engine you will use does some version of exactly this.
+<strong>Backward:</strong> module 4's "few large transfers beat many small ones", run
+backwards to buy bounded memory; module 3's byte widths, applied
+40,305,871 times; module 7's index,
+which is what broke.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>This is the module where the cost stops being a number on a page and starts deciding
+what you are allowed to build.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Manning, Raghavan &amp; Schütze,
+  <span class="title">Introduction to Information Retrieval</span>, chapters
+  4–5.</strong> Chapter 4 is index construction under memory pressure, with BSBI and
+  SPIMI named and compared. Chapter 5 is compression, including the gap-and-varbyte
+  scheme you just built and several better ones. Expect chapter 5 to make your
+  2.9&times; look modest.</p>
+
+  <ol>
+    <li>Your block size is 10,000 documents.
+    What happens to peak memory, merge time, and the number of block files if you
+    halve it? Which of those three do you care about?</li>
+    <li>Gaps alone saved nothing. Say why, in terms of what a 32-bit integer is.</li>
+    <li>Decoding costs 15.4&times; more
+    than not decoding. Name a situation where you would refuse to compress, and one
+    where the 2.9&times; is worth far more
+    than the time.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If SPIMI's memory grows as fast as the in-memory build, check that your document
+    source is a generator rather than a list. <code>eval_corpus(n)</code> returns a
+    list and holds the whole corpus; <code>iter_eval_corpus(n)</code> streams. Getting
+    this wrong is the most common way to write a streaming index that does not stream,
+    and it is worth causing on purpose once.</p>
+    <p>If your varbyte round trip fails, the usual cause is the continuation bit. The
+    high bit marks the <em>last</em> byte of a number, not the first. Check the order
+    you emit bytes in, and remember the low seven bits go out first.</p>
+    <p>If your compression ratio is much better than
+    2.9&times;, you may be measuring only the
+    long posting lists. Rare terms have posting lists of one or two entries where gaps
+    save nothing, and they are most of the vocabulary. The ratio over the whole index
+    is always worse than the ratio over the common terms.</p>
+  </div>
+</div>
+<button class="done-toggle" type="button" aria-pressed="false" data-module="09-index-that-doesnt-fit"><span class="box"></span><span class="label">mark this module complete</span></button><nav class="modnav"><a class="prev" href="08-retrieve.html"><span class="dir">previous</span><span class="name">08 · Retrieve — how results get ranked</span></a><a class="next" href="10-ingestion-vs-query.html"><span class="dir">next</span><span class="name">10 · Keeping the index fresh as documents arrive</span></a></nav></main></div></div><script src="../assets/site.js"></script>
+</body>
+</html>

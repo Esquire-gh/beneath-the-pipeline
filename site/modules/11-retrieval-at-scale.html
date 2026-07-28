@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11 · How ranking stays fast at scale — Beneath the Pipeline</title>
+<meta name="description" content="Most documents you score cannot possibly reach the top ten.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead"><div class="masthead-inner"><div class="brandrow"><a class="brand" href="../index.html"><b>Beneath the Pipeline</b> &nbsp;/&nbsp; part iii · when reality arrives</a><span class="progress-label">11 / 15</span></div><nav class="strip" aria-label="the pipeline"><a class="stage reinforced" href="04-load.html" title="load() — built in module 4; stressed in module 9"><span class="n">04·09</span>load</a><a class="stage done" href="05-parse.html" title="parse() — built in module 5; stressed in module 13"><span class="n">05·13</span>parse</a><a class="stage done" href="06-chunk-embed.html" title="chunk() — built in module 6"><span class="n">06</span>chunk</a><a class="stage done" href="06-chunk-embed.html" title="embed() — built in module 6; stressed in module 12"><span class="n">06·12</span>embed</a><a class="stage reinforced" href="07-index.html" title="index() — built in module 7; stressed in module 9, 10, 12"><span class="n">07·09·10·12</span>index</a><a class="stage stressed" href="08-retrieve.html" title="retrieve() — built in module 8; stressed in module 11, 14"><span class="n">08·11·14</span>retrieve</a></nav><div class="lane2"><span class="spacer"></span><a class="branch" href="14-what-vectors-cant-answer.html" title="module 14 — the structured path">14 · structured</a></div></div></header><div class="wrap"><div class="layout"><div class="gutter" aria-hidden="true"><div class="marks"><div>0000</div><div>0010</div><div>0020</div><div>0030</div><div>0040</div><div>0050</div><div>0060</div><div>0070</div><div>0080</div><div>0090</div><div>00a0</div><div>00b0</div><div>00c0</div><div>00d0</div><div>00e0</div><div>00f0</div><div>0100</div><div>0110</div><div>0120</div><div>0130</div><div>0140</div><div>0150</div><div>0160</div><div>0170</div><div>0180</div><div>0190</div><div>01a0</div><div>01b0</div><div>01c0</div><div>01d0</div><div>01e0</div><div>01f0</div><div>0200</div><div>0210</div><div>0220</div><div>0230</div><div>0240</div><div>0250</div><div>0260</div><div>0270</div><div>0280</div><div>0290</div><div>02a0</div><div>02b0</div><div>02c0</div><div>02d0</div><div>02e0</div><div>02f0</div><div>0300</div><div>0310</div><div>0320</div><div>0330</div><div>0340</div><div>0350</div><div>0360</div><div>0370</div><div>0380</div><div>0390</div><div>03a0</div><div>03b0</div><div>03c0</div><div>03d0</div><div>03e0</div><div>03f0</div><div>0400</div><div>0410</div><div>0420</div><div>0430</div><div>0440</div><div>0450</div><div>0460</div><div>0470</div><div>0480</div><div>0490</div><div>04a0</div><div>04b0</div><div>04c0</div><div>04d0</div><div>04e0</div><div>04f0</div><div>0500</div><div>0510</div><div>0520</div><div>0530</div><div>0540</div><div>0550</div><div>0560</div><div>0570</div><div>0580</div><div>0590</div><div>05a0</div><div>05b0</div><div>05c0</div><div>05d0</div><div>05e0</div><div>05f0</div><div>0600</div><div>0610</div><div>0620</div><div>0630</div><div>0640</div><div>0650</div><div>0660</div><div>0670</div><div>0680</div><div>0690</div><div>06a0</div><div>06b0</div><div>06c0</div><div>06d0</div><div>06e0</div><div>06f0</div><div>0700</div><div>0710</div><div>0720</div><div>0730</div><div>0740</div><div>0750</div><div>0760</div><div>0770</div><div>0780</div><div>0790</div><div>07a0</div><div>07b0</div><div>07c0</div><div>07d0</div><div>07e0</div><div>07f0</div><div>0800</div><div>0810</div><div>0820</div><div>0830</div><div>0840</div><div>0850</div><div>0860</div><div>0870</div><div>0880</div><div>0890</div><div>08a0</div><div>08b0</div><div>08c0</div><div>08d0</div><div>08e0</div><div>08f0</div><div>0900</div><div>0910</div><div>0920</div><div>0930</div><div>0940</div><div>0950</div><div>0960</div><div>0970</div><div>0980</div><div>0990</div><div>09a0</div><div>09b0</div><div>09c0</div><div>09d0</div><div>09e0</div><div>09f0</div><div>0a00</div><div>0a10</div><div>0a20</div><div>0a30</div><div>0a40</div><div>0a50</div><div>0a60</div><div>0a70</div><div>0a80</div><div>0a90</div><div>0aa0</div><div>0ab0</div><div>0ac0</div><div>0ad0</div><div>0ae0</div><div>0af0</div><div>0b00</div><div>0b10</div><div>0b20</div><div>0b30</div><div>0b40</div><div>0b50</div><div>0b60</div><div>0b70</div><div>0b80</div><div>0b90</div><div>0ba0</div><div>0bb0</div><div>0bc0</div><div>0bd0</div><div>0be0</div><div>0bf0</div><div>0c00</div><div>0c10</div><div>0c20</div><div>0c30</div><div>0c40</div><div>0c50</div><div>0c60</div><div>0c70</div><div>0c80</div><div>0c90</div><div>0ca0</div><div>0cb0</div><div>0cc0</div><div>0cd0</div><div>0ce0</div><div>0cf0</div><div>0d00</div><div>0d10</div><div>0d20</div><div>0d30</div><div>0d40</div><div>0d50</div><div>0d60</div><div>0d70</div><div>0d80</div><div>0d90</div><div>0da0</div><div>0db0</div><div>0dc0</div><div>0dd0</div><div>0de0</div><div>0df0</div><div>0e00</div><div>0e10</div><div>0e20</div><div>0e30</div><div>0e40</div><div>0e50</div><div>0e60</div><div>0e70</div><div>0e80</div><div>0e90</div><div>0ea0</div><div>0eb0</div><div>0ec0</div><div>0ed0</div><div>0ee0</div><div>0ef0</div><div>0f00</div><div>0f10</div><div>0f20</div><div>0f30</div><div>0f40</div><div>0f50</div><div>0f60</div><div>0f70</div><div>0f80</div><div>0f90</div><div>0fa0</div><div>0fb0</div><div>0fc0</div><div>0fd0</div><div>0fe0</div><div>0ff0</div><div>1000</div><div>1010</div><div>1020</div><div>1030</div><div>1040</div><div>1050</div><div>1060</div><div>1070</div><div>1080</div><div>1090</div><div>10a0</div><div>10b0</div><div>10c0</div><div>10d0</div><div>10e0</div><div>10f0</div><div>1100</div><div>1110</div><div>1120</div><div>1130</div><div>1140</div><div>1150</div><div>1160</div><div>1170</div><div>1180</div><div>1190</div><div>11a0</div><div>11b0</div><div>11c0</div><div>11d0</div><div>11e0</div><div>11f0</div><div>1200</div><div>1210</div><div>1220</div><div>1230</div><div>1240</div><div>1250</div><div>1260</div><div>1270</div><div>1280</div><div>1290</div><div>12a0</div><div>12b0</div><div>12c0</div><div>12d0</div><div>12e0</div><div>12f0</div><div>1300</div><div>1310</div><div>1320</div><div>1330</div><div>1340</div><div>1350</div><div>1360</div><div>1370</div><div>1380</div><div>1390</div><div>13a0</div><div>13b0</div><div>13c0</div><div>13d0</div><div>13e0</div><div>13f0</div><div>1400</div><div>1410</div><div>1420</div><div>1430</div><div>1440</div><div>1450</div><div>1460</div><div>1470</div><div>1480</div><div>1490</div><div>14a0</div><div>14b0</div><div>14c0</div><div>14d0</div><div>14e0</div><div>14f0</div><div>1500</div><div>1510</div><div>1520</div><div>1530</div><div>1540</div><div>1550</div><div>1560</div><div>1570</div><div>1580</div><div>1590</div><div>15a0</div><div>15b0</div><div>15c0</div><div>15d0</div><div>15e0</div><div>15f0</div><div>1600</div><div>1610</div><div>1620</div><div>1630</div><div>1640</div><div>1650</div><div>1660</div><div>1670</div><div>1680</div><div>1690</div><div>16a0</div><div>16b0</div><div>16c0</div><div>16d0</div><div>16e0</div><div>16f0</div><div>1700</div><div>1710</div><div>1720</div><div>1730</div><div>1740</div><div>1750</div><div>1760</div><div>1770</div><div>1780</div><div>1790</div><div>17a0</div><div>17b0</div><div>17c0</div><div>17d0</div><div>17e0</div><div>17f0</div><div>1800</div><div>1810</div><div>1820</div><div>1830</div><div>1840</div><div>1850</div><div>1860</div><div>1870</div><div>1880</div><div>1890</div><div>18a0</div><div>18b0</div><div>18c0</div><div>18d0</div><div>18e0</div><div>18f0</div><div>1900</div><div>1910</div><div>1920</div><div>1930</div><div>1940</div><div>1950</div><div>1960</div><div>1970</div><div>1980</div><div>1990</div><div>19a0</div><div>19b0</div><div>19c0</div><div>19d0</div><div>19e0</div><div>19f0</div><div>1a00</div><div>1a10</div><div>1a20</div><div>1a30</div><div>1a40</div><div>1a50</div><div>1a60</div><div>1a70</div><div>1a80</div><div>1a90</div><div>1aa0</div><div>1ab0</div><div>1ac0</div><div>1ad0</div><div>1ae0</div><div>1af0</div><div>1b00</div><div>1b10</div><div>1b20</div><div>1b30</div><div>1b40</div><div>1b50</div><div>1b60</div><div>1b70</div><div>1b80</div><div>1b90</div><div>1ba0</div><div>1bb0</div><div>1bc0</div><div>1bd0</div><div>1be0</div><div>1bf0</div><div>1c00</div><div>1c10</div><div>1c20</div><div>1c30</div><div>1c40</div><div>1c50</div><div>1c60</div><div>1c70</div><div>1c80</div><div>1c90</div><div>1ca0</div><div>1cb0</div><div>1cc0</div><div>1cd0</div><div>1ce0</div><div>1cf0</div><div>1d00</div><div>1d10</div><div>1d20</div><div>1d30</div><div>1d40</div><div>1d50</div><div>1d60</div><div>1d70</div><div>1d80</div><div>1d90</div><div>1da0</div><div>1db0</div><div>1dc0</div><div>1dd0</div><div>1de0</div><div>1df0</div><div>1e00</div><div>1e10</div><div>1e20</div><div>1e30</div><div>1e40</div><div>1e50</div><div>1e60</div><div>1e70</div><div>1e80</div><div>1e90</div><div>1ea0</div><div>1eb0</div><div>1ec0</div><div>1ed0</div><div>1ee0</div><div>1ef0</div><div>1f00</div><div>1f10</div><div>1f20</div><div>1f30</div><div>1f40</div><div>1f50</div><div>1f60</div><div>1f70</div><div>1f80</div><div>1f90</div><div>1fa0</div><div>1fb0</div><div>1fc0</div><div>1fd0</div><div>1fe0</div><div>1ff0</div><div>2000</div><div>2010</div><div>2020</div><div>2030</div><div>2040</div><div>2050</div><div>2060</div><div>2070</div><div>2080</div><div>2090</div><div>20a0</div><div>20b0</div><div>20c0</div><div>20d0</div><div>20e0</div><div>20f0</div><div>2100</div><div>2110</div><div>2120</div><div>2130</div><div>2140</div><div>2150</div><div>2160</div><div>2170</div><div>2180</div><div>2190</div><div>21a0</div><div>21b0</div><div>21c0</div><div>21d0</div><div>21e0</div><div>21f0</div><div>2200</div><div>2210</div><div>2220</div><div>2230</div><div>2240</div><div>2250</div><div>2260</div><div>2270</div><div>2280</div><div>2290</div><div>22a0</div><div>22b0</div><div>22c0</div><div>22d0</div><div>22e0</div><div>22f0</div><div>2300</div><div>2310</div><div>2320</div><div>2330</div><div>2340</div><div>2350</div><div>2360</div><div>2370</div><div>2380</div><div>2390</div><div>23a0</div><div>23b0</div><div>23c0</div><div>23d0</div><div>23e0</div><div>23f0</div><div>2400</div><div>2410</div><div>2420</div><div>2430</div><div>2440</div><div>2450</div><div>2460</div><div>2470</div><div>2480</div><div>2490</div><div>24a0</div><div>24b0</div><div>24c0</div><div>24d0</div><div>24e0</div><div>24f0</div><div>2500</div><div>2510</div><div>2520</div><div>2530</div><div>2540</div><div>2550</div><div>2560</div><div>2570</div><div>2580</div><div>2590</div><div>25a0</div><div>25b0</div><div>25c0</div><div>25d0</div><div>25e0</div><div>25f0</div><div>2600</div><div>2610</div><div>2620</div><div>2630</div><div>2640</div><div>2650</div><div>2660</div><div>2670</div><div>2680</div><div>2690</div><div>26a0</div><div>26b0</div><div>26c0</div><div>26d0</div><div>26e0</div><div>26f0</div><div>2700</div><div>2710</div><div>2720</div><div>2730</div><div>2740</div><div>2750</div><div>2760</div><div>2770</div><div>2780</div><div>2790</div><div>27a0</div><div>27b0</div><div>27c0</div><div>27d0</div><div>27e0</div><div>27f0</div><div>2800</div><div>2810</div><div>2820</div><div>2830</div><div>2840</div><div>2850</div><div>2860</div><div>2870</div><div>2880</div><div>2890</div><div>28a0</div><div>28b0</div><div>28c0</div><div>28d0</div><div>28e0</div><div>28f0</div><div>2900</div><div>2910</div><div>2920</div><div>2930</div><div>2940</div><div>2950</div><div>2960</div><div>2970</div><div>2980</div><div>2990</div><div>29a0</div><div>29b0</div><div>29c0</div><div>29d0</div><div>29e0</div><div>29f0</div><div>2a00</div><div>2a10</div><div>2a20</div><div>2a30</div><div>2a40</div><div>2a50</div><div>2a60</div><div>2a70</div><div>2a80</div><div>2a90</div><div>2aa0</div><div>2ab0</div><div>2ac0</div><div>2ad0</div><div>2ae0</div><div>2af0</div><div>2b00</div><div>2b10</div><div>2b20</div><div>2b30</div><div>2b40</div><div>2b50</div><div>2b60</div><div>2b70</div><div>2b80</div><div>2b90</div><div>2ba0</div><div>2bb0</div><div>2bc0</div><div>2bd0</div><div>2be0</div><div>2bf0</div><div>2c00</div><div>2c10</div><div>2c20</div><div>2c30</div><div>2c40</div><div>2c50</div><div>2c60</div><div>2c70</div><div>2c80</div><div>2c90</div><div>2ca0</div><div>2cb0</div><div>2cc0</div><div>2cd0</div><div>2ce0</div><div>2cf0</div><div>2d00</div><div>2d10</div><div>2d20</div><div>2d30</div><div>2d40</div><div>2d50</div><div>2d60</div><div>2d70</div><div>2d80</div><div>2d90</div><div>2da0</div><div>2db0</div><div>2dc0</div><div>2dd0</div><div>2de0</div><div>2df0</div><div>2e00</div><div>2e10</div><div>2e20</div><div>2e30</div><div>2e40</div><div>2e50</div><div>2e60</div><div>2e70</div><div>2e80</div><div>2e90</div><div>2ea0</div><div>2eb0</div><div>2ec0</div><div>2ed0</div><div>2ee0</div><div>2ef0</div><div>2f00</div><div>2f10</div><div>2f20</div><div>2f30</div><div>2f40</div><div>2f50</div><div>2f60</div><div>2f70</div><div>2f80</div><div>2f90</div><div>2fa0</div><div>2fb0</div><div>2fc0</div><div>2fd0</div><div>2fe0</div><div>2ff0</div><div>3000</div><div>3010</div><div>3020</div><div>3030</div><div>3040</div><div>3050</div><div>3060</div><div>3070</div><div>3080</div><div>3090</div><div>30a0</div><div>30b0</div><div>30c0</div><div>30d0</div><div>30e0</div><div>30f0</div><div>3100</div><div>3110</div><div>3120</div><div>3130</div><div>3140</div><div>3150</div><div>3160</div><div>3170</div><div>3180</div><div>3190</div><div>31a0</div><div>31b0</div><div>31c0</div><div>31d0</div><div>31e0</div><div>31f0</div><div>3200</div><div>3210</div><div>3220</div><div>3230</div><div>3240</div><div>3250</div><div>3260</div><div>3270</div><div>3280</div><div>3290</div><div>32a0</div><div>32b0</div><div>32c0</div><div>32d0</div><div>32e0</div><div>32f0</div><div>3300</div><div>3310</div><div>3320</div><div>3330</div><div>3340</div><div>3350</div><div>3360</div><div>3370</div><div>3380</div><div>3390</div><div>33a0</div><div>33b0</div><div>33c0</div><div>33d0</div><div>33e0</div><div>33f0</div><div>3400</div><div>3410</div><div>3420</div><div>3430</div><div>3440</div><div>3450</div><div>3460</div><div>3470</div><div>3480</div><div>3490</div><div>34a0</div><div>34b0</div><div>34c0</div><div>34d0</div><div>34e0</div><div>34f0</div><div>3500</div><div>3510</div><div>3520</div><div>3530</div><div>3540</div><div>3550</div><div>3560</div><div>3570</div><div>3580</div><div>3590</div><div>35a0</div><div>35b0</div><div>35c0</div><div>35d0</div><div>35e0</div><div>35f0</div><div>3600</div><div>3610</div><div>3620</div><div>3630</div><div>3640</div><div>3650</div><div>3660</div><div>3670</div><div>3680</div><div>3690</div><div>36a0</div><div>36b0</div><div>36c0</div><div>36d0</div><div>36e0</div><div>36f0</div><div>3700</div><div>3710</div><div>3720</div><div>3730</div><div>3740</div><div>3750</div><div>3760</div><div>3770</div><div>3780</div><div>3790</div><div>37a0</div><div>37b0</div><div>37c0</div><div>37d0</div><div>37e0</div><div>37f0</div><div>3800</div><div>3810</div><div>3820</div><div>3830</div></div></div><main class="col"><p class="kicker">Part III · module 11 · build · 50–75 minutes</p>
+<h1><span class="num">11 ·</span> How ranking stays fast at scale</h1>
+<p class="hook">This module breaks module 8's scorer. It was correct, and it is about
+to become the slowest thing in your pipeline.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>Module 8's BM25 does its job the honest way: for every document that shares at least
+one word with the query, compute the full score, then sort. At a hundred thousand
+passages that was fine. As the corpus grows, the number of documents sharing a word
+with the query grows with it, and the honest way starts spending almost all of its time
+computing scores for documents that were never going to matter. You want ten results.
+It scores tens of thousands of candidates to find them.</p>
+
+<p>The insight this module builds is that you can often prove a document cannot reach
+the top ten <em>without scoring it</em>. Work out, once, at build time, the largest
+score each word could ever contribute to any document. At query time, keep the ten best
+scores seen so far. If a candidate document's words, at their theoretical best, cannot
+add up to more than your current tenth place, computing its actual score is provably
+wasted work, and you skip it. Done carefully, this returns <em>exactly</em> the same
+ten results while doing a small fraction of the arithmetic. It is not an approximation.
+It is a refusal to compute what cannot change the answer, and it is how real search
+engines survive their query load.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>BM25 scores every document that contains any query term. At
+  100,000 passages, a median query's terms cover
+  44,231 postings, and the worst
+  query covers 430,647.</p>
+  <p>You want ten documents. Most of the ones you are about to score cannot possibly
+  reach the top ten, and you could have known that before scoring them.</p>
+  <p>How do you skip them without ever skipping one that mattered?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/11-retrieval-at-scale/starter.py</code>. It has three
+<code>TODO</code>s, in the order the ideas depend on each other.</p>
+
+<figure>
+  <div class="code"><pre>python exercises/11-retrieval-at-scale/starter.py --scale small --queries 60
+python exercises/11-retrieval-at-scale/verify.py</pre></div>
+</figure>
+
+<h3>1 · Score document at a time</h3>
+
+<p>Module 8 scored <span class="term">term at a time</span>: take a query word, walk
+its whole posting list adding to a score map, then take the next word. It works, and it
+needs a score map holding every document any term touched.</p>
+
+<p>The alternative is <span class="term">document at a time</span>: walk all the
+posting lists together in document order, finish each document completely, and keep
+only the best ten. There is no score map, only a heap of ten. It gives the same
+answers, and it is the shape that makes everything after it possible.</p>
+
+<h3>2 · Add skip pointers</h3>
+
+<p>Posting lists are sorted. So when you need to reach document 8,000 and your cursor
+is at 300, you do not have to step through every entry between them. Look ahead a fixed
+number of entries; if the value there is still too small, move the whole block without
+reading what is inside it. That look-ahead is a
+<span class="term">skip pointer</span>, and it costs nothing to have, because the list
+was already sorted.</p>
+
+<h3>3 · Write WAND, which refuses to score what cannot win</h3>
+
+<p>Now the idea the module exists for. For each term, compute once at build time the
+largest score any single document could ever get from it, its
+<span class="term">upper bound</span>. During a query, keep the ten best scores so far.
+The tenth is your <span class="term">threshold</span>.</p>
+
+<p>Sort the cursors by the document they are currently at, and add up their upper
+bounds going down the list. The first point where the running total could exceed the
+threshold is the <span class="term">pivot</span>. Nothing before the pivot can reach
+the top ten, whatever its actual scores are, so skip straight to the pivot without
+scoring anything in between.</p>
+
+<div class="callout">
+  <p><strong>Every strategy must return the same answer.</strong> The exercise checks
+  this, and it is not a formality. Writing this module produced a version of WAND that
+  was faster and wrong: it counted a repeated query word once while term-at-a-time
+  counted it twice, so the two were scoring different things. The cross-check caught
+  it. The timings would not have.</p>
+</div>
+
+<h2 id="observe">What you should see</h2>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 138" preserveAspectRatio="xMinYMin meet" role="img" aria-label="documents fully scored per query"><text class="lbl" x="0" y="21">term at a time</text><rect class="bar alt" x="124" y="11" width="362.0" height="14"></rect><text x="492.0" y="22">42,777</text><text class="lbl" x="0" y="47">document at a time</text><rect class="bar alt" x="124" y="37" width="362.0" height="14"></rect><text x="492.0" y="48">42,777</text><text class="lbl" x="0" y="73">WAND, no skips</text><rect class="bar" x="124" y="63" width="5.8" height="14"></rect><text x="135.8" y="74">685</text><text class="lbl" x="0" y="99">WAND + skips</text><rect class="bar" x="124" y="89" width="5.8" height="14"></rect><text x="135.8" y="100">685</text><line class="base" x1="124" y1="8" x2="124" y2="112"></line><text class="axis-title" x="124" y="132">documents scored per query — lower is better</text></svg>
+<figcaption>documents fully scored per query, over
+200 queries at
+100,000 passages</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/11-retrieval-at-scale/solution.py — all four
+  strategies returned identical top tens</caption>
+  <thead><tr><th>strategy</th><th class="num">postings touched</th>
+    <th class="num">documents scored</th><th class="num">median</th>
+    <th class="num">p99</th><th class="num">same answer</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td>term at a time</td>
+      <td class="num">65,237</td>
+      <td class="num">42,777</td>
+      <td class="num">6.3ms</td>
+      <td class="num">34.8ms</td>
+      <td class="num">baseline</td></tr>
+    <tr class="lose"><td>document at a time</td>
+      <td class="num">65,237</td>
+      <td class="num">42,777</td>
+      <td class="num">119.5ms</td>
+      <td class="num">671.2ms</td>
+      <td class="num">100%</td></tr>
+    <tr><td>WAND, stepping one at a time</td>
+      <td class="num">65,149</td>
+      <td class="num">685</td>
+      <td class="num">14.0ms</td>
+      <td class="num">152.5ms</td>
+      <td class="num">100%</td></tr>
+    <tr class="win"><td>WAND with skip pointers</td>
+      <td class="num">44,256</td>
+      <td class="num">685</td>
+      <td class="num">10.5ms</td>
+      <td class="num">149.4ms</td>
+      <td class="num">100%</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Read the two work columns separately, because they say different things and only one
+of them is dramatic.</p>
+
+<p><strong>Documents fully scored fell
+62.4&times;</strong>, from
+42,777 to
+685. That is
+the pruning working exactly as designed: almost every document that BM25 would have
+scored was ruled out by arithmetic on upper bounds instead.</p>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 138" preserveAspectRatio="xMinYMin meet" role="img" aria-label="postings touched per query"><text class="lbl" x="0" y="21">term at a time</text><rect class="bar alt" x="124" y="11" width="362.0" height="14"></rect><text x="492.0" y="22">65,237</text><text class="lbl" x="0" y="47">document at a time</text><rect class="bar alt" x="124" y="37" width="362.0" height="14"></rect><text x="492.0" y="48">65,237</text><text class="lbl" x="0" y="73">WAND, no skips</text><rect class="bar" x="124" y="63" width="361.5" height="14"></rect><text x="491.5" y="74">65,149</text><text class="lbl" x="0" y="99">WAND + skips</text><rect class="bar" x="124" y="89" width="245.6" height="14"></rect><text x="375.6" y="100">44,256</text><line class="base" x1="124" y1="8" x2="124" y2="112"></line><text class="axis-title" x="124" y="132">postings stepped over per query — lower is better</text></svg>
+<figcaption>postings stepped over per query — a smaller effect than the scoring one</figcaption>
+</figure>
+
+<p><strong>Postings touched fell only
+1.5&times;</strong>, and skip
+pointers account for
+1.5&times; of that within WAND.
+Pruning lets you avoid <em>scoring</em> a document. It does not let you avoid
+<em>knowing where the cursors are</em>. You still have to walk the lists, only without
+doing the arithmetic at every stop, and on short queries over passage-length documents
+that walking is most of the remaining work.</p>
+
+<div class="aside">
+  <span class="aside-label">about the wall-clock column</span>
+  These implementations are pure Python, so the timings are dominated by interpreter
+  overhead rather than by the algorithms — document-at-a-time looks terrible because it
+  runs a Python loop per document where term-at-a-time runs one per posting in a tighter
+  loop. The columns that transfer to a real implementation are <em>postings touched</em>
+  and <em>documents scored</em>. Those are counts of work, and they do not depend on the
+  language.
+</div>
+
+<h3>The median got better and the tail got worse</h3>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 250" preserveAspectRatio="xMinYMin meet" role="img" aria-label="median against p99 latency, by strategy"><line class="grid" x1="46" y1="204.0" x2="548" y2="204.0"></line><text x="40" y="207.5" text-anchor="end">0</text><line class="grid" x1="46" y1="149.8" x2="548" y2="149.8"></line><text x="40" y="153.3" text-anchor="end">200</text><line class="grid" x1="46" y1="95.5" x2="548" y2="95.5"></line><text x="40" y="99.0" text-anchor="end">400</text><line class="grid" x1="46" y1="41.3" x2="548" y2="41.3"></line><text x="40" y="44.8" text-anchor="end">600</text><rect class="bar " x="82.8" y="202.3" width="24.0" height="1.7"></rect><rect class="bar alt" x="108.8" y="194.6" width="24.0" height="9.4"></rect><text class="lbl" x="108.8" y="219" text-anchor="middle">term at a time</text><rect class="bar " x="208.2" y="171.6" width="24.0" height="32.4"></rect><rect class="bar alt" x="234.2" y="22.0" width="24.0" height="182.0"></rect><text class="lbl" x="234.2" y="219" text-anchor="middle">document at a time</text><rect class="bar " x="333.8" y="200.2" width="24.0" height="3.8"></rect><rect class="bar alt" x="359.8" y="162.6" width="24.0" height="41.4"></rect><text class="lbl" x="359.8" y="219" text-anchor="middle">WAND, no skips</text><rect class="bar " x="459.2" y="201.1" width="24.0" height="2.9"></rect><rect class="bar alt" x="485.2" y="163.5" width="24.0" height="40.5"></rect><text class="lbl" x="485.2" y="219" text-anchor="middle">WAND + skips</text><rect class="bar " x="46" y="238" width="9" height="9"></rect><text x="59" y="246">median</text><rect class="bar alt" x="104" y="238" width="9" height="9"></rect><text x="117" y="246">p99</text><text class="axis-title" x="46" y="14">milliseconds per query</text></svg>
+<figcaption>median against p99 — the same queries, ranked by how long they took</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>strategy</th><th class="num">median</th><th class="num">p99</th>
+    <th class="num">p99 ÷ median</th></tr></thead>
+  <tbody>
+    <tr><td>term at a time</td>
+      <td class="num">6.32 ms</td>
+      <td class="num">34.79 ms</td>
+      <td class="num">5.5&times;</td></tr>
+    <tr><td>document at a time</td>
+      <td class="num">119.48 ms</td>
+      <td class="num">671.16 ms</td>
+      <td class="num">5.6&times;</td></tr>
+    <tr class="lose"><td>WAND with skip pointers</td>
+      <td class="num">10.53 ms</td>
+      <td class="num">149.39 ms</td>
+      <td class="num">14.2&times;</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>WAND has the best median and the <em>worst</em> spread. Its p99 is
+14.2&times; its median, against
+5.5&times; for the strategy it replaced.
+That is not a flaw in the measurement. It is what pruning does.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Start with why the upper bound works, because everything else follows from it.</p>
+
+<p>BM25's score for a document is a sum of per-term contributions. Each contribution
+depends on the term's rarity, how often it occurs in that document, and the document's
+length, all of which are known at build time. So for each term you can compute, once,
+the largest contribution it could ever make to <em>any</em> document. Add those up
+across a query's terms and you have a ceiling on what any document could score.</p>
+
+<p>Now hold ten scores. If a document's ceiling is below your tenth-best score, its
+actual score cannot beat it, so scoring it is provably wasted work. You do not need to
+know what the score would have been. That is the entire argument, and it is why WAND
+returns <em>exactly</em> the same top ten rather than an approximation. The pruning is
+sound: it only ever discards documents that could not have won.</p>
+
+<p>Notice how different that is from what module 12 is about to do. WAND gives up
+nothing, same answers, less work. Approximate nearest-neighbour search gives up
+correctness for speed. Both are called "making retrieval fast", and only one of them
+changes your results.</p>
+
+<h3>Why the tail is what production teams watch</h3>
+
+<p>Your median query got faster. Your slowest queries did not get faster by nearly as
+much, and relative to the new median they got worse.</p>
+
+<p>The reason is in the mechanism. WAND is fast when the threshold rises quickly: find
+ten good documents early and the ceiling test starts rejecting almost everything. On a
+query where the good documents are scattered, or where every term is common so no term
+has a distinguishing upper bound, the threshold stays low, the pivot barely moves, and
+WAND degrades towards scoring everything <em>plus</em> the bookkeeping it did trying
+not to.</p>
+
+<p>So the work per query became far more variable. And a user does not experience your
+median. A page that issues one search shows the user one query's latency. A page that
+issues five shows them the slowest of the five, which lands near p99 more often than
+anyone's intuition suggests. Latency budgets in production are written against p99 or
+p999 for exactly this reason, and an optimisation that improves the median while
+stretching the tail can make a system feel worse while every dashboard shows it got
+better.</p>
+
+<h3>What this means for your pipeline</h3>
+
+<p>Part 0's <code>retrieve()</code> hides all of this behind a function call. Now you
+know the questions to ask a search system: does it score document-at-a-time or
+term-at-a-time, does it prune, is the pruning sound or approximate, and what does its
+p99 look like, not its median.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>retrieve()</code>'s cost is not "scoring the
+corpus". It is scoring the documents you could not rule out, and the ruling-out is the
+engineering. <strong>Backward:</strong> module 8 built the scorer this module refuses
+to run, and module 9's sorted posting lists are what make skip pointers possible at
+all: the same sortedness that made gaps work.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Sortedness is arrangement. It was free when you built the index, and here it pays
+twice: gaps in module 9, skips in this one.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Büttcher, Clarke &amp; Cormack,
+  <span class="title">Information Retrieval: Implementing and Evaluating Search
+  Engines</span>, the query processing chapters.</strong> WAND, MaxScore, block-max
+  variants, and the accounting for what each one skips. Expect it to be much more
+  careful than this page about the conditions under which pruning stays sound.</p>
+
+  <ol>
+    <li>WAND scored 62.4&times; fewer
+    documents but touched only
+    1.5&times; fewer postings.
+    Explain the gap between those two numbers.</li>
+    <li>Your p99 got worse relative to your median. Describe a query where WAND does
+    badly, and say what you could measure to find such queries in your own traffic.</li>
+    <li>WAND returns exactly the right answer; module 12's HNSW will not. Why is one
+    allowed to skip work while the other has to give something up?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your strategies return different top tens, check two things before assuming a
+    logic error. First, whether they tokenize the query the same way. Counting a
+    repeated query word twice in one strategy and once in another is the bug this
+    module's own solution shipped with. Second, tie-breaking: two documents with equal
+    scores must be ordered the same way by every strategy, which means comparing whole
+    tuples rather than scores alone when replacing the worst entry in the heap.</p>
+    <p>If WAND scores <em>more</em> documents than document-at-a-time, your threshold
+    is probably never being updated. It should be set to the tenth-best score as soon
+    as the heap is full, and updated on every replacement.</p>
+    <p>If skip pointers make no difference, check where you are calling them. Advancing
+    to <code>current + 1</code> can never skip anything, because the next posting is
+    always the next posting. Skipping only pays when the target is far away, which in
+    WAND means advancing a lagging cursor to the pivot.</p>
+  </div>
+</div>
+<button class="done-toggle" type="button" aria-pressed="false" data-module="11-retrieval-at-scale"><span class="box"></span><span class="label">mark this module complete</span></button><nav class="modnav"><a class="prev" href="10-ingestion-vs-query.html"><span class="dir">previous</span><span class="name">10 · Keeping the index fresh as documents arrive</span></a><a class="next" href="12-vector-search-at-scale.html"><span class="dir">next</span><span class="name">12 · How vector search scales</span></a></nav></main></div></div><script src="../assets/site.js"></script>
+</body>
+</html>

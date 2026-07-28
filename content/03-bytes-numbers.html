@@ -1,0 +1,325 @@
+<p class="kicker learn">Part I · module 3 · build · 20–30 minutes · standard library only</p>
+<h1><span class="num">03 ·</span> How numbers become bytes</h1>
+<p class="hook">This module sits under <code>embed()</code>, long before you get there.
+That line turns a chunk of text into {{ 03-bytes-numbers.embedding.dims }} numbers, and
+this module is about what a number is once it has to live in bytes.</p>
+
+<h2 id="what">From the things you think in, down to bytes</h2>
+
+<p>You think in numbers, text, pictures, sound, and video. A disk stores none of those
+things. It stores bytes, and a byte is eight switches that are each either on or off,
+which makes it a small number between 0 and 255. That is the entire vocabulary of
+computer storage. Everything you have ever saved was translated into a row of those
+small numbers on the way in, and translated back on the way out.</p>
+
+<p>The translation is never automatic. Someone had to sit down and write a rule that
+says "this kind of information gets written into bytes in this particular way", and
+those written rules are what file formats are. Module 2 showed you the rule for text,
+where an agreement says that 65 means <code>A</code>. This module shows you the rules
+for numbers, and numbers are the key that unlocks everything else, because every other
+kind of data turns out to be numbers underneath.</p>
+
+<p>Sound is the clearest example, and it is the one you will work with here. To record
+sound, a microphone measures air pressure
+{{ 03-bytes-numbers.wav.rate | int }} times every second, and each measurement is a
+number. A WAV file is those numbers written down one after another, with a short header
+at the front telling any future reader how to interpret them: how many measurements per
+second, how many bytes per measurement, how many channels. Images work the same way,
+since each pixel's color is a few numbers and an image file is those numbers plus a
+header. Video is images over time with sound alongside. Once you see that each of these
+formats is "numbers, arranged by a written agreement", the whole zoo of file types
+collapses into one idea.</p>
+
+<p>A PDF is another such agreement, a far more complicated one, and what it encodes is
+subtler: what a page looks like. Hold onto that thought, because it explains what
+"parsing" means in your pipeline. When <code>load()</code> reads a PDF from disk, the
+thing that arrives in memory is still PDF bytes, the same agreement it was on disk.
+Loading changes where the bytes are, not what they are. Parsing is the actual
+conversion: reading bytes under one agreement, the PDF format, and writing the useful
+part back out under a different agreement, a plain text string. That is all any parser
+ever does, in any pipeline: it converts data from one agreement to another. Module 5
+opens up that conversion for PDFs. This module gives you the skill it depends on, which
+is reading bytes under a written agreement and knowing what goes wrong when the
+agreement is misread.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Ask Python whether <code>0.1 + 0.2 == 0.3</code> and it answers
+  {{ 03-bytes-numbers.floats.equals_point_three }}. Print the sum and you get
+  <code>{{ 03-bytes-numbers.floats.sum }}</code>.</p>
+  <p>Here is a second oddity. Store the number
+  {{ 03-bytes-numbers.integer_widths.4.value | int }} in
+  {{ 03-bytes-numbers.integer_widths.4.width }} bytes and it comes back as
+  {{ 03-bytes-numbers.integer_widths.4.stored | int }}, a different number, with no
+  error raised. Store it in {{ 03-bytes-numbers.integer_widths.5.width }} bytes and it
+  comes back unharmed.</p>
+  <p>Neither of these is a bug. Both are agreements that someone made for you. What are
+  the agreements, and where exactly do they break?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/03-bytes-numbers/starter.py</code>. It has four
+<code>TODO</code>s, about 40 lines of your own work, standard library only.</p>
+
+<figure>
+  <div class="code"><pre>python exercises/03-bytes-numbers/starter.py    <span class="c-cm"># run yours</span>
+python exercises/03-bytes-numbers/verify.py     <span class="c-cm"># check it</span></pre></div>
+</figure>
+
+<h3>1 · Write a hex dump tool, in about thirty lines</h3>
+
+<p>You have been reading <code>xxd</code>'s output since module 2. Now write your own.
+It prints three columns: the position in the file, sixteen bytes in hexadecimal with a
+gap after eight, and those same bytes shown as characters wherever a printable
+character exists. Printable means bytes 32 through 126, the visible part of module 2's
+table.</p>
+
+<p>It is a small program, and it forces one thing into the open: you have to decide
+what to display for bytes that are not text, and nothing in the bytes themselves tells
+you which ones those are.</p>
+
+<h3>2 · Read a real format's header, using its written agreement</h3>
+
+<p>The starter writes a WAV file for you with the standard library, so the bytes you
+parse were produced by something other than the code reading them. Then you read the
+header, not by guessing, but from the table the format's authors published:</p>
+
+<div class="table-wrap">
+<table>
+  <caption>the WAV header fields this exercise reads — offsets and widths from the format's specification</caption>
+  <thead><tr><th class="num">offset</th><th class="num">width</th><th>meaning</th><th>byte order</th></tr></thead>
+  <tbody>
+    <tr><td class="num">0</td><td class="num">4</td><td>the letters <code>RIFF</code></td><td>—</td></tr>
+    <tr><td class="num">8</td><td class="num">4</td><td>the letters <code>WAVE</code></td><td>—</td></tr>
+    <tr><td class="num">22</td><td class="num">2</td><td>number of channels</td><td>low byte first</td></tr>
+    <tr><td class="num">24</td><td class="num">4</td><td>sample rate</td><td>low byte first</td></tr>
+    <tr><td class="num">34</td><td class="num">2</td><td>bits per sample</td><td>low byte first</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Each field needs three facts: where it starts, how wide it is, and which end the
+bytes go in. Get any one of the three wrong and you still get a number. It is not the
+right one.</p>
+
+<h3>3 · Flip the byte order and watch the numbers turn to nonsense</h3>
+
+<p>Your parser takes an <code>endian</code> argument. Pass the other value. The bytes
+on disk do not move. Only your agreement about how to read them changes.</p>
+
+<h3>4 · Break integers and floats on purpose</h3>
+
+<p>Store numbers in 1, 2, and 4 bytes and find where each width stops working. Then
+compute <code>0.1 + 0.2</code>, look at the bytes of <code>0.1</code>, and print the
+exact decimal value that Python actually stored.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<p>Here is your hex dump of a real WAV header. The letters in the right-hand column are
+the format announcing itself, exactly as PNG and PDF did in module 2:</p>
+
+<figure>
+{{ hex:03-bytes-numbers.hexdump_dump | 24-27 }}
+<figcaption>the first 48 bytes of a {{ 03-bytes-numbers.wav.rate | int }} Hz,
+{{ 03-bytes-numbers.wav.channels }}-channel, {{ 03-bytes-numbers.wav.bits }}-bit WAV.
+highlighted: offsets 24–27, the four bytes holding the sample rate</figcaption>
+</figure>
+
+<p>Those four highlighted bytes are
+<code>{{ 03-bytes-numbers.hexdump_dump.1.hex.8 }}
+{{ 03-bytes-numbers.hexdump_dump.1.hex.9 }}
+{{ 03-bytes-numbers.hexdump_dump.1.hex.10 }}
+{{ 03-bytes-numbers.hexdump_dump.1.hex.11 }}</code>. Read them low byte first and they
+say {{ 03-bytes-numbers.header_correct.sample_rate | int }}, which is the sample rate
+of a compact disc. Read the same four bytes high byte first and they say
+{{ 03-bytes-numbers.header_flipped.sample_rate | int }}.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>the same bytes, two agreements — measured by exercises/03-bytes-numbers/solution.py</caption>
+  <thead><tr><th>field</th><th class="num">low byte first</th><th class="num">high byte first</th></tr></thead>
+  <tbody>
+    <tr><td>channels</td>
+        <td class="num">{{ 03-bytes-numbers.header_correct.channels }}</td>
+        <td class="num">{{ 03-bytes-numbers.header_flipped.channels | int }}</td></tr>
+    <tr><td>sample rate</td>
+        <td class="num">{{ 03-bytes-numbers.header_correct.sample_rate | int }}</td>
+        <td class="num">{{ 03-bytes-numbers.header_flipped.sample_rate | int }}</td></tr>
+    <tr><td>bits per sample</td>
+        <td class="num">{{ 03-bytes-numbers.header_correct.bits_per_sample }}</td>
+        <td class="num">{{ 03-bytes-numbers.header_flipped.bits_per_sample | int }}</td></tr>
+    <tr><td><code>RIFF</code> and <code>WAVE</code></td>
+        <td class="num">unchanged</td>
+        <td class="num">unchanged</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The last row is the one to sit with. The text fields came through both readings
+intact, because a run of one-byte characters has no "order" to get wrong. Only the
+multi-byte numbers broke.</p>
+
+<h3>Where each integer width stops working</h3>
+
+<div class="table-wrap">
+<table>
+  <caption>storing the same values in different widths</caption>
+  <thead><tr><th class="num">value</th><th class="num">width</th><th class="num">largest that fits</th><th class="num">what came back</th></tr></thead>
+  <tbody>
+    <tr><td class="num">{{ 03-bytes-numbers.integer_widths.0.value | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.0.width }} B</td><td class="num">{{ 03-bytes-numbers.integer_widths.0.max | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.0.stored | int }}</td></tr>
+    <tr><td class="num">{{ 03-bytes-numbers.integer_widths.1.value | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.1.width }} B</td><td class="num">{{ 03-bytes-numbers.integer_widths.1.max | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.1.stored | int }}</td></tr>
+    <tr class="lose"><td class="num">{{ 03-bytes-numbers.integer_widths.2.value | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.2.width }} B</td><td class="num">{{ 03-bytes-numbers.integer_widths.2.max | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.2.stored | int }}</td></tr>
+    <tr class="lose"><td class="num">{{ 03-bytes-numbers.integer_widths.3.value | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.3.width }} B</td><td class="num">{{ 03-bytes-numbers.integer_widths.3.max | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.3.stored | int }}</td></tr>
+    <tr class="lose"><td class="num">{{ 03-bytes-numbers.integer_widths.4.value | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.4.width }} B</td><td class="num">{{ 03-bytes-numbers.integer_widths.4.max | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.4.stored | int }}</td></tr>
+    <tr class="win"><td class="num">{{ 03-bytes-numbers.integer_widths.5.value | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.5.width }} B</td><td class="num">{{ 03-bytes-numbers.integer_widths.5.max | int }}</td><td class="num">{{ 03-bytes-numbers.integer_widths.5.stored | int }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>What 0.1 + 0.2 actually is</h3>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>question</th><th class="num">answer</th></tr></thead>
+  <tbody>
+    <tr><td><code>0.1 + 0.2</code></td><td class="num">{{ 03-bytes-numbers.floats.sum }}</td></tr>
+    <tr><td>is that <code>== 0.3</code>?</td><td class="num">{{ 03-bytes-numbers.floats.equals_point_three }}</td></tr>
+    <tr><td>by how much?</td><td class="num">{{ 03-bytes-numbers.floats.error }}</td></tr>
+    <tr><td><code>0.1</code> as eight bytes</td><td class="num">{{ 03-bytes-numbers.floats.as_bytes }}</td></tr>
+    <tr><td>what <code>0.1</code> exactly is</td><td class="num" style="white-space:normal">{{ 03-bytes-numbers.floats.exact }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Start with the sample rate, because it is the cleanest case. Four bytes hold the
+number {{ 03-bytes-numbers.header_correct.sample_rate | int }}. Written low byte first,
+they are <code>{{ 03-bytes-numbers.hexdump_dump.1.hex.8 }}
+{{ 03-bytes-numbers.hexdump_dump.1.hex.9 }}
+{{ 03-bytes-numbers.hexdump_dump.1.hex.10 }}
+{{ 03-bytes-numbers.hexdump_dump.1.hex.11 }}</code>. Nothing in those bytes says which
+end to start reading from. That decision is called
+<span class="term">byte order</span>, or endianness, and it is a convention chosen by
+whoever designed the format. WAV chose low byte first because it grew up on Intel
+machines that work that way, and network protocols mostly chose the other end. Neither
+choice is correct. They are two possible agreements, and a reader has to know which one
+is in force.</p>
+
+<p>That is why the flipped reading did not raise an error. It produced
+{{ 03-bytes-numbers.header_flipped.sample_rate | int }}, a perfectly well-formed number
+that happens to be wrong. The failure mode of a misread agreement is usually not a
+crash. It is a plausible answer. Module 2 showed the same thing with
+<code>{{ 02-bytes-text.disagreement.latin1 }}</code>, and this is that lesson repeated
+in numbers.</p>
+
+<p>The text fields survived the flip because <code>RIFF</code> is four separate
+one-byte characters. There is no order to reverse inside a single byte, so a run of
+single bytes reads the same either way. That is worth noticing: byte order is not a
+property of a file. It is a property of each multi-byte field inside the file.</p>
+
+<h3>Why widths exist at all</h3>
+
+<p>Now the integers. Python's own integers grow as large as memory allows, so it is
+easy to forget that this is unusual. Down at the level where data gets stored, a number
+occupies a fixed number of bytes, decided in advance. One byte can hold
+{{ 03-bytes-numbers.width_limits.1 | int }} at most. Two bytes can hold
+{{ 03-bytes-numbers.width_limits.2 | int }}. Four can hold
+{{ 03-bytes-numbers.width_limits.4 | int }}.</p>
+
+<p>Try to store {{ 03-bytes-numbers.integer_widths.3.value | int }} in one byte and the
+value that comes back is {{ 03-bytes-numbers.integer_widths.3.stored | int }}, which is
+the remainder after dividing by {{ 03-bytes-numbers.width_limits.1 | int }} plus one.
+The high bits had nowhere to go, so they were dropped. This is called
+<span class="term">overflow</span>, and hardware does it silently, because checking for
+it would cost time on every arithmetic operation ever performed.</p>
+
+<p>The width is a promise about range, and choosing it is a real decision. Module 9
+turns this into a technique: the posting lists inside a search index are lists of
+integers, and storing each one in the smallest width that fits is where a large part of
+an index's compression comes from.</p>
+
+<h3>Why 0.1 is not 0.1</h3>
+
+<p>A 64-bit float stores a number as a fraction multiplied by a power of two. That
+scheme is called <span class="term">IEEE 754</span>, and every language on your machine
+uses it. It can represent halves, quarters, and eighths exactly. It cannot represent
+one tenth exactly, for the same reason base ten cannot represent one third: the digits
+never terminate.</p>
+
+<p>So when you write <code>0.1</code>, the machine stores the closest value it can
+hold, which is:</p>
+
+<p style="font-family:var(--mono);font-size:.82rem;color:var(--break);max-width:none">
+{{ 03-bytes-numbers.floats.exact }}</p>
+
+<p>Slightly more than a tenth. Add it to the closest value to 0.2, and the two small
+excesses add up to <code>{{ 03-bytes-numbers.floats.sum }}</code>, off by
+<code>{{ 03-bytes-numbers.floats.error }}</code>. Nothing went wrong. You asked for a
+number the format cannot hold, and it gave you the nearest one it can, twice.</p>
+
+<p>This sets up a number to carry into Part II. An embedding is
+{{ 03-bytes-numbers.embedding.dims }} of these approximations. At 32-bit precision that
+is {{ 03-bytes-numbers.embedding.float32_bytes | int }} bytes per chunk, and at 64-bit
+it is {{ 03-bytes-numbers.embedding.float64_bytes | int }}. A million chunks is
+{{ 03-bytes-numbers.embedding.million_float32_bytes | bytes }} against
+{{ 03-bytes-numbers.embedding.million_float64_bytes | bytes }}, the same vectors held
+one agreement apart. And every cosine similarity your pipeline computes is a sum of
+{{ 03-bytes-numbers.embedding.dims }} of these approximations, which is why two
+mathematically identical ways of computing the same similarity can return slightly
+different numbers.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>embed()</code> returns
+{{ 03-bytes-numbers.embedding.dims }} floats, and you now know what each one is: a
+fixed-width approximation under a published convention, not a number in the
+mathematical sense. <strong>Backward:</strong> modules 2 and 3 are one lesson told
+twice. Text is a convention over bytes, and numbers are a convention over bytes.
+Module 6 fuses them, with text going in and numbers coming out, and an agreement
+standing at each end.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>The offsets and widths in that WAV header are pure arrangement. The only reason a
+parser can find the sample rate is that someone decided in advance where to put it,
+and that is the same move a search index makes, at a scale you will build in
+module 7.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Bryant &amp; O'Hallaron, <span class="title">Computer
+  Systems: A Programmer's Perspective</span>, chapter 2, in full.</strong> Two's
+  complement, IEEE 754, and byte order, done properly. Expect it to make the overflow
+  you caused feel inevitable rather than surprising, and expect the floating-point
+  section to be the one you return to.</p>
+
+  <ol>
+    <li>You store a document count in two bytes. What is the largest corpus you can
+    count, and what happens on the document after that?</li>
+    <li>A colleague's parser reads your file and gets
+    {{ 03-bytes-numbers.header_flipped.sample_rate | int }} where you wrote
+    {{ 03-bytes-numbers.header_correct.sample_rate | int }}. What is the one-line
+    diagnosis, and how would you confirm it from a hex dump?</li>
+    <li>Your similarity scores differ in the twelfth decimal place between two runs
+    that compute the same thing in a different order. Is that a bug? Say why.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your hex dump's rows do not match the reference, the usual cause is padding
+    on a short final row: the hex column has to be padded to a fixed width or the
+    right-hand column drifts left. <code>verify.py</code> tests exactly that case and
+    prints both rows so you can line them up.</p>
+    <p>If flipping <code>endian</code> changes nothing, the argument is probably not
+    reaching <code>struct.unpack_from</code>. Check that the format string is built
+    from it rather than starting with a hard-coded <code>&lt;</code>.</p>
+    <p>If <code>0.1 + 0.2</code> prints as exactly <code>0.3</code> in your terminal,
+    you are seeing a shortened display rather than the stored value. Compare with
+    <code>==</code>, or print <code>repr()</code>, or use
+    <code>Decimal(0.1 + 0.2)</code> to see all of it.</p>
+  </div>
+</div>

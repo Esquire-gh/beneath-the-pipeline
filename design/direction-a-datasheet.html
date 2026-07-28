@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction A — Datasheet</title>
+<style>
+:root{
+  --paper:#eef0f3;
+  --surface:#ffffff;
+  --ink:#14171d;
+  --ink-2:#565d68;
+  --ink-3:#878e99;
+  --rule:#d2d6dd;
+  --rule-hard:#a8aeb9;
+  --learn:#2c3ba6;      /* Part II — building it */
+  --learn-bg:#e5e7f6;
+  --break:#a51f5c;      /* Part III — breaking it */
+  --break-bg:#f8e4ee;
+  --code-bg:#e8eaef;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "DejaVu Sans Mono", "Liberation Mono", Consolas, monospace;
+  --body: "Iowan Old Style", "Charter", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--body); font-size:17px; line-height:1.62;
+}
+
+/* ---------- header + pipeline strip ---------- */
+.masthead{
+  position:sticky; top:0; z-index:20;
+  background:var(--surface);
+  border-bottom:1px solid var(--rule-hard);
+}
+.masthead-inner{max-width:1080px; margin:0 auto; padding:.55rem 1.5rem .6rem}
+.brandrow{display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap}
+.brand{
+  font-family:var(--mono); font-size:.72rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-2);
+}
+.brand b{color:var(--ink); font-weight:600}
+.progress{
+  font-family:var(--mono); font-size:.68rem; color:var(--ink-3);
+  margin-left:auto; letter-spacing:.06em;
+}
+
+/* the strip */
+.strip{display:flex; gap:2px; margin-top:.5rem; align-items:stretch}
+.stage{
+  flex:1 1 0; min-width:0; position:relative;
+  border:1px solid var(--rule-hard);
+  background:var(--surface);
+  padding:.34rem .5rem .3rem;
+  text-decoration:none; color:var(--ink-2);
+  font-family:var(--mono); font-size:.66rem; letter-spacing:.1em;
+  text-transform:uppercase; text-align:left;
+  transition:background .12s ease, color .12s ease;
+}
+.stage .n{display:block; font-size:.58rem; color:var(--ink-3); letter-spacing:.08em}
+.stage:hover{background:var(--learn-bg)}
+.stage.done{background:var(--learn); border-color:var(--learn); color:#fff}
+.stage.done .n{color:#c3c9ee}
+.stage.here{
+  background:var(--learn-bg); border-color:var(--learn); color:var(--learn);
+  box-shadow:inset 0 -3px 0 var(--learn);
+}
+.stage.here .n{color:var(--learn)}
+.stage.stressed{
+  background:var(--break-bg); border-color:var(--break); color:var(--break);
+}
+/* second lane under retrieve() — the structured path, module 14 */
+.lane2{display:flex; gap:2px; margin-top:2px}
+.lane2 .spacer{flex:5 1 0}
+.lane2 .branch{
+  flex:1 1 0; border:1px dashed var(--rule-hard); border-top:none;
+  font-family:var(--mono); font-size:.6rem; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-3); padding:.15rem .5rem;
+}
+
+/* ---------- page ---------- */
+.wrap{max-width:1080px; margin:0 auto; padding:0 1.5rem}
+.layout{display:grid; grid-template-columns:5.5rem minmax(0,1fr); gap:0}
+/* offset gutter, the site's one piece of ornament */
+.gutter{
+  border-right:1px solid var(--rule);
+  font-family:var(--mono); font-size:.62rem; color:var(--ink-3);
+  padding-top:3.2rem; text-align:right; padding-right:.9rem;
+  user-select:none;
+}
+.gutter div{line-height:1.62; }
+.col{padding:2.6rem 0 4rem 1.6rem; min-width:0}
+
+.kicker{
+  font-family:var(--mono); font-size:.7rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--break); margin:0 0 .5rem;
+}
+h1{
+  font-family:var(--mono); font-weight:600; font-size:1.85rem;
+  line-height:1.2; letter-spacing:-.01em; margin:0 0 .2rem;
+}
+h1 .num{color:var(--ink-3); font-weight:400}
+.hook{color:var(--ink-2); font-size:1.02rem; margin:.4rem 0 2.2rem; max-width:62ch}
+
+h2{
+  font-family:var(--mono); font-size:.74rem; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--ink-2); font-weight:600;
+  margin:2.8rem 0 .9rem; padding-bottom:.35rem;
+  border-bottom:1px solid var(--rule);
+}
+p{max-width:66ch; margin:0 0 1.1rem}
+em{font-style:italic}
+strong{font-weight:600}
+
+.symptom{
+  background:var(--surface); border:1px solid var(--rule-hard);
+  border-left:4px solid var(--break);
+  padding:1.1rem 1.3rem; margin:0 0 1.4rem; max-width:66ch;
+}
+.symptom p{margin:0}
+.symptom p + p{margin-top:.7rem}
+
+/* code */
+figure{margin:0 0 1.6rem}
+.code{
+  position:relative; background:var(--code-bg); border:1px solid var(--rule);
+  font-family:var(--mono); font-size:.79rem; line-height:1.75;
+  overflow-x:auto;
+}
+.code pre{margin:0; padding:.95rem 1.1rem}
+.copy{
+  position:absolute; top:.4rem; right:.4rem;
+  font-family:var(--mono); font-size:.6rem; letter-spacing:.1em; text-transform:uppercase;
+  background:var(--surface); color:var(--ink-2);
+  border:1px solid var(--rule-hard); padding:.22rem .5rem; cursor:pointer;
+}
+.copy:hover{background:var(--learn); color:#fff; border-color:var(--learn)}
+.c-cm{color:var(--ink-3)}
+.c-kw{color:var(--learn)}
+.c-st{color:var(--break)}
+figcaption{
+  font-family:var(--mono); font-size:.66rem; color:var(--ink-3);
+  letter-spacing:.06em; margin-top:.4rem;
+}
+
+/* hex figure */
+.hex{
+  background:var(--surface); border:1px solid var(--rule);
+  font-family:var(--mono); font-size:.78rem; line-height:1.85;
+  padding:.9rem 1.1rem; overflow-x:auto; white-space:pre;
+}
+.hex .off{color:var(--ink-3)}
+.hex .hl{background:var(--break-bg); color:var(--break)}
+
+/* measurement table */
+table{border-collapse:collapse; width:100%; max-width:44rem; font-size:.9rem; margin-bottom:.5rem}
+th,td{border-bottom:1px solid var(--rule); padding:.5rem .7rem; text-align:right}
+th:first-child,td:first-child{text-align:left}
+thead th{
+  font-family:var(--mono); font-size:.64rem; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-2); border-bottom:1px solid var(--rule-hard);
+}
+td.num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+tr.win td{background:var(--learn-bg)}
+
+.chart{margin:1.2rem 0 .4rem; max-width:44rem}
+.chart text{font-family:var(--mono); font-size:10px; fill:var(--ink-2)}
+.chart .lbl{fill:var(--ink)}
+.chart .bar{fill:var(--learn)}
+.chart .bar.alt{fill:var(--break)}
+.chart .base{stroke:var(--rule-hard); stroke-width:1}
+
+.connect{border-top:1px solid var(--rule-hard); padding-top:1.1rem}
+.thesis{
+  font-family:var(--mono); font-size:.8rem; letter-spacing:.04em;
+  color:var(--learn); border-left:3px solid var(--learn);
+  padding-left:.8rem; margin:1.3rem 0; max-width:60ch;
+}
+.check{background:var(--surface); border:1px solid var(--rule); padding:1.1rem 1.3rem; max-width:66ch}
+.check ol{margin:.5rem 0 0; padding-left:1.2rem}
+.check li{margin-bottom:.4rem}
+.trouble{
+  margin-top:1rem; padding-top:.9rem; border-top:1px dashed var(--rule-hard);
+  font-size:.92rem; color:var(--ink-2);
+}
+.trouble b{font-family:var(--mono); font-size:.66rem; letter-spacing:.12em; text-transform:uppercase; color:var(--break); display:block; margin-bottom:.3rem}
+.note{font-size:.82rem; color:var(--ink-3); font-family:var(--mono); margin-top:2.5rem}
+@media (max-width:720px){
+  .layout{grid-template-columns:1fr}
+  .gutter{display:none}
+  .col{padding-left:0}
+  .stage{font-size:0; padding:.5rem .2rem}
+  .stage .n{font-size:.58rem}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="brandrow">
+      <span class="brand"><b>Beneath the Pipeline</b> &nbsp;/&nbsp; part ii · the pipeline, one line at a time</span>
+      <span class="progress">04 / 15</span>
+    </div>
+    <nav class="strip" aria-label="pipeline">
+      <a class="stage here" href="#"><span class="n">04</span>load</a>
+      <a class="stage" href="#"><span class="n">05</span>parse</a>
+      <a class="stage" href="#"><span class="n">06</span>chunk</a>
+      <a class="stage" href="#"><span class="n">06</span>embed</a>
+      <a class="stage" href="#"><span class="n">07</span>index</a>
+      <a class="stage" href="#"><span class="n">08</span>retrieve</a>
+    </nav>
+    <div class="lane2"><span class="spacer"></span><span class="branch">14 · structured</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="layout">
+  <div class="gutter">
+    <div>0000</div><div>0010</div><div>0020</div><div>0030</div><div>0040</div>
+    <div>0050</div><div>0060</div><div>0070</div><div>0080</div><div>0090</div>
+    <div>00a0</div><div>00b0</div><div>00c0</div>
+  </div>
+  <main class="col">
+
+  <p class="kicker">Part II · module 4</p>
+  <h1><span class="num">04 ·</span> Load — from disk to memory</h1>
+  <p class="hook"><code>loader.load()</code>, finally cashed out. This is the first line of the Part 0 pipeline and the last one anybody looks at.</p>
+
+  <h2>Symptom</h2>
+  <div class="symptom">
+    <p>You have 10,000 small files. You have one large file holding the same total bytes. Reading the 10,000 takes far longer than reading the one.</p>
+    <p>Same bytes off the same disk. Where did the extra time go?</p>
+  </div>
+
+  <h2>Build</h2>
+  <p>Open <code>exercises/04-load/starter.py</code>. The plumbing is written; three <code>TODO</code>s are not. You will read the same corpus three ways — file by file, line by line, and one large buffered read — and count how many times each one crosses into the operating system.</p>
+
+  <figure>
+    <div class="code">
+      <button class="copy">copy</button>
+<pre><span class="c-cm"># TODO 1 — read the corpus one file at a time.</span>
+<span class="c-cm"># Return total bytes read. Count your open() calls.</span>
+<span class="c-kw">def</span> read_file_by_file(paths):
+    total = <span class="c-st">0</span>
+    <span class="c-kw">for</span> p <span class="c-kw">in</span> paths:
+        <span class="c-kw">with</span> open(p, <span class="c-st">"rb"</span>) <span class="c-kw">as</span> f:
+            total += len(f.read())
+    <span class="c-kw">return</span> total</pre>
+    </div>
+    <figcaption>exercises/04-load/starter.py — 3 TODOs, ~40 lines of your own</figcaption>
+  </figure>
+
+  <p>Every one of those <code>open()</code> and <code>read()</code> calls is a <strong>syscall</strong>: a function call with a border crossing inside it. Your program cannot touch the disk. It asks the operating system to, and the ask costs something even when the answer is already sitting in memory.</p>
+
+  <figure>
+    <div class="hex"><span class="off">00000000</span>  25 50 44 46 2d 31 2e 37  0a 25 <span class="hl">e2 e3 cf d3</span> 0a 31  |%PDF-1.7.%.....1|
+<span class="off">00000010</span>  20 30 20 6f 62 6a 0a 3c  3c 2f 54 79 70 65 2f 43  | 0 obj.&lt;&lt;/Type/C|
+<span class="off">00000020</span>  61 74 61 6c 6f 67 2f 50  61 67 65 73 20 32 20 30  |atalog/Pages 2 0|</div>
+    <figcaption>the first 48 bytes of sample_pdfs/clean.pdf — a signature, then an agreement</figcaption>
+  </figure>
+
+  <h2>Observe</h2>
+  <p>Don't look at the absolute times; your machine is not this machine. Look at the ratio, and look at the crossings column next to it.</p>
+
+  <table>
+    <thead><tr><th>strategy</th><th>syscalls</th><th>wall time</th><th>vs. best</th></tr></thead>
+    <tbody>
+      <tr><td>file by file</td><td class="num">30,003</td><td class="num">1.84 s</td><td class="num">14.2×</td></tr>
+      <tr><td>line by line</td><td class="num">4,118</td><td class="num">0.42 s</td><td class="num">3.2×</td></tr>
+      <tr class="win"><td>one buffered read</td><td class="num">37</td><td class="num">0.13 s</td><td class="num">1.0×</td></tr>
+    </tbody>
+  </table>
+
+  <svg class="chart" viewBox="0 0 560 118" role="img" aria-label="wall time by strategy">
+    <text class="lbl" x="0" y="22">file by file</text>
+    <rect class="bar alt" x="118" y="10" width="410" height="16"></rect>
+    <text x="534" y="22">1.84s</text>
+    <text class="lbl" x="0" y="56">line by line</text>
+    <rect class="bar" x="118" y="44" width="94" height="16"></rect>
+    <text x="218" y="56">0.42s</text>
+    <text class="lbl" x="0" y="90">one read</text>
+    <rect class="bar" x="118" y="78" width="29" height="16"></rect>
+    <text x="153" y="90">0.13s</text>
+    <line class="base" x1="118" y1="4" x2="118" y2="100"></line>
+  </svg>
+
+  <h2>Explain</h2>
+  <p>Loading is four things, and none of them is magic. Consult the bookkeeping the operating system keeps about your bytes — the record from module 1 — to find which blocks belong to this file. Ask for those blocks in as few crossings as you can. Decode the bytes by whatever convention was agreed on, which is module 2. Hold the result in memory.</p>
+
+  <div class="connect">
+    <h2 style="margin-top:0;border:none;padding:0">Connect</h2>
+    <p><strong>Upward:</strong> <code>loader.load()</code> is that list, in that order, with the crossing count hidden from you. <strong>Backward:</strong> module 1 said a file is a row of blocks and a record pointing at them. This module is what it costs to actually go get them.</p>
+    <p class="thesis">meaning is a convention; arrangement is a cost.</p>
+  </div>
+
+  <h2>Read &amp; Check</h2>
+  <div class="check">
+    <p style="margin:0"><strong>Petrov, <em>Database Internals</em>, Part I.</strong> Read it for one thing: how storage engines batch their work specifically to stay off the boundary you just measured.</p>
+    <ol>
+      <li>Your corpus is 300 MB. Why did reading it file-by-file cost more than reading it in one call, when the disk moved the same bytes?</li>
+      <li>What does a buffer size of 64 KB buy you over 4 KB, and where does that stop paying?</li>
+      <li>Which of the three strategies would you use on a corpus larger than your RAM, and what breaks first?</li>
+    </ol>
+    <div class="trouble">
+      <b>If what you saw didn't match</b>
+      Ratios under 2× usually mean the files were already in the page cache from a previous run — the OS kept them in memory and never touched the disk. Run <code>./exercises/04-load/drop_caches.sh</code> between timings, or generate a fresh corpus with a different seed.
+    </div>
+  </div>
+
+  <p class="note">design mockup — numbers above are placeholders, not measured. on the real site every figure is injected from measurements.json.</p>
+  </main>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,336 @@
+<p class="kicker">Part III · module 10 · build · 50–75 minutes</p>
+<h1><span class="num">10 ·</span> Keeping the index fresh as documents arrive</h1>
+<p class="hook">This module breaks module 7's "build it once" assumption, and it sits
+under every <code>db.add()</code> that happens <em>after</em> the first one.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>Module 7 ended on a warning: an index describes the corpus as it was at the moment
+you built it. Real corpora do not hold still. Documents arrive every hour, get
+corrected, get deleted, and every one of those events makes the index a little more
+wrong until something updates it.</p>
+
+<p>Updating it turns out to be a genuinely hard problem, because the two obvious
+approaches both fail. Rebuilding the whole index from scratch on every batch of new
+documents costs the full build price, forever, for corpora that mostly did not change.
+Editing the existing index in place fails for a mechanical reason you already know:
+posting lists sit packed together in a file, and growing one in the middle means
+moving everything after it.</p>
+
+<p>The industry's answer is a third way, and this module has you build it. Never edit
+anything. Each batch of new documents becomes its own small, self-contained index,
+called a <span class="term">segment</span>, written once and never touched again.
+Queries consult every segment and combine the answers, and a background process
+occasionally folds small segments into bigger ones to keep that consultation cheap. The
+whole design is a dial between write cost and read cost, and you will measure both ends
+of it. Then, because segments live on disk across program restarts, you will design the
+file format they are stored in, and discover what it takes for a file written by last
+week's code to remain readable by next week's.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>New documents arrive. Rebuilding the whole index takes
+  {{ 10-ingestion-vs-query.full_rebuild_seconds | time }} at this scale, which is
+  {{ 10-ingestion-vs-query.rebuild_vs_one_batch | x0 }} the cost of indexing one batch,
+  and you would pay it on every batch, forever.</p>
+  <p>Appending to the existing index in place is somewhere between hard and impossible,
+  because every posting list would need to grow in the middle of a file.</p>
+  <p>Meanwhile, the index you saved with <code>pickle</code> last week will not load in
+  this week's code.</p>
+  <p>How does a search engine accept new documents every minute without ever paying for
+  a rebuild?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/10-ingestion-vs-query/starter.py</code>. It has four
+<code>TODO</code>s: three about accepting new documents without rebuilding, and one
+about writing an index down so a later version of your code can still read it.</p>
+
+<figure>
+  <div class="code"><pre>python exercises/10-ingestion-vs-query/starter.py --scale small
+python exercises/10-ingestion-vs-query/verify.py</pre></div>
+</figure>
+
+<h3>Write segments, and never edit them</h3>
+
+<p>Each batch of documents becomes its own small index, written once and never
+modified. A delete becomes a note saying "ignore this document". An update becomes a
+delete plus an add. Nothing is changed in place, ever.</p>
+
+<p>That makes writing cheap and reading more expensive, because a query now has to
+consult every segment and combine the answers. The number of segments a query touches
+is called the <span class="term">fanout</span>. Controlling it is what a
+<span class="term">merge policy</span> is for: whenever several segments of about the
+same size exist, fold them into one bigger segment in the background.</p>
+
+<h3>Then design the file format they live in</h3>
+
+<p>Module 3 said reading a field needs three facts: offset, width, and byte order. Now
+you are the format author, so you have to write those facts down: a magic number to say
+what the file is, a version number, and a layout. Then you get to find out what happens
+when the format changes.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>What fanout costs</h3>
+
+<p>The comparison has to hold the corpus constant, or you measure corpus size instead
+of segment count. Here the same
+{{ 10-ingestion-vs-query.fanout.0.docs | int }} documents are cut into different
+numbers of segments, each written to its own file in the format you designed, and
+queried by seeking into it, which is what a real segment is.</p>
+
+<figure>
+{{ chart:fanout-cost }}
+<figcaption>the same corpus, sliced more ways. each extra segment is another seek</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/10-ingestion-vs-query/solution.py</caption>
+  <thead><tr><th class="num">segments</th><th class="num">reads per query</th>
+    <th class="num">time per query</th><th class="num">vs one segment</th>
+    <th class="num">index on disk</th></tr></thead>
+  <tbody>
+    <tr class="win"><td class="num">{{ 10-ingestion-vs-query.fanout.0.segments }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.0.reads_per_query | 1f }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.0.seconds | time }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.0.vs_one_segment | x }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.0.index_bytes | bytes }}</td></tr>
+    <tr><td class="num">{{ 10-ingestion-vs-query.fanout.2.segments }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.2.reads_per_query | 1f }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.2.seconds | time }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.2.vs_one_segment | x }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.2.index_bytes | bytes }}</td></tr>
+    <tr><td class="num">{{ 10-ingestion-vs-query.fanout.3.segments }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.3.reads_per_query | 1f }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.3.seconds | time }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.3.vs_one_segment | x }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.3.index_bytes | bytes }}</td></tr>
+    <tr class="lose"><td class="num">{{ 10-ingestion-vs-query.fanout.5.segments }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.5.reads_per_query | 1f }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.5.seconds | time }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.5.vs_one_segment | x }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.fanout.5.index_bytes | bytes }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>There are two effects here, and the smaller one is the famous one.</p>
+
+<p><strong>Query time grew {{ 10-ingestion-vs-query.fanout_penalty | x }}</strong>
+going from {{ 10-ingestion-vs-query.fanout.0.segments }} segment to
+{{ 10-ingestion-vs-query.fanout.5.segments }}, because each segment is another seek:
+module 4's border crossing, once per segment per term. That is a real cost and a modest
+one here, on a local SSD with term dictionaries already in memory. Put those segments
+on network storage, or make the term dictionary too large to keep resident, and the
+same {{ 10-ingestion-vs-query.fanout.5.reads_per_query | 0f }} reads per query stop
+being cheap. The measurement is honest about this machine, and the mechanism is what
+travels.</p>
+
+<figure>
+{{ chart:fanout-size }}
+<figcaption>the same corpus takes more disk the more ways you slice it</figcaption>
+</figure>
+
+<p><strong>And the index got {{ 10-ingestion-vs-query.fanout_size_growth | x }}
+bigger</strong>: {{ 10-ingestion-vs-query.fanout.0.index_bytes | bytes }} as one
+segment, {{ 10-ingestion-vs-query.fanout.5.index_bytes | bytes }} as
+{{ 10-ingestion-vs-query.fanout.5.segments }}. Every segment repeats the whole term
+dictionary. The word <em>the</em> is stored fifty times, once per segment, along with
+every other term that appears in more than one batch. Fanout costs space before it
+costs time.</p>
+
+<h3>The write-cost against read-cost trade, swept end to end</h3>
+
+<figure>
+{{ chart:merge-trade }}
+<figcaption>{{ 10-ingestion-vs-query.policies.5.segments }} batches have arrived. each
+policy is one answer to what to do about it</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>policy</th><th class="num">segments left</th>
+    <th class="num">documents rewritten</th><th class="num">merge time</th>
+    <th class="num">per query</th></tr></thead>
+  <tbody>
+    <tr><td>fan = 2</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.0.segments }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.0.rewritten | int }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.0.merge_seconds | time }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.0.query_seconds | time }}</td></tr>
+    <tr class="win"><td>fan = 3</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.1.segments }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.1.rewritten | int }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.1.merge_seconds | time }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.1.query_seconds | time }}</td></tr>
+    <tr><td>fan = 4</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.2.segments }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.2.rewritten | int }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.2.merge_seconds | time }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.2.query_seconds | time }}</td></tr>
+    <tr><td>fan = 8</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.3.segments }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.3.rewritten | int }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.3.merge_seconds | time }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.3.query_seconds | time }}</td></tr>
+    <tr class="lose"><td>never merge</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.5.segments }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.5.rewritten | int }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.5.merge_seconds | time }}</td>
+      <td class="num">{{ 10-ingestion-vs-query.policies.5.query_seconds | time }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The fastest queries come from
+<strong>{{ 10-ingestion-vs-query.trade.fastest_query }}</strong>. The cheapest
+ingestion comes from
+<strong>{{ 10-ingestion-vs-query.trade.cheapest_write }}</strong>. They are not the
+same policy, and no amount of engineering makes them the same policy, because the merge
+that makes a query cheap <em>is</em> the work that makes ingestion expensive.</p>
+
+<p>Look at the rewritten column. Merging aggressively rewrote
+{{ 10-ingestion-vs-query.policies.0.rewritten | int }} documents' worth of postings,
+several times the corpus, because a document that gets merged twice is written twice.
+Never merging rewrote nothing and left
+{{ 10-ingestion-vs-query.policies.5.segments }} segments for every query to visit.</p>
+
+<h3>And whether the file survives your own code changing</h3>
+
+<div class="table-wrap">
+<table>
+  <caption>the four ways a reader and a file can meet</caption>
+  <thead><tr><th>reader</th><th>data</th><th>what happens</th></tr></thead>
+  <tbody>
+    <tr><td>version 1</td><td>version 1</td>
+      <td>{{ 10-ingestion-vs-query.compatibility.v1_reader_v1_data }}</td></tr>
+    <tr><td>version 1</td><td>version 2</td>
+      <td>{{ 10-ingestion-vs-query.compatibility.v1_reader_v2_data }}</td></tr>
+    <tr><td>version 2</td><td>version 1</td>
+      <td>{{ 10-ingestion-vs-query.compatibility.v2_reader_v1_data }}</td></tr>
+    <tr><td>version 2</td><td>version 2</td>
+      <td>{{ 10-ingestion-vs-query.compatibility.v2_reader_v2_data }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>All four behave <em>deliberately</em>. The old reader refuses new data rather than
+misreading it, because the version number is the second field in the file and it checks
+it before anything else. The new reader accepts old data and correctly reports that
+there are no document lengths in it, because the flag says so. Version 2 added its
+field by <strong>appending</strong> a section rather than inserting one, which is the
+only reason any of this works.</p>
+
+<p>Compare with what you get for free:</p>
+
+<div class="callout">
+  <p><code>pickle</code> of the same segment:
+  {{ 10-ingestion-vs-query.pickle.bytes | bytes }}, which is
+  {{ 10-ingestion-vs-query.pickle.vs_own_format | x }} the size of your format. And
+  {{ 10-ingestion-vs-query.pickle.note }}</p>
+</div>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Everything in this module follows from one decision: <em>never modify a file that
+has been written</em>.</p>
+
+<p>The reason to make that decision is what module 4 measured. Editing a posting list
+in the middle of a file means moving everything after it, and files do not have room in
+the middle; module 1's block list is not a linked list you can splice. Appending is
+cheap, and inserting is a rewrite. So systems that must accept writes continuously stop
+inserting and start appending, and then spend their engineering budget on the
+consequence.</p>
+
+<p>The consequence is that reads fan out, and the fix for reads is to periodically
+rewrite many small files into one large one. Which is a write. So the whole design is a
+dial: turn it towards reads and you pay in write amplification, turn it towards writes
+and you pay in fanout. You measured both ends of the dial and the shape between
+them.</p>
+
+<p>That structure has a name, a
+<span class="term">log-structured merge tree</span>, LSM for short, and you have now
+derived it rather than memorised it. It is how Lucene, Elasticsearch, RocksDB,
+Cassandra, and every vector database that accepts live updates handles ingestion. When
+a vector database's documentation talks about segments, compaction, or a flush
+interval, it is talking about the dial you just turned.</p>
+
+<h3>Why the format half belongs here</h3>
+
+<p>Because an index you cannot reload is an index you rebuild, and rebuilding is the
+thing this whole module exists to avoid.</p>
+
+<p>The temptation is <code>pickle</code>, and it is a trap with a specific shape.
+Pickle stores the path to your class. Rename <code>Segment</code>, move it to another
+module, or change its fields, and every index you ever saved becomes unreadable, with
+no version number to explain why and no way to write a converter, because you cannot
+read the old data to convert it.</p>
+
+<p>Your format cost about forty lines and gives you something pickle structurally
+cannot: a file that <em>says what it is</em>. Four magic bytes so a reader can tell
+this is your index and not a JPEG. A version number so an old reader refuses rather
+than guesses. A flags field so a new section can be optional. This is module 2's
+argument with you on the other side of it. You are the one writing the agreement down,
+and everything you leave out is something a future reader will have to guess.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> the second and every subsequent <code>db.add()</code> is
+this: a new segment, a merge policy deciding what to fold together, and a format on
+disk that a later version has to still understand. <strong>Backward:</strong> module 4
+said appending is cheap and rewriting is not; module 7 built the index that this module
+stops rebuilding; module 3's offsets and widths are now yours to publish.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Both halves, in one module, and this time you are the author of the convention.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Petrov, <span class="title">Database Internals</span>, Part
+  I.</strong> LSM trees, compaction strategies, and the read/write amplification
+  vocabulary for the dial you just turned. Expect it to name the two ends, size-tiered
+  and levelled compaction, and expect to recognise your <code>fan</code> parameter in
+  both.</p>
+
+  <p class="book"><strong>Kleppmann &amp; Riccomini,
+  <span class="title">Designing Data-Intensive Applications</span>, 2nd edition,
+  "Encoding and Evolution".</strong> For the persistence half. Expect it to be blunter
+  than this page about language-specific serialisation, and to give you the terms,
+  backward and forward compatibility, for the four rows of that matrix.</p>
+
+  <ol>
+    <li>Your merge policy has <code>fan = 4</code>. A batch arrives every minute.
+    Sketch what the segment count does over an hour, and say when the expensive merges
+    happen.</li>
+    <li>Slicing the same corpus into
+    {{ 10-ingestion-vs-query.fanout.5.segments }} segments made the index
+    {{ 10-ingestion-vs-query.fanout_size_growth | x }} bigger. Where did the extra
+    bytes go, and would compressing the postings help?</li>
+    <li>You add a field to your format. Name the change that lets old readers keep
+    working and the change that must break them, and say how a reader can tell the
+    difference.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If query time barely moves as segments accumulate, check that you are querying
+    <em>files</em>. An in-memory dict of segments genuinely does not care how many
+    there are, because total postings are the same however you slice them, and
+    measuring it that way makes fanout look free. The cost lives in the per-segment
+    seek, so it only appears when segments are on disk.</p>
+    <p>If your merge policy never merges anything, check the tier calculation. Segments
+    are bucketed by <code>log(n_docs, fan)</code>, so segments of equal size land in
+    the same tier. If you bucket by exact document count, batches that differ by one
+    document never merge.</p>
+    <p>If your version-1 reader happily reads version-2 data, it is not checking the
+    version field. That is the failure the whole exercise exists to make you cause
+    once: it will read the postings correctly and then silently ignore everything after
+    them, which is worse than crashing.</p>
+  </div>
+</div>

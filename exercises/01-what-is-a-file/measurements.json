@@ -1,0 +1,93 @@
+{
+  "_generated_unix": 1785264784,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "after_unlink": {
+    "content": "abcd",
+    "links": 1
+  },
+  "alloc_block_size": 4096,
+  "allocation_unchanged_on_append": true,
+  "boundary": {
+    "at_block": {
+      "allocated": 4096,
+      "size": 4096
+    },
+    "at_block_minus_1": {
+      "allocated": 4096,
+      "size": 4095
+    },
+    "at_block_plus_1": {
+      "allocated": 8192,
+      "size": 4097
+    },
+    "doubles_at_plus_1": true
+  },
+  "corpus": {
+    "allocated": 50810880,
+    "files": 10000,
+    "mean_file_size": 3900.7,
+    "size": 39007000,
+    "waste": 11803880,
+    "waste_ratio": 1.302609275258287
+  },
+  "directory": {
+    "allocated": 0,
+    "blocks_512": 0,
+    "inode": 20293771,
+    "links": 6,
+    "size": 192
+  },
+  "first_allocation_jump": {
+    "allocated": 8192,
+    "size": 4352
+  },
+  "four_char": {
+    "allocated": 4096,
+    "blocks_512": 8,
+    "inode": 20293765,
+    "links": 1,
+    "size": 4
+  },
+  "fs_block_size": 1048576,
+  "fs_frsize": 4096,
+  "hardlink": {
+    "inode_a": 20293765,
+    "inode_b": 20293765,
+    "link_count": 2,
+    "same_inode": true
+  },
+  "is_mac": true,
+  "platform": "Darwin",
+  "rename": {
+    "after": "notes.txt: PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced",
+    "before": "icon.png: PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced",
+    "first_bytes": "00000000: 8950 4e47 0d0a 1a0a                      .PNG...."
+  },
+  "sparse": {
+    "allocated": 0,
+    "apparent": 1073741824,
+    "du": "0B"
+  },
+  "statvfs_bsize": 1048576,
+  "statvfs_frsize": 4096,
+  "three_char": {
+    "allocated": 4096,
+    "blocks_512": 8,
+    "inode": 20293765,
+    "links": 1,
+    "size": 3
+  }
+}

@@ -1,0 +1,406 @@
+<p class="kicker">Part III · module 13 · investigate &amp; build · 60–90 minutes</p>
+<h1><span class="num">13 ·</span> Why parsing is a hard problem</h1>
+<p class="hook">This module pays off the thread module 5 opened. The pipeline line with
+no canonical book behind it finally gets its mechanisms, four of them.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>Module 5 established what parsing is: converting a document from the agreement it
+was written under into the plain text your pipeline needs. It also showed the first
+crack, that a PDF records where ink goes rather than what the text says, so extraction
+is reconstruction. This module goes the rest of the way down, because the crack widens
+into four separate mechanisms, and each one fails differently.</p>
+
+<p>First, many PDFs contain no text at all. A scanned document is a photograph of a
+page, and a parser honouring the PDF specification perfectly will find nothing in it.
+Second, the fix for that, optical character recognition, is a model guessing characters
+from pixels, and its guesses are wrong in measurable amounts that depend on scan
+quality. Third, even when the text is present, the structure is not: reading order,
+columns, and tables are all inferences from coordinates, and they fail on styling
+choices as small as whether a table's grid lines were drawn. Fourth, the modern answer
+to all of this, vision models that read the page the way a person does, costs orders of
+magnitude more compute per page, which is why serious document pipelines want a GPU.
+You will measure each mechanism on documents built to isolate it.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Here are two PDFs. On screen they are indistinguishable: same layout, same words,
+  same table. Open them side by side and you cannot tell which is which.</p>
+  <p>Run the same parser over both. One returns
+  {{ 13-why-parsing-is-hard.matched_pairs.clean_1col.text_chars | int }} characters.
+  The other returns
+  {{ 13-why-parsing-is-hard.matched_pairs.clean_1col.image_chars }}.</p>
+  <p>How can two documents that look identical to a human behave that differently to a
+  program?</p>
+</div>
+
+<h2 id="do">Build it yourself, then run the experiments</h2>
+
+<figure>
+  <div class="code"><pre>pip install pymupdf pdfplumber pytesseract
+brew install tesseract        <span class="c-cm"># or: apt install tesseract-ocr</span>
+python data/fetch.py --only pdfs
+
+python exercises/13-why-parsing-is-hard/starter.py     <span class="c-cm"># three TODOs</span>
+python exercises/13-why-parsing-is-hard/verify.py
+python exercises/13-why-parsing-is-hard/solution.py    <span class="c-cm"># the four experiments</span></pre></div>
+</figure>
+
+<p>This module is mostly investigation: run the solution and read what happened. But
+three functions are worth writing yourself first. Two of them are how every accuracy
+claim below is computed, <strong>edit distance</strong> and the
+<strong>character error rate</strong> built from it. The third is the one to take to
+work with you: a function that decides whether an extraction <em>failed</em>. Module 15
+uses all three.</p>
+
+<p>Then come four investigations. Each one is a mechanism, and together they are the
+reason "parse this PDF" is not one operation.</p>
+
+<h2 id="observe">(a) A scanned page contains no text to find</h2>
+
+<p>The repository builds the matched pair for you, and how it does it is the whole
+explanation: it takes a clean text PDF, renders each page to a picture, and wraps the
+pictures back into a PDF. That is exactly what every office scanner and every "print to
+PDF" button on a photocopier does.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/13-why-parsing-is-hard/solution.py</caption>
+  <thead><tr><th>document</th><th class="num">characters extracted</th>
+    <th class="num">file size</th></tr></thead>
+  <tbody>
+    <tr class="win"><td>{{ 13-why-parsing-is-hard.matched_pairs.clean_1col.text_pdf }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.matched_pairs.clean_1col.text_chars | int }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.matched_pairs.clean_1col.text_bytes | bytes }}</td></tr>
+    <tr class="lose"><td>{{ 13-why-parsing-is-hard.matched_pairs.clean_1col.image_pdf }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.matched_pairs.clean_1col.image_chars }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.matched_pairs.clean_1col.image_bytes | bytes }}</td></tr>
+    <tr class="win"><td>{{ 13-why-parsing-is-hard.matched_pairs.tables.text_pdf }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.matched_pairs.tables.text_chars | int }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.matched_pairs.tables.text_bytes | bytes }}</td></tr>
+    <tr class="lose"><td>{{ 13-why-parsing-is-hard.matched_pairs.tables.image_pdf }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.matched_pairs.tables.image_chars }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.matched_pairs.tables.image_bytes | bytes }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>That is not "worse extraction". It is <strong>nothing at all</strong>, from a file
+{{ 13-why-parsing-is-hard.matched_pairs.clean_1col.size_ratio | x0 }} larger.</p>
+
+<p>This is module 2's lesson at document scale. The bytes now honour an
+<em>image</em> agreement: a grid of pixel values, with rules for compressing them. The
+words exist only as patterns of dark pixels that a human eye decodes. There are no
+glyphs, no fonts, and no <code>Tj</code> commands. Module 5 showed you what a text
+PDF's page holds, and none of it is here. A parser honouring the PDF specification
+perfectly finds no text, because there is no text.</p>
+
+<h2 id="ocr">(b) OCR guesses at the pixels, with a measurable error rate</h2>
+
+<p><span class="term">Optical character recognition</span> is a model that looks at
+pixels and predicts characters. It does not recover the original text. It makes a fresh
+guess at what the shapes say, and its guesses are wrong in measurable amounts.</p>
+
+<p>The measure is <span class="term">character error rate</span>: the number of
+single-character edits, insert, delete, or substitute, needed to turn the OCR output
+back into the true text, divided by the true text's length. Zero is perfect.</p>
+
+<figure>
+{{ chart:ocr-ladder }}
+<figcaption>characters recovered from the same page by three routes</figcaption>
+</figure>
+
+<figure>
+{{ chart:ocr-error-rates }}
+<figcaption>the same Tesseract, the same settings, three documents</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>document</th><th class="num">character error rate</th>
+    <th class="num">words found</th><th class="num">seconds per page</th></tr></thead>
+  <tbody>
+    <tr class="win"><td>{{ 13-why-parsing-is-hard.ocr.clean_scan.description }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ocr.clean_scan.cer | 4f }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ocr.clean_scan.word_accuracy | pct }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ocr.clean_scan.seconds_per_page | time }}</td></tr>
+    <tr><td>{{ 13-why-parsing-is-hard.ocr.table_scan.description }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ocr.table_scan.cer | 4f }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ocr.table_scan.word_accuracy | pct }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ocr.table_scan.seconds_per_page | time }}</td></tr>
+    <tr class="lose"><td>{{ 13-why-parsing-is-hard.ocr.noisy_scan.description }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ocr.noisy_scan.cer | 4f }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ocr.noisy_scan.word_accuracy | pct }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ocr.noisy_scan.seconds_per_page | time }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>On a clean scan, OCR is close to free:
+{{ 13-why-parsing-is-hard.ocr.clean_scan.cer | 4f }} error rate,
+{{ 13-why-parsing-is-hard.ocr.clean_scan.word_accuracy | pct }} of words recovered. It
+is genuinely a solved problem for clean printed text, and it has been for years.</p>
+
+<p>Then take the resolution down to 120 dpi, tilt the page by under a degree, and add
+speckle, a photocopy of a photocopy, which is what a great deal of the world's archived
+paper actually looks like. The error rate goes to
+{{ 13-why-parsing-is-hard.ocr.noisy_scan.cer | 4f }}.
+<strong>That is {{ 13-why-parsing-is-hard.ocr_spread.ratio | x0 }} the error rate of
+the clean scan, from the same engine with the same settings.</strong></p>
+
+<p>Look at where the errors land in the table scan, because the pattern is the
+point:</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">OCR of a page of ruled tables</div>
+<pre class="out">{{ 13-why-parsing-is-hard.ocr.table_scan.excerpt }}</pre>
+  </div>
+  <figcaption>the prose is perfect. look at what happened to the column headers</figcaption>
+</figure>
+
+<p>Errors cluster where the visual evidence is thinnest: small type, digits, which have
+less shape to distinguish them than letters, and text touching a ruling line. A
+document that is mostly prose OCRs beautifully while the one table in it, the part
+somebody wants to ask a question about, is the part that came back wrong.</p>
+
+<h2 id="layout">(c) Reading order and tables are guesses about layout</h2>
+
+<p>Now assume the text is in the file. Structure still is not.</p>
+
+<figure>
+  <div class="dual">
+    <div class="term-block">
+      <div class="term-head">layout-aware</div>
+<pre class="out">{{ 13-why-parsing-is-hard.layout.layout_aware_excerpt }}</pre>
+    </div>
+    <div class="term-block">
+      <div class="term-head">coordinate order</div>
+<pre class="out">{{ 13-why-parsing-is-hard.layout.coordinate_order_excerpt }}</pre>
+    </div>
+  </div>
+  <figcaption>the same library, the same file, one argument changed. character
+  similarity between them: {{ 13-why-parsing-is-hard.layout.similarity | 3f }}</figcaption>
+</figure>
+
+<p>Reading top to bottom by coordinate, the pen visits the left column and the right
+column alternately, so the sentences interleave. Every word is present. The document is
+unreadable.</p>
+
+<p>The page never stored "this is a column". Columns are a <em>visual</em> convention
+that a human reader infers from a gap of whitespace. A parser has to infer it too, from
+coordinates, and whether it does depends on a setting most people never see.</p>
+
+<h3>Tables are worse, because detection comes before extraction</h3>
+
+<figure>
+{{ chart:table-detection }}
+<figcaption>two documents holding the same numbers in the same visual arrangement</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>document</th><th class="num">horizontal rules</th>
+    <th class="num">vertical rules</th><th class="num">tables found</th>
+    <th class="num">rows extracted</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td>{{ 13-why-parsing-is-hard.tables.rules_only.file }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.tables.rules_only.horizontal_lines }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.tables.rules_only.vertical_lines }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.tables.rules_only.tables_found }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.tables.rules_only.rows_found }}</td></tr>
+    <tr class="win"><td>{{ 13-why-parsing-is-hard.tables.full_grid.file }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.tables.full_grid.horizontal_lines }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.tables.full_grid.vertical_lines }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.tables.full_grid.tables_found }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.tables.full_grid.rows_found }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Same numbers. Same column arrangement. Same font. A person reads both as tables
+without hesitating. The difference is that one is drawn with a full grid and the other
+with three horizontal rules and no verticals, a styling choice made by whoever wrote
+the document, years ago, for aesthetic reasons.</p>
+
+<p>The library finds {{ 13-why-parsing-is-hard.tables.full_grid.rows_found }} rows in
+one and {{ 13-why-parsing-is-hard.tables.rules_only.rows_found }} in the other, because
+its table finder works by looking for ruling lines. The undetected page still extracts
+as text. It comes out as a stream of numbers with no row or column structure, and a
+chunker will cut it wherever the character count runs out, which is module 6's table
+disaster arriving on schedule.</p>
+
+<h2 id="gpu">(d) Why the good models want a GPU</h2>
+
+<p>Rules get you part of the way. The long tail of real layouts, every newsletter,
+form, receipt, and multi-column journal ever printed, is why modern document
+understanding trains vision models to <em>look</em> at the page the way a person does,
+instead of reasoning about coordinates.</p>
+
+<p>Those models are a different kind of program. Tesseract is a character-level engine
+that walks the image with hand-built stages. A transformer OCR model runs a fixed
+network over an image: here,
+{{ 13-why-parsing-is-hard.ml.trocr.parameters | count }} parameters, and a matrix
+multiply against every one of them for every line it reads. That is millions of
+multiply-adds, module 3's floats in bulk, with no dependency between them, which is
+precisely the workload a GPU exists for.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>this machine: {{ machine.gpu.name }} ({{ machine.gpu.kind }}) — measured on
+  the same scanned page</caption>
+  <thead><tr><th>engine</th><th>device</th><th class="num">time</th>
+    <th class="num">unit</th></tr></thead>
+  <tbody>
+    <tr><td>Tesseract</td><td>CPU</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ml.tesseract.seconds_per_page | time }}</td>
+      <td class="num">per page</td></tr>
+    <tr class="lose"><td>TrOCR ({{ 13-why-parsing-is-hard.ml.trocr.parameters | count }} params)</td><td>CPU</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ml.trocr.devices.cpu.seconds_per_line | time }}</td>
+      <td class="num">per line</td></tr>
+    <tr class="win"><td>TrOCR ({{ 13-why-parsing-is-hard.ml.trocr.parameters | count }} params)</td><td>{{ 13-why-parsing-is-hard.ml.gpu_device }}</td>
+      <td class="num">{{ 13-why-parsing-is-hard.ml.trocr.devices.mps.seconds_per_line | time }}</td>
+      <td class="num">per line</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+{{ chart:ocr-gpu }}
+<figcaption>note that the units differ between rows — Tesseract is timed per page, the
+ML model per line</figcaption>
+</figure>
+
+<p>The GPU runs the same model
+<strong>{{ 13-why-parsing-is-hard.ml.gpu_speedup | x }} faster</strong> than the CPU.
+Nothing about the model changed. The arithmetic moved to hardware built to do a great
+deal of it at once.</p>
+
+<p>And be honest about the other column. Extrapolated to a whole page, the ML model
+costs about {{ 13-why-parsing-is-hard.ml.ml_vs_tesseract_per_page | x }} what Tesseract
+costs, <em>even on the GPU</em>. This is the trade nobody mentions when they say "just
+use a modern model": you are choosing to spend one to two orders of magnitude more
+compute per page, and for a clean printed scan, where Tesseract already gets
+{{ 13-why-parsing-is-hard.ocr.clean_scan.cer | 4f }}, you would be spending it for
+nothing. The ML path earns its cost on the documents where the rules fail.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Put the four investigations together and parsing difficulty stops being a vague
+complaint and becomes a ladder with rungs you can name.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>the parsing ladder — each rung needs a different kind of program</caption>
+  <thead><tr><th>the document</th><th>what it takes</th><th>state</th></tr></thead>
+  <tbody>
+    <tr class="win"><td>text PDF, clean single-column layout</td>
+      <td>read the content stream, honour the specification</td>
+      <td>solved</td></tr>
+    <tr><td>text PDF, hard layout — columns, tables, forms</td>
+      <td>reconstruct structure from coordinates and whitespace; heuristics,
+      and a table finder that depends on how the document was drawn</td>
+      <td>partially solved</td></tr>
+    <tr><td>scanned document, clean</td>
+      <td>OCR — a model predicting characters from pixels</td>
+      <td>solved for clean print</td></tr>
+    <tr class="lose"><td>scanned document, hard layout or poor quality</td>
+      <td>vision models that read the page as an image, on a GPU</td>
+      <td>open research</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Part 0's <code>parse()</code> line silently assumed the top rung.</strong>
+One line, no arguments, no error if the document turns out to be a photograph of a fax.
+It returns an empty string and the pipeline carries on: it chunks nothing, embeds
+nothing, indexes nothing, and answers questions about that document by returning some
+other document, confidently.</p>
+
+<p>That failure mode is the one to take away. Every other stage of the pipeline fails
+loudly. A missing dependency raises, and a malformed query errors. Parsing fails
+<em>silently</em>, and it fails per document, so a corpus can be 5% invisible and
+nothing anywhere will say so. The first thing to build into any ingestion pipeline is
+the check module 5 and this module both point at: <em>how many characters did each
+document yield, and which ones yielded none?</em></p>
+
+<h3>Why there is no book for this</h3>
+
+<p>Every other stage of your pipeline sits on decades of settled theory. Retrieval has
+<span class="title">Introduction to Information Retrieval</span>. Storage has Petrov.
+Encoding has <span class="title">CS:APP</span>. This stage has a nine-hundred-page
+specification that tells you how to draw a page, and a research literature that is
+still arguing about how to read one.</p>
+
+<p>That is not an accident. The other stages solve problems somebody designed a format
+for. This one solves the problem of recovering an intent that was never written down.
+The document's author knew it was a table, the format had no way to say so, and
+everything downstream is inference.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>parse()</code> is a rung on a ladder, and which rung
+your corpus sits on decides what the rest of the pipeline can possibly do.
+<strong>Backward:</strong> module 2 said a file format is an agreement, and that a
+reader can only recover what the agreement recorded. Here the agreement records pixels.
+Module 5 measured two libraries disagreeing, and this module gives the mechanisms for
+why.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>A scanned page is the purest statement of the first half on the whole site. The
+meaning is entirely in the reader, human eye or neural network, and the bytes carry
+none of it.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>The DocLayNet and LayoutLM papers, introductions
+  only.</strong> Readable statements of why layout is a learned problem rather than a
+  rules problem, from the people who built the datasets. Expect DocLayNet's
+  introduction to describe exactly the table you just failed to detect.</p>
+
+  <p class="book"><strong>The Docling technical report.</strong> How a modern open
+  pipeline stages these steps, detecting layout, classifying regions, OCRing what needs
+  it, reconstructing reading order, and where it puts the model that needs a GPU.</p>
+
+  <p><strong>There is no canonical book.</strong> The papers are the literature. That
+  is worth saying out loud about the pipeline line every tutorial spends the least time
+  on.</p>
+
+  <ol>
+    <li>A colleague reports that retrieval "doesn't work for some documents". Name the
+    single measurement you would take first, and what its distribution would tell
+    you.</li>
+    <li>OCR gave {{ 13-why-parsing-is-hard.ocr.clean_scan.cer | 4f }} on one scan and
+    {{ 13-why-parsing-is-hard.ocr.noisy_scan.cer | 4f }} on another. Both are "scanned
+    PDFs". What would you need to know about a corpus before quoting either
+    number?</li>
+    <li>The ML model costs about
+    {{ 13-why-parsing-is-hard.ml.ml_vs_tesseract_per_page | x }} Tesseract per page
+    even on a GPU. Describe a corpus where you would pay that, and one where paying it
+    would be waste.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If <code>pytesseract</code> raises <code>TesseractNotFoundError</code>, remember
+    the Python package is only a wrapper. The engine is a separate binary:
+    <code>brew install tesseract</code> on macOS,
+    <code>apt install tesseract-ocr</code> on Debian and Ubuntu.</p>
+    <p>If your character error rates are much lower than these across the board, check
+    the dpi you are rendering at. This page's numbers come from rendering the page
+    images at 200 dpi. Feeding OCR a higher-resolution image makes almost everything
+    easier, which is itself the finding: scan quality is a parameter you often
+    control.</p>
+    <p>If the TrOCR download fails or the processor will not load, run with
+    <code>--skip-ml</code>. Parts (a) to (c) carry the module's argument on their own,
+    and (d) only puts a number on the cost.</p>
+    <p>If you have no GPU, the CPU timing still makes the point. The model is
+    {{ 13-why-parsing-is-hard.ml.trocr.parameters | count }} parameters against a
+    hand-built engine, and you will feel the difference. The page reports the machine
+    it ran on; yours will differ, and the ratio between CPU and GPU is what to
+    compare.</p>
+  </div>
+</div>

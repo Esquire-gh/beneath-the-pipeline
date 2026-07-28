@@ -1,0 +1,215 @@
+<div class="hero">
+  <p class="kicker learn">Part 0 · the frame</p>
+  <h1>Beneath the Pipeline</h1>
+  <p class="sub">A retrieval pipeline is {{ 00-pipeline.pipeline_lines.code_lines }} lines
+  of Python sitting on decades of storage engineering, byte-level convention, and
+  information-retrieval research. You are about to build every one of those floors
+  yourself, at small scale, and then push each one until it breaks.</p>
+</div>
+
+<h2 id="working">0a · The pipeline, working</h2>
+
+<p>Here is the pipeline the internet teaches. Open PDFs, pull out their text, cut the
+text into chunks, turn each chunk into a list of numbers, put those numbers in a
+database, and ask the database for the four chunks nearest your question.</p>
+
+<figure>
+{{ code:pipeline/naive_rag.py#PIPELINE }}
+<figcaption>pipeline/naive_rag.py — {{ 00-pipeline.pipeline_lines.code_lines }} lines of
+code, shown exactly as the file has them</figcaption>
+</figure>
+
+<p>Run it against the folder of PDFs in this repository:</p>
+
+<figure>
+  <div class="code"><pre>python pipeline/naive_rag.py "{{ 00-pipeline.question }}"</pre></div>
+</figure>
+
+<p>It works. On this machine it read {{ 00-pipeline.n_pdfs }} PDFs, which is
+{{ 00-pipeline.n_pages }} pages and {{ 00-pipeline.pdf_bytes | bytes }} on disk. It
+pulled out {{ 00-pipeline.n_chars | int }} characters of text, cut them into
+{{ 00-pipeline.n_chunks | int }} chunks, turned each chunk into
+{{ 00-pipeline.dims }} numbers, indexed them, and answered a question in
+{{ 00-pipeline.pipeline_seconds | time }}. The top passage it returned came from
+<code>{{ 00-pipeline.top_hit_source }}</code>, and it is the right passage:</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">top result, verbatim</div>
+    <pre class="out">{{ 00-pipeline.top_hit_excerpt }}…</pre>
+  </div>
+  <figcaption>one query, {{ 00-pipeline.retrieve_seconds | time }}, from a
+  {{ 00-pipeline.n_chunks | int }}-chunk index</figcaption>
+</figure>
+
+<p>Say it plainly: <strong>for a demo, this is fine.</strong> Nothing here is wrong.
+Thousands of working systems start exactly like this, and if your corpus is small and
+your questions are the kind this shape of pipeline suits, you can stop reading and ship it.</p>
+
+<div class="callout">
+  <p>The question this site asks is not <em>what is wrong with these lines</em>. It is:
+  <strong>how many things did you just take on faith?</strong></p>
+</div>
+
+<h2 id="inventory">0b · The inventory of assumptions</h2>
+
+<p>Walk the pipeline line by line. Each line does something you could not explain to
+someone who asked. Here is the literal list.</p>
+
+<p>This list is the table of contents. Every question below names the module that
+answers it, and the modules are in pipeline order.</p>
+
+<ul class="inventory">
+  <li>
+    <div class="line">load(pdf_dir)</div>
+    <div class="asks">
+      <p>What is a file? Your program asked for one and got bytes back. Where were
+      those bytes, what told the machine where to find them, and what did the asking cost?</p>
+      <p>And why do the bytes on disk become <em>text</em> at all? Who decided that
+      this byte means that letter?</p>
+      <a class="answers" href="modules/01-what-is-a-file.html">01 · what is a file</a>
+      <a class="answers" href="modules/02-bytes-text.html">02 · how text becomes bytes</a>
+      <a class="answers" href="modules/04-load.html">04 · load</a>
+    </div>
+  </li>
+  <li>
+    <div class="line">parse(docs)</div>
+    <div class="asks">
+      <p>Why is extracting text from a PDF a <em>step</em>? The text is right there on
+      the screen. Why does a program have to work for it?</p>
+      <p>And why do two libraries reading the same file disagree about what it says?</p>
+      <a class="answers" href="modules/05-parse.html">05 · parse</a>
+      <a class="answers iii" href="modules/13-why-parsing-is-hard.html">13 · why parsing is hard</a>
+    </div>
+  </li>
+  <li>
+    <div class="line">split(parsed, size=1000)</div>
+    <div class="asks">
+      <p>Why cut the text up at all? Who chose 1000, and what happens to a table that
+      the cut lands in the middle of?</p>
+      <a class="answers" href="modules/06-chunk-embed.html">06 · chunk &amp; embed</a>
+    </div>
+  </li>
+  <li>
+    <div class="line">embed(chunks, model)</div>
+    <div class="asks">
+      <p>How did text become {{ 00-pipeline.dims }} numbers? What is a number here, how
+      is it stored, and how exact is it?</p>
+      <p>And what does distance between two of these lists of numbers actually promise you?</p>
+      <a class="answers" href="modules/03-bytes-numbers.html">03 · how numbers become bytes</a>
+      <a class="answers" href="modules/06-chunk-embed.html">06 · chunk &amp; embed</a>
+      <a class="answers iii" href="modules/12-vector-search-at-scale.html">12 · approximation</a>
+    </div>
+  </li>
+  <li>
+    <div class="line">db.add(...)</div>
+    <div class="asks">
+      <p>What did the database <em>build</em>? Something was constructed, it took time,
+      and it takes up room. What is it, and why does having it make asking for
+      neighbours fast?</p>
+      <p>What happens when it no longer fits in memory, or when new documents arrive
+      after it was built?</p>
+      <a class="answers" href="modules/07-index.html">07 · index</a>
+      <a class="answers iii" href="modules/09-index-that-doesnt-fit.html">09 · it doesn't fit</a>
+      <a class="answers iii" href="modules/10-ingestion-vs-query.html">10 · ingestion vs query</a>
+    </div>
+  </li>
+  <li>
+    <div class="line">retrieve(db, model, q, k=4)</div>
+    <div class="asks">
+      <p>Top four, ranked by what? Say a query matches four thousand passages. Four come
+      back. Which four, and who decided?</p>
+      <p>How would you know if the ranking is bad? What does it cost to rank a million
+      passages instead of a hundred thousand?</p>
+      <p>And the last assumption, the one nobody states: <strong>is "the nearest chunk"
+      even the right kind of answer to every question?</strong></p>
+      <a class="answers" href="modules/08-retrieve.html">08 · retrieve</a>
+      <a class="answers iii" href="modules/11-retrieval-at-scale.html">11 · at scale</a>
+      <a class="answers iii" href="modules/14-what-vectors-cant-answer.html">14 · what vectors can't answer</a>
+    </div>
+  </li>
+</ul>
+
+<h2 id="map">0c · The map</h2>
+
+<p>The pipeline, drawn once. Each stage carries the module where you build it and the
+modules where you break it. This drawing is also the strip along the top of every page:
+as you work, stages fill in, and Part III marks the ones you have stressed.</p>
+
+<figure>
+  <div class="map">{{ chart:site-map }}</div>
+  <figcaption>the whole site on one line — Part II builds left to right, Part III
+  returns to each stage and pushes it until it fails</figcaption>
+</figure>
+
+<h2 id="modules">The modules</h2>
+
+<ul class="toc">
+  <li class="toc-part">Part I · the floor — nothing to install, 15&ndash;25 minutes each</li>
+  <li><a href="modules/01-what-is-a-file.html" data-module="01-what-is-a-file"><span class="n">01</span><span class="t">What is a file, actually?</span><span class="d">What the operating system really keeps when you save a file, and why three characters occupy 4096 bytes.</span></a></li>
+  <li><a href="modules/02-bytes-text.html" data-module="02-bytes-text"><span class="n">02</span><span class="t">How text becomes bytes</span><span class="d">The agreements that turn bytes into letters, and what happens when a reader applies the wrong one.</span></a></li>
+  <li><a href="modules/03-bytes-numbers.html" data-module="03-bytes-numbers"><span class="n">03</span><span class="t">How numbers become bytes</span><span class="d">How numbers, and through them audio and images, are written into bytes, and why 0.1 + 0.2 is not 0.3.</span></a></li>
+
+  <li class="toc-part">Part II · the pipeline, one line at a time</li>
+  <li><a href="modules/04-load.html" data-module="04-load"><span class="n">04</span><span class="t">Load — what reading a file costs</span><span class="d">Why reading ten thousand small files costs far more than reading the same bytes from one big file.</span></a></li>
+  <li><a href="modules/05-parse.html" data-module="05-parse"><span class="n">05</span><span class="t">Parse — how a PDF becomes text</span><span class="d">What is actually inside a PDF, and why two libraries reading the same file return different text.</span></a></li>
+  <li><a href="modules/06-chunk-embed.html" data-module="06-chunk-embed"><span class="n">06</span><span class="t">Chunk &amp; Embed — how text becomes vectors</span><span class="d">How text gets cut into chunks and turned into numbers, so that similar meanings land near each other.</span></a></li>
+  <li><a href="modules/07-index.html" data-module="07-index"><span class="n">07</span><span class="t">Index — how search gets fast</span><span class="d">What db.add() built: the precomputed structure that turns seconds of scanning into microseconds of lookup.</span></a></li>
+  <li><a href="modules/08-retrieve.html" data-module="08-retrieve"><span class="n">08</span><span class="t">Retrieve — how results get ranked</span><span class="d">The scoring formulas that decide which four passages come back, and how to measure whether they are any good.</span></a></li>
+
+  <li class="toc-part">Part III · when reality arrives</li>
+  <li><a href="modules/09-index-that-doesnt-fit.html" data-module="09-index-that-doesnt-fit"><span class="n">09</span><span class="t">When the index doesn't fit in memory</span><span class="d">How to build an index bigger than your RAM, by spilling to disk and merging.</span></a></li>
+  <li><a href="modules/10-ingestion-vs-query.html" data-module="10-ingestion-vs-query"><span class="n">10</span><span class="t">Keeping the index fresh as documents arrive</span><span class="d">Why adding documents to a finished index is hard, and how segments and merging solve it.</span></a></li>
+  <li><a href="modules/11-retrieval-at-scale.html" data-module="11-retrieval-at-scale"><span class="n">11</span><span class="t">How ranking stays fast at scale</span><span class="d">How search engines skip the documents that cannot reach the top ten, without changing the answer.</span></a></li>
+  <li><a href="modules/12-vector-search-at-scale.html" data-module="12-vector-search-at-scale"><span class="n">12</span><span class="t">How vector search scales</span><span class="d">The approximate index that makes a million vectors searchable, and exactly what it gives up in return.</span></a></li>
+  <li><a href="modules/13-why-parsing-is-hard.html" data-module="13-why-parsing-is-hard"><span class="n">13</span><span class="t">Why parsing is a hard problem</span><span class="d">Two PDFs that look identical on screen, and why one parses perfectly while the other returns nothing.</span></a></li>
+  <li><a href="modules/14-what-vectors-cant-answer.html" data-module="14-what-vectors-cant-answer"><span class="n">14</span><span class="t">What vectors can't answer</span><span class="d">Questions that need counting, joining, or exactness, and the structured tools that answer them.</span></a></li>
+  <li><a href="modules/15-rebuilt-and-measured.html" data-module="15-rebuilt-and-measured"><span class="n">15</span><span class="t">The pipeline, rebuilt and measured</span><span class="d">Your own parts put back together, then measured against documents that fight back.</span></a></li>
+</ul>
+
+<p style="margin-top:1.4rem"><a href="reading-list.html">The reading list</a>: every
+book this site points at, with the chapter and the reason, in one table.</p>
+
+<h2 id="machine">The machine these numbers came from</h2>
+
+<p>Every number printed on this site was produced by running the code on one machine.
+Here it is. <strong>Your absolute numbers will differ, and that is expected.</strong>
+What the site actually claims are the ratios, one strategy against another, one index
+against another, and those hold across machines. Where a ratio depends on your
+hardware, the page says so.</p>
+
+<div class="specs">
+  <dl>
+    <dt>processor</dt><dd>{{ machine.cpu }} · {{ machine.cores }} cores</dd>
+    <dt>memory</dt><dd>{{ machine.ram_human }}</dd>
+    <dt>disk</dt><dd>{{ machine.disk }}</dd>
+    <dt>gpu</dt><dd>{{ machine.gpu.name }} <span style="color:var(--ink-3)">({{ machine.gpu.kind }})</span></dd>
+    <dt>system</dt><dd>{{ machine.os }} · Python {{ machine.python }}</dd>
+  </dl>
+</div>
+
+<p>Every exercise takes a <code>--scale</code> flag. The default is small enough to
+finish on a laptop without filling its memory; the pages name the scale their own
+numbers came from. If your machine is smaller than this one, run the default and read
+the ratios. If it is larger, push the scale up and watch the same shapes appear.</p>
+
+<h2 id="contract">The contract</h2>
+
+<div class="callout">
+  <p>By the end of this site you will have rebuilt these
+  {{ 00-pipeline.pipeline_lines.code_lines }} lines yourself, from parts you wrote. You
+  will know what every one of them costs. And you will know the questions they cannot
+  answer.</p>
+</div>
+
+<p>The order never varies. Part I lays the floor: what a disk holds, what a file is,
+and how numbers and text become bytes by agreement. Part II walks the pipeline one
+stage at a time and has you build an honest small version of each. Part III turns the
+assumptions off, first scale and then the two hard truths the demo hides, and the last
+module puts your own parts back together and measures them against documents that
+fight back.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>That sentence is the whole site. Every module is one more place where it is true.
+Start at the floor.</p>

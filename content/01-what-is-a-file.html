@@ -1,0 +1,376 @@
+<p class="kicker learn">Part I · module 1 · investigate · 15–25 minutes · nothing to install</p>
+<h1><span class="num">01 ·</span> What is a file, actually?</h1>
+<p class="hook">This module sits three floors under <code>loader.load()</code>. Your
+pipeline's first line opens PDF files, and before you can say what opening one costs,
+you have to say what a file is.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>You use files every day, and you carry a picture of them in your head: a file is a
+thing with a name, a size, and an icon, sitting in a folder. That picture is drawn for
+you by the operating system, and it hides almost everything about how the thing
+actually works. This module replaces the picture with the machinery underneath, because
+the machinery is what your pipeline pays for.</p>
+
+<p>The short version, which the rest of the module earns: a disk only stores bytes, in
+fixed-size batches. Everything else you associate with a file, its name, its size, its
+type, the folder it lives in, is bookkeeping that the operating system writes onto the
+same disk, next to your data. Once you can see the bookkeeping as a separate thing from
+the bytes, a whole family of confusing behaviors becomes predictable: files that take
+more space than they contain, deletes that free no space, gigabyte files that occupy
+almost nothing, and load times that depend on how many files you have rather than how
+much data.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Write three characters into a file. Ask your system how big the file is and it
+  says 3 bytes. Ask how much disk the file takes and it says
+  {{ 01-what-is-a-file.three_char.allocated | int }} bytes.</p>
+  <p>Both answers come from the same operating system, about the same file, at the same
+  moment. Where did the other {{ 01-what-is-a-file.three_char.allocated | int }} minus
+  3 bytes go?</p>
+</div>
+
+<h2 id="mental-model">The mental model: a disk, and a database about it</h2>
+
+<p>A hard disk or SSD does not know what a file is. It knows one thing: it has a very
+long row of numbered slots, and you can ask for the contents of a slot or ask to put
+something in one.</p>
+
+<p>The slots are not individual bytes. The disk hands out its contents in fixed-size
+batches. {{ 01-what-is-a-file.alloc_block_size | int }} bytes is a common size, and it
+is the size on this machine. Such a batch is called a
+<span class="term">block</span>, and it is the smallest amount of disk a file can
+occupy. If you want to store one byte, you get four thousand and change, and the rest
+sits unused.</p>
+
+<p>So the disk is a row of numbered blocks and nothing more. No names, no folders, no
+file types, no dates. Which raises a question: you have a folder on your screen with
+files in it that have names and sizes and icons. Where is any of that?</p>
+
+<p>The answer is that it is on the disk too, written into some of those same blocks.
+Some blocks do not hold your documents. They hold bookkeeping <em>about</em> your
+documents: which blocks belong together, what name points at them, how they should be
+read. Think of it as a small database the operating system keeps about your bytes. That
+bookkeeping scheme is called a <span class="term">filesystem</span>. The files and
+folders you see on your desktop, on a Mac or on Windows alike, are not things sitting
+on a disk. They are that database, drawn on a screen.</p>
+
+<h3>Every file is a record in that database</h3>
+
+<p>The database has one central kind of entry. For every file, the filesystem keeps a
+small record holding the file's size, who owns it, when it was last changed, and, the
+part that matters here, the list of block numbers holding its contents. That record is
+called an <span class="term">inode</span>. It has a number, and that number is how the
+filesystem refers to the file internally.</p>
+
+<p>Read that list again and notice what is missing from it. The record holds the size,
+the dates, the owner, and the blocks. It does not hold the name.</p>
+
+<h3>The name lives in the folder, not in the file</h3>
+
+<p>The name lives in the folder. And a folder, it turns out, is a file too: a file
+whose contents are a list of pairs, each pair being a name and a record number. That is
+all a folder is. When you ask for <code>report.pdf</code>, the operating system reads
+the folder's contents, finds the pair whose name is <code>report.pdf</code>, takes the
+record number next to it, reads that record, gets the list of blocks, and asks the disk
+for those blocks.</p>
+
+<p>This has a consequence you can see with two commands, and it is the payoff of this
+module: <strong>the name and the contents are separate things.</strong> They are stored
+in different places, they are edited by different operations, and either one can exist
+without the other making any sense.</p>
+
+<p>Two names can point at the same record. Then the file has two names, both equally
+real, and there is no fact of the matter about which one is "the" file. Deleting a name
+removes one pair from one folder's list, and it does not touch the bytes. The bytes go
+away when the last name pointing at them is gone and the record says nobody is looking
+any more.</p>
+
+<h3>The record has no "type" field</h3>
+
+<p>One more thing is missing from that record: what the file <em>is</em>. There is no
+type field. A photo, a PDF, and a program are, on disk, a record and a list of blocks,
+with no difference in kind. The <code>.pdf</code> at the end of a name is part of the
+name, a hint to humans and to programs that trust hints. Rename it and nothing
+underneath changes, because there is nothing underneath to change.</p>
+
+<p>What makes a PDF a PDF is not where it lives or what it is called. It is that the
+bytes inside follow a convention that a reader can honour. That sentence is module 2's
+whole subject, and it is the floor the parsing modules stand on.</p>
+
+<h3>Why a retrieval pipeline cares</h3>
+
+<p>Everything above is why a call like <code>loader.load()</code> has a cost that has
+nothing to do with how many bytes you asked for. Reading a file means reading a folder,
+reading a record, and then asking for blocks. That is three trips before a single byte
+of your document arrives. Do it for ten thousand files and you pay for ten thousand
+folder lookups and ten thousand records. Module 4 measures exactly that.</p>
+
+<p>And storage engines, the things inside every database and every vector store, mostly
+decline to play this game. They keep one enormous file and do their own bookkeeping
+inside it, because the filesystem's bookkeeping is arranged for a different access
+pattern than theirs. You will build that kind of bookkeeping yourself in module 10.</p>
+
+<h2 id="do">Investigate it yourself</h2>
+
+<p>Every command below runs on macOS and Linux, and where the two differ, both are
+shown. On Windows, use WSL. Work in a scratch directory, for example
+<code>mkdir /tmp/floor &amp;&amp; cd /tmp/floor</code>, because you are about to make a
+file that claims to be a gigabyte.</p>
+
+<p>Or run all of it at once, which also records the numbers this page prints:</p>
+
+<figure>
+  <div class="code"><pre>python exercises/01-what-is-a-file/investigate.py</pre></div>
+</figure>
+
+<h3>1 · See the gap between size and space</h3>
+
+<div class="dual">
+  <div class="term-block">
+    <div class="term-head">macOS</div>
+<pre><span class="prompt">$</span> printf 'abc' > three.txt
+<span class="prompt">$</span> stat -x three.txt
+<span class="prompt">$</span> stat -f %k .</pre>
+  </div>
+  <div class="term-block">
+    <div class="term-head">Linux</div>
+<pre><span class="prompt">$</span> printf 'abc' > three.txt
+<span class="prompt">$</span> stat three.txt
+<span class="prompt">$</span> stat -f -c %s .</pre>
+  </div>
+</div>
+
+<p>Read the size and read the blocks. The size is 3. The blocks are counted in
+512-byte units, so multiply them out: this machine reserved
+{{ 01-what-is-a-file.three_char.allocated | int }} bytes for three characters. Say the
+gap out loud: {{ 01-what-is-a-file.three_char.allocated | int }} reserved,
+{{ 01-what-is-a-file.three_char.size }} used.</p>
+
+<h3>2 · Append a character and watch which number moves</h3>
+
+<figure>
+  <div class="code"><pre>printf 'd' >> three.txt
+stat -x three.txt      # macOS       (stat three.txt on Linux)</pre></div>
+</figure>
+
+<p>The size moves from 3 to 4. Watch what the blocks do. Then find the edge: write a
+file of exactly {{ 01-what-is-a-file.alloc_block_size | int }} bytes, then one of
+{{ 01-what-is-a-file.boundary.at_block_plus_1.size | int }}, and compare the two.</p>
+
+<h3>3 · Give one file two names</h3>
+
+<figure>
+  <div class="code"><pre>ls -i three.txt              # the record number
+ln three.txt also-three.txt  # a second name for the same record
+ls -li three.txt also-three.txt</pre></div>
+</figure>
+
+<p>Both names show one record number. Which one is "the" file?</p>
+
+<h3>4 · Delete one of the names</h3>
+
+<figure>
+  <div class="code"><pre>rm three.txt
+cat also-three.txt</pre></div>
+</figure>
+
+<p>The other name still works. Ask yourself what <code>rm</code> actually removed.</p>
+
+<h3>5 · Make a file that claims a gigabyte</h3>
+
+<div class="dual">
+  <div class="term-block">
+    <div class="term-head">macOS &amp; Linux (coreutils)</div>
+<pre><span class="prompt">$</span> truncate -s 1G big.img
+<span class="prompt">$</span> ls -l big.img
+<span class="prompt">$</span> du -h big.img</pre>
+  </div>
+  <div class="term-block">
+    <div class="term-head">macOS without coreutils</div>
+<pre><span class="prompt">$</span> mkfile -n 1g big.img
+<span class="prompt">$</span> ls -l big.img
+<span class="prompt">$</span> du -h big.img</pre>
+  </div>
+</div>
+
+<p><code>ls</code> reads the size field in the record. <code>du</code> adds up the
+blocks. They disagree by a gigabyte.</p>
+
+<h3>6 · Rename a PNG and see who notices</h3>
+
+<figure>
+  <div class="code"><pre>file icon.png
+mv icon.png notes.txt
+file notes.txt
+head -c 8 notes.txt | xxd       # or: head -c 8 notes.txt | hexdump -C</pre></div>
+</figure>
+
+<p><code>file</code> gives the same answer both times, because it never looked at the
+name. It looked at the first few bytes.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<p>Your absolute numbers depend on your filesystem. The shapes below do not.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/01-what-is-a-file/investigate.py on this machine</caption>
+  <thead><tr><th>what you did</th><th class="num">size says</th><th class="num">disk reserved</th></tr></thead>
+  <tbody>
+    <tr><td>wrote 3 characters</td>
+        <td class="num">{{ 01-what-is-a-file.three_char.size }} B</td>
+        <td class="num">{{ 01-what-is-a-file.three_char.allocated | int }} B</td></tr>
+    <tr><td>appended a 4th character</td>
+        <td class="num">{{ 01-what-is-a-file.four_char.size }} B</td>
+        <td class="num">{{ 01-what-is-a-file.four_char.allocated | int }} B</td></tr>
+    <tr><td>filled the block exactly</td>
+        <td class="num">{{ 01-what-is-a-file.boundary.at_block.size | int }} B</td>
+        <td class="num">{{ 01-what-is-a-file.boundary.at_block.allocated | int }} B</td></tr>
+    <tr><td>wrote one byte past it</td>
+        <td class="num">{{ 01-what-is-a-file.boundary.at_block_plus_1.size | int }} B</td>
+        <td class="num">{{ 01-what-is-a-file.boundary.at_block_plus_1.allocated | int }} B</td></tr>
+    <tr class="lose"><td>claimed a gigabyte with <code>truncate</code></td>
+        <td class="num">{{ 01-what-is-a-file.sparse.apparent | bytes }}</td>
+        <td class="num">{{ 01-what-is-a-file.sparse.allocated | bytes }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Four things to have seen:</p>
+
+<ul>
+  <li><strong>The gap.</strong> Three characters reserved
+  {{ 01-what-is-a-file.three_char.allocated | int }} bytes, which is one whole block.
+  The disk will not hand out less.</li>
+  <li><strong>Size moved, blocks didn't.</strong> Appending a character changed the
+  size field in the record and nothing else, because the byte fit in a block that was
+  already reserved. The reservation moves at exactly one byte past the block: at
+  {{ 01-what-is-a-file.boundary.at_block.size | int }} bytes of content the file still
+  holds {{ 01-what-is-a-file.boundary.at_block.allocated | int }} bytes of disk, and at
+  {{ 01-what-is-a-file.boundary.at_block_plus_1.size | int }} it holds
+  {{ 01-what-is-a-file.boundary.at_block_plus_1.allocated | int }}.</li>
+  <li><strong>Two names, one record.</strong> After <code>ln</code>, both names showed
+  the same number and the record said
+  {{ 01-what-is-a-file.hardlink.link_count }} names point here. After <code>rm</code>
+  it said {{ 01-what-is-a-file.after_unlink.links }}, and the surviving name still read
+  the same bytes.</li>
+  <li><strong>A gigabyte that isn't there.</strong> The size field says
+  {{ 01-what-is-a-file.sparse.apparent | bytes }}, and <code>du</code> says
+  {{ 01-what-is-a-file.sparse.du }}. Nothing was written, so no blocks were taken. The
+  record is a claim, not the contents.</li>
+</ul>
+
+<p>And here is the ratio to keep, because your pipeline lives in it. The corpus in
+<code>data/corpus_small/files</code> holds
+{{ 01-what-is-a-file.corpus.size | bytes }} of text in
+{{ 01-what-is-a-file.corpus.files | int }} files averaging
+{{ 01-what-is-a-file.corpus.mean_file_size | bytes }} each. Those files reserve
+{{ 01-what-is-a-file.corpus.allocated | bytes }} of disk, which is
+{{ 01-what-is-a-file.corpus.waste_ratio | 2f }}× the text, because every file rounds up
+to a whole number of blocks.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Work backwards from the gap. Three characters took a whole block because a block is
+the unit the hardware trades in. The filesystem cannot reserve part of one, so it
+reserves one, writes three bytes into the front of it, and records in the file's own
+record that the useful length is 3. Two numbers are doing two different jobs: one says
+how much space is held, and the other says how much of that space means anything.</p>
+
+<p>That is also why the fourth character was free. The block was already yours. The
+write went into space already reserved, and the only thing that changed was the length
+field. Fill the block exactly, all
+{{ 01-what-is-a-file.boundary.at_block.size | int }} bytes of it, and you still hold
+one block. Write one more byte and you hold
+{{ 01-what-is-a-file.boundary.at_block_plus_1.allocated | int }}. The reservation does
+not grow gradually. It doubles in a single step, because half a block is not a thing
+the hardware trades in.</p>
+
+<p>Now the gigabyte. <code>truncate</code> set the length field to a billion and wrote
+nothing. <code>ls -l</code> printed the length field, so it reported a gigabyte.
+<code>du</code> added up the blocks, found almost none, and reported almost nothing.
+Neither tool is lying. They read different fields, because a file's stated length and
+its actual occupancy were never the same fact. Files like this are called
+<span class="term">sparse</span>, and they are how a virtual machine can have a 500 GB
+disk image on a 256 GB laptop.</p>
+
+<p>The hard link is the sharpest of the four. <code>ln</code> did not copy anything. It
+added one pair, a name and a record number, to a folder's list, and bumped the count in
+the record that says how many names point here. Two entries, one record, one set of
+blocks. Nothing in the system marks one as the original, because nothing in the system
+needs to. <code>rm</code> removed a pair from a list and decremented the count. The
+contents only become free when that count reaches zero.</p>
+
+<p>Which is why "the file" is a slightly wrong idea. There is a record, and there are
+names pointing at it. Usually there is one name, and the shorthand does no harm, until
+you meet a link, or a delete that frees no space, and the shorthand stops predicting
+what you see.</p>
+
+<p>Then the rename. Nothing about a file's contents is recorded anywhere except in the
+contents. The <code>.png</code> was a hint in a folder's list. <code>file</code>
+ignores hints. It reads the first bytes and compares them against a table of known
+openings, and the bytes it found, <code>89 50 4e 47</code>, are the PNG signature that
+the PNG specification says every PNG starts with. The name changed, the bytes did not,
+and only one of those two things was ever the evidence.</p>
+
+<p>All of which sets up the number you will care about most. Your corpus wastes
+{{ 01-what-is-a-file.corpus.waste | bytes }} on block rounding, but that is the small
+cost. The large one is that opening each of those
+{{ 01-what-is-a-file.corpus.files | int }} files means walking this machinery from the
+top: find the folder, read the list, get the record, get the block list, ask for
+blocks. Ten thousand times over. Module 4 puts a stopwatch on it.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>loader.load()</code> now has a floor under it. It
+does not "get the file". It consults a database the operating system keeps about your
+bytes, and then asks the hardware for specific numbered blocks.
+<strong>Backward:</strong> there is nothing behind this module yet, because it is the
+floor. Ahead, the same move repeats at bigger radius three times: the filesystem keeps
+bookkeeping so a name becomes cheap to resolve, module 7's index keeps bookkeeping so a
+word becomes cheap to find, and module 14's tables keep bookkeeping so a total becomes
+cheap to compute.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Both halves of that sentence are already here. The bytes
+<code>89 50 4e 47</code> mean "PNG" only by agreement. The block is the cost of
+arranging anything at all.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Petrov, <span class="title">Database Internals</span>, Part I
+  opening.</strong> Read the first pages on blocks and pages. Expect it to explain why
+  database engines keep their own bookkeeping inside one large file instead of trusting
+  the filesystem's. You have just seen the bookkeeping they decline to use.</p>
+
+  <ol>
+    <li>A file reports a size of 10 bytes and reserves
+    {{ 01-what-is-a-file.alloc_block_size | int }}. You append 10 more bytes. What
+    changes on disk, and what changes in the record?</li>
+    <li>You delete a 4 GB file and free space does not go up. Give two explanations
+    consistent with what you saw in this module.</li>
+    <li>Someone hands you a file called <code>data.csv</code>. What is the cheapest way
+    to find out whether it really is one, and why is the name not evidence?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If <code>stat</code> reports blocks that don't multiply out to a multiple of
+    {{ 01-what-is-a-file.alloc_block_size | int }}, your filesystem may store very
+    small files inside the record itself rather than in a separate block. APFS, ext4
+    and Btrfs all do a version of this. The gap is then smaller than shown here, and
+    the lesson is unchanged: the length field and the occupancy are separate facts.</p>
+    <p>If <code>ln</code> fails with "Operation not permitted", you are probably on a
+    filesystem that doesn't support hard links, such as an exFAT or FAT32 drive. Run it
+    under <code>/tmp</code> instead.</p>
+    <p>If <code>du</code> reports the full gigabyte, your filesystem does not do sparse
+    files, and some do not. Compare <code>ls -l</code> against <code>du</code> on a
+    normal file instead: they will agree, and that agreement is the thing to
+    notice.</p>
+  </div>
+</div>

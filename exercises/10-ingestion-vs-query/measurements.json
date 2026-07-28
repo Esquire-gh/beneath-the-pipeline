@@ -1,0 +1,156 @@
+{
+  "_generated_unix": 1785267924,
+  "_machine": {
+    "cores": 18,
+    "cpu": "Apple M5 Max",
+    "disk": "SSD",
+    "gpu": {
+      "detail": "torch 2.13.0",
+      "kind": "mps",
+      "name": "Apple Silicon GPU (Metal)"
+    },
+    "os": "macOS 26.5.1",
+    "python": "3.11.5",
+    "ram_bytes": 137438953472,
+    "ram_human": "128.0 GB"
+  },
+  "batch_size": 5000,
+  "build_seconds": 0.6045784999150783,
+  "compatibility": {
+    "v1_reader_v1_data": "reads it",
+    "v1_reader_v2_data": "refuses: index was written by version 2; this reader understands up to 1. Refusing to guess.",
+    "v2_reader_v1_data": "reads it, 0 document lengths (none, correctly)",
+    "v2_reader_v2_data": "reads it, 200 document lengths"
+  },
+  "fanout": [
+    {
+      "docs": 50000,
+      "index_bytes": 9214020,
+      "reads_per_query": 1.0,
+      "seconds": 0.0002395249903202057,
+      "segments": 1,
+      "vs_one_segment": 1.0
+    },
+    {
+      "docs": 50000,
+      "index_bytes": 9657137,
+      "reads_per_query": 2.0,
+      "seconds": 0.00027445838786661626,
+      "segments": 2,
+      "vs_one_segment": 1.1458444795247058
+    },
+    {
+      "docs": 50000,
+      "index_bytes": 10504028,
+      "reads_per_query": 5.0,
+      "seconds": 0.00024020839482545852,
+      "segments": 5,
+      "vs_one_segment": 1.0028531657775634
+    },
+    {
+      "docs": 50000,
+      "index_bytes": 11400365,
+      "reads_per_query": 10.0,
+      "seconds": 0.00024307500571012496,
+      "segments": 10,
+      "vs_one_segment": 1.014821064746411
+    },
+    {
+      "docs": 50000,
+      "index_bytes": 12991020,
+      "reads_per_query": 22.6,
+      "seconds": 0.00025679157115519045,
+      "segments": 25,
+      "vs_one_segment": 1.0720867614352145
+    },
+    {
+      "docs": 50000,
+      "index_bytes": 14516244,
+      "reads_per_query": 40.8,
+      "seconds": 0.000261083384975791,
+      "segments": 50,
+      "vs_one_segment": 1.09000478249374
+    }
+  ],
+  "fanout_penalty": 1.09000478249374,
+  "fanout_size_growth": 1.5754517572134639,
+  "format": {
+    "bytes": 1132395,
+    "bytes_per_posting": 5.665147482590251,
+    "header": {
+      "flags": 0,
+      "terms": 25411,
+      "version": 1
+    },
+    "postings": 199888,
+    "round_trip_ok": true,
+    "terms": 25411
+  },
+  "full_rebuild_seconds": 0.6109107919037342,
+  "n_passages": 50000,
+  "pickle": {
+    "bytes": 948992,
+    "note": "pickle stores the class path. Rename or move the Segment class and every saved index becomes unreadable, with no version number to tell you why.",
+    "vs_own_format": 0.8380397299528874
+  },
+  "policies": [
+    {
+      "fan": 2,
+      "label": "fan=2",
+      "merge_seconds": 1.6211528331041336,
+      "query_seconds": 0.0002707331907004118,
+      "rewritten": 226000,
+      "segments": 3
+    },
+    {
+      "fan": 3,
+      "label": "fan=3",
+      "merge_seconds": 1.44200662500225,
+      "query_seconds": 0.0002465750090777874,
+      "rewritten": 120000,
+      "segments": 6
+    },
+    {
+      "fan": 4,
+      "label": "fan=4",
+      "merge_seconds": 1.571025833953172,
+      "query_seconds": 0.00026662498712539675,
+      "rewritten": 96000,
+      "segments": 5
+    },
+    {
+      "fan": 8,
+      "label": "fan=8",
+      "merge_seconds": 1.435735291801393,
+      "query_seconds": 0.00026461658999323847,
+      "rewritten": 48000,
+      "segments": 8
+    },
+    {
+      "fan": 16,
+      "label": "fan=16",
+      "merge_seconds": 2.384011249989271,
+      "query_seconds": 0.0002686915919184685,
+      "rewritten": 48000,
+      "segments": 5
+    },
+    {
+      "fan": null,
+      "label": "never merge",
+      "merge_seconds": 2.0791776478290558e-07,
+      "query_seconds": 0.00027028340846300123,
+      "rewritten": 0,
+      "segments": 50
+    }
+  ],
+  "rebuild_vs_one_batch": 10.10473895432182,
+  "segments_built": 10,
+  "trade": {
+    "cheapest_write": "never merge",
+    "fastest_query": "fan=3",
+    "query_spread": 1.0979749801611207,
+    "they_differ": true
+  },
+  "v2_bytes": 1133999,
+  "v2_overhead_bytes": 1604
+}

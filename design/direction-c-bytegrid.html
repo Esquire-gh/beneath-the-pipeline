@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction C — Byte grid</title>
+<style>
+:root{
+  --paper:#e6e5e0;        /* warm neutral, not cream */
+  --surface:#f3f2ee;
+  --ink:#111312;
+  --ink-2:#4c514e;
+  --ink-3:#7d827e;
+  --rule:#c9c8c1;
+  --rule-hard:#111312;
+  --learn:#0d6b62;        /* deep teal — Part II */
+  --break:#5a3fc0;        /* violet — Part III */
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "DejaVu Sans Mono", "Liberation Mono", Consolas, monospace;
+  --body: "Helvetica Neue", Helvetica, "Inter", "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--body); font-size:16.5px; line-height:1.68;
+}
+.shell{display:grid; grid-template-columns:13.5rem minmax(0,1fr); max-width:1180px; margin:0 auto; gap:0}
+
+/* ---------- vertical margin rail = the pipeline strip ---------- */
+.rail{
+  position:sticky; top:0; align-self:start; height:100vh;
+  border-right:2px solid var(--rule-hard);
+  padding:1.6rem 1.1rem 1.6rem 1.5rem;
+  display:flex; flex-direction:column;
+}
+.rail .brand{
+  font-family:var(--mono); font-size:.72rem; line-height:1.45; letter-spacing:.02em;
+  text-transform:lowercase; margin-bottom:.15rem;
+}
+.rail .brand b{display:block; font-size:.86rem; letter-spacing:-.01em}
+.rail .part{font-family:var(--mono); font-size:.63rem; color:var(--ink-3); letter-spacing:.1em; margin-bottom:1.6rem}
+.vstrip{display:flex; flex-direction:column; gap:0; border:2px solid var(--rule-hard)}
+.vstage{
+  display:block; text-decoration:none; color:var(--ink-2);
+  font-family:var(--mono); font-size:.7rem; letter-spacing:.06em; text-transform:lowercase;
+  padding:.42rem .6rem; border-bottom:1px solid var(--rule);
+  display:flex; justify-content:space-between; align-items:baseline; gap:.5rem;
+}
+.vstage:last-child{border-bottom:none}
+.vstage .n{font-size:.6rem; color:var(--ink-3)}
+.vstage:hover{background:var(--surface)}
+.vstage.done{background:var(--learn); color:#fff} .vstage.done .n{color:#a6d6d0}
+.vstage.here{background:var(--surface); color:var(--learn); box-shadow:inset 3px 0 0 var(--learn); font-weight:700}
+.vstage.here .n{color:var(--learn)}
+.vstage.stressed{color:var(--break); box-shadow:inset 3px 0 0 var(--break)}
+.branch{
+  margin-left:1.4rem; border-left:2px solid var(--rule-hard); border-bottom:2px solid var(--rule-hard);
+  border-right:2px solid var(--rule-hard);
+  font-family:var(--mono); font-size:.63rem; text-transform:lowercase; color:var(--ink-3);
+  padding:.3rem .6rem;
+}
+.rail .foot{margin-top:auto; font-family:var(--mono); font-size:.63rem; color:var(--ink-3); letter-spacing:.06em}
+.rail .meter{height:4px; background:var(--rule); margin-top:.4rem}
+.rail .meter i{display:block; height:100%; width:26.6%; background:var(--learn)}
+
+/* ---------- column ---------- */
+.col{padding:3.2rem 3rem 6rem; min-width:0}
+.kicker{font-family:var(--mono); font-size:.66rem; letter-spacing:.16em; text-transform:lowercase; color:var(--break); margin:0 0 .7rem}
+h1{
+  font-family:var(--mono); font-weight:700; font-size:2.05rem; line-height:1.14;
+  letter-spacing:-.02em; text-transform:lowercase; margin:0 0 .35rem; max-width:20ch;
+}
+h1 .num{color:var(--ink-3); font-weight:400}
+.hook{color:var(--ink-2); max-width:60ch; margin:.5rem 0 2.6rem; font-size:1.02rem}
+h2{
+  font-family:var(--mono); font-size:.72rem; letter-spacing:.14em; text-transform:lowercase;
+  font-weight:700; color:var(--ink); margin:3rem 0 1rem;
+  border-top:2px solid var(--rule-hard); padding-top:.5rem;
+}
+p{max-width:64ch; margin:0 0 1.1rem}
+code{font-family:var(--mono); font-size:.88em; background:var(--surface); padding:.05em .28em}
+
+.symptom{
+  border:2px solid var(--break); padding:1.1rem 1.3rem; max-width:64ch; margin-bottom:1.5rem;
+  background:var(--surface);
+}
+.symptom p{margin:0; max-width:none} .symptom p+p{margin-top:.7rem}
+
+figure{margin:0 0 1.8rem}
+.code{position:relative; background:var(--surface); border:2px solid var(--rule-hard); overflow-x:auto}
+.code pre{margin:0; padding:1rem 1.15rem; font-family:var(--mono); font-size:.79rem; line-height:1.8}
+.copy{
+  position:absolute; top:0; right:0; cursor:pointer; border:none; border-left:2px solid var(--rule-hard);
+  border-bottom:2px solid var(--rule-hard); background:var(--paper); color:var(--ink-2);
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.1em; text-transform:lowercase; padding:.3rem .6rem;
+}
+.copy:hover{background:var(--learn); color:#fff}
+.c-cm{color:var(--ink-3)} .c-kw{color:var(--break)} .c-st{color:var(--learn)}
+figcaption{font-family:var(--mono); font-size:.64rem; color:var(--ink-3); margin-top:.45rem}
+
+.hex{
+  border:2px solid var(--rule-hard); background:var(--surface); padding:.95rem 1.15rem;
+  font-family:var(--mono); font-size:.78rem; line-height:1.9; overflow-x:auto; white-space:pre;
+}
+.hex .off{color:var(--ink-3)}
+.hex .hl{background:var(--break); color:#fff}
+
+table{border-collapse:collapse; width:100%; max-width:42rem; font-size:.89rem}
+th,td{padding:.5rem .7rem; text-align:right; border-bottom:1px solid var(--rule)}
+th:first-child,td:first-child{text-align:left}
+thead th{font-family:var(--mono); font-size:.62rem; letter-spacing:.12em; text-transform:lowercase; color:var(--ink-2); border-bottom:2px solid var(--rule-hard)}
+td.num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+tr.win td{font-weight:700; color:var(--learn)}
+
+.chart{margin:1.3rem 0 .4rem; max-width:42rem}
+.chart text{font-family:var(--mono); font-size:10px; fill:var(--ink-2)}
+.chart .lbl{fill:var(--ink)}
+.chart .bar{fill:var(--learn)} .chart .bar.alt{fill:var(--break)}
+.chart .base{stroke:var(--rule-hard); stroke-width:2}
+
+.thesis{
+  font-family:var(--mono); font-size:.8rem; text-transform:lowercase; color:var(--ink);
+  border:2px solid var(--rule-hard); border-left-width:6px; border-left-color:var(--learn);
+  padding:.6rem .9rem; margin:1.4rem 0; max-width:56ch; background:var(--surface);
+}
+.check{border:2px solid var(--rule-hard); padding:1.15rem 1.35rem; max-width:64ch; background:var(--surface)}
+.check ol{margin:.6rem 0 0; padding-left:1.2rem} .check li{margin-bottom:.45rem}
+.trouble{margin-top:1.05rem; padding-top:.95rem; border-top:2px dotted var(--rule); font-size:.9rem; color:var(--ink-2)}
+.trouble b{display:block; font-family:var(--mono); font-size:.63rem; letter-spacing:.12em; text-transform:lowercase; color:var(--break); margin-bottom:.3rem}
+.note{font-family:var(--mono); font-size:.7rem; color:var(--ink-3); margin-top:2.6rem}
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}
+  .rail{position:static; height:auto; border-right:none; border-bottom:2px solid var(--rule-hard)}
+  .vstrip{flex-direction:row} .vstage{flex:1; border-bottom:none; border-right:1px solid var(--rule); flex-direction:column; gap:0}
+  .branch{margin-left:0}
+  .col{padding:2.2rem 1.3rem 4rem}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="rail">
+    <div class="brand"><b>beneath the pipeline</b></div>
+    <div class="part">part ii · module 04 of 15</div>
+
+    <nav class="vstrip" aria-label="pipeline">
+      <a class="vstage here" href="#">load <span class="n">04</span></a>
+      <a class="vstage" href="#">parse <span class="n">05·13</span></a>
+      <a class="vstage" href="#">chunk <span class="n">06</span></a>
+      <a class="vstage" href="#">embed <span class="n">06·12</span></a>
+      <a class="vstage" href="#">index <span class="n">07·09</span></a>
+      <a class="vstage" href="#">retrieve <span class="n">08·11</span></a>
+    </nav>
+    <div class="branch">└ structured · 14</div>
+
+    <div class="foot">
+      progress
+      <div class="meter"><i></i></div>
+    </div>
+  </aside>
+
+  <main class="col">
+    <p class="kicker">part ii — the pipeline, one line at a time</p>
+    <h1><span class="num">04 ·</span> load — from disk to memory</h1>
+    <p class="hook"><code>loader.load()</code>, finally cashed out. The first line of the Part 0 pipeline and the last one anybody looks at.</p>
+
+    <h2>symptom</h2>
+    <div class="symptom">
+      <p>You have 10,000 small files. You have one large file holding the same total bytes. Reading the 10,000 takes far longer than reading the one.</p>
+      <p>Same bytes off the same disk. Where did the extra time go?</p>
+    </div>
+
+    <h2>build</h2>
+    <p>Open <code>exercises/04-load/starter.py</code>. The plumbing is written; three <code>TODO</code>s are not. You will read the same corpus three ways — file by file, line by line, and one large buffered read — and count how many times each one crosses into the operating system.</p>
+
+    <figure>
+      <div class="code">
+        <button class="copy">copy</button>
+<pre><span class="c-cm"># TODO 1 — read the corpus one file at a time.</span>
+<span class="c-cm"># Return total bytes read. Count your open() calls.</span>
+<span class="c-kw">def</span> read_file_by_file(paths):
+    total = <span class="c-st">0</span>
+    <span class="c-kw">for</span> p <span class="c-kw">in</span> paths:
+        <span class="c-kw">with</span> open(p, <span class="c-st">"rb"</span>) <span class="c-kw">as</span> f:
+            total += len(f.read())
+    <span class="c-kw">return</span> total</pre>
+      </div>
+      <figcaption>exercises/04-load/starter.py — 3 TODOs, ~40 lines of your own</figcaption>
+    </figure>
+
+    <p>Every one of those <code>open()</code> and <code>read()</code> calls is a <strong>syscall</strong>: a function call with a border crossing inside it. Your program cannot touch the disk. It asks the operating system to, and the ask costs something even when the answer is already sitting in memory.</p>
+
+    <figure>
+      <div class="hex"><span class="off">00000000</span>  25 50 44 46 2d 31 2e 37  0a 25 <span class="hl">e2 e3 cf d3</span> 0a 31  |%PDF-1.7.%.....1|
+<span class="off">00000010</span>  20 30 20 6f 62 6a 0a 3c  3c 2f 54 79 70 65 2f 43  | 0 obj.&lt;&lt;/Type/C|
+<span class="off">00000020</span>  61 74 61 6c 6f 67 2f 50  61 67 65 73 20 32 20 30  |atalog/Pages 2 0|</div>
+      <figcaption>the first 48 bytes of sample_pdfs/clean.pdf — a signature, then an agreement</figcaption>
+    </figure>
+
+    <h2>observe</h2>
+    <p>Don't look at the absolute times; your machine is not this machine. Look at the ratio, and look at the crossings column next to it.</p>
+
+    <table>
+      <thead><tr><th>strategy</th><th>syscalls</th><th>wall time</th><th>vs. best</th></tr></thead>
+      <tbody>
+        <tr><td>file by file</td><td class="num">30,003</td><td class="num">1.84 s</td><td class="num">14.2×</td></tr>
+        <tr><td>line by line</td><td class="num">4,118</td><td class="num">0.42 s</td><td class="num">3.2×</td></tr>
+        <tr class="win"><td>one buffered read</td><td class="num">37</td><td class="num">0.13 s</td><td class="num">1.0×</td></tr>
+      </tbody>
+    </table>
+
+    <svg class="chart" viewBox="0 0 560 118" role="img" aria-label="wall time by strategy">
+      <text class="lbl" x="0" y="22">file by file</text>
+      <rect class="bar alt" x="118" y="10" width="410" height="16"></rect>
+      <text x="534" y="22">1.84s</text>
+      <text class="lbl" x="0" y="56">line by line</text>
+      <rect class="bar" x="118" y="44" width="94" height="16"></rect>
+      <text x="218" y="56">0.42s</text>
+      <text class="lbl" x="0" y="90">one read</text>
+      <rect class="bar" x="118" y="78" width="29" height="16"></rect>
+      <text x="153" y="90">0.13s</text>
+      <line class="base" x1="118" y1="4" x2="118" y2="100"></line>
+    </svg>
+
+    <h2>explain</h2>
+    <p>Loading is four things, and none of them is magic. Consult the bookkeeping the operating system keeps about your bytes — the record from module 1 — to find which blocks belong to this file. Ask for those blocks in as few crossings as you can. Decode the bytes by whatever convention was agreed on, which is module 2. Hold the result in memory.</p>
+
+    <h2>connect</h2>
+    <p><strong>Upward:</strong> <code>loader.load()</code> is that list, in that order, with the crossing count hidden from you. <strong>Backward:</strong> module 1 said a file is a row of blocks and a record pointing at them. This module is what it costs to actually go get them.</p>
+    <p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+    <h2>read &amp; check</h2>
+    <div class="check">
+      <p style="margin:0"><strong>Petrov, <em>Database Internals</em>, Part I.</strong> Read it for one thing: how storage engines batch their work specifically to stay off the boundary you just measured.</p>
+      <ol>
+        <li>Your corpus is 300 MB. Why did reading it file-by-file cost more than reading it in one call, when the disk moved the same bytes?</li>
+        <li>What does a buffer size of 64 KB buy you over 4 KB, and where does that stop paying?</li>
+        <li>Which of the three strategies would you use on a corpus larger than your RAM, and what breaks first?</li>
+      </ol>
+      <div class="trouble">
+        <b>if what you saw didn't match</b>
+        Ratios under 2× usually mean the files were already in the page cache from a previous run — the OS kept them in memory and never touched the disk. Run <code>./exercises/04-load/drop_caches.sh</code> between timings, or generate a fresh corpus with a different seed.
+      </div>
+    </div>
+
+    <p class="note">design mockup — numbers above are placeholders, not measured. on the real site every figure is injected from measurements.json.</p>
+  </main>
+</div>
+</body>
+</html>

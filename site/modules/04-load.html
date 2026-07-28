@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · Load — what reading a file costs — Beneath the Pipeline</title>
+<meta name="description" content="Same bytes, ten thousand files instead of one, wildly different cost.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead"><div class="masthead-inner"><div class="brandrow"><a class="brand" href="../index.html"><b>Beneath the Pipeline</b> &nbsp;/&nbsp; part ii · the pipeline, one line at a time</a><span class="progress-label">04 / 15</span></div><nav class="strip" aria-label="the pipeline"><a class="stage here" href="04-load.html" title="load() — built in module 4; stressed in module 9"><span class="n">04·09</span>load</a><a class="stage" href="05-parse.html" title="parse() — built in module 5; stressed in module 13"><span class="n">05·13</span>parse</a><a class="stage" href="06-chunk-embed.html" title="chunk() — built in module 6"><span class="n">06</span>chunk</a><a class="stage" href="06-chunk-embed.html" title="embed() — built in module 6; stressed in module 12"><span class="n">06·12</span>embed</a><a class="stage" href="07-index.html" title="index() — built in module 7; stressed in module 9, 10, 12"><span class="n">07·09·10·12</span>index</a><a class="stage" href="08-retrieve.html" title="retrieve() — built in module 8; stressed in module 11, 14"><span class="n">08·11·14</span>retrieve</a></nav><div class="lane2"><span class="spacer"></span><a class="branch" href="14-what-vectors-cant-answer.html" title="module 14 — the structured path">14 · structured</a></div></div></header><div class="wrap"><div class="layout"><div class="gutter" aria-hidden="true"><div class="marks"><div>0000</div><div>0010</div><div>0020</div><div>0030</div><div>0040</div><div>0050</div><div>0060</div><div>0070</div><div>0080</div><div>0090</div><div>00a0</div><div>00b0</div><div>00c0</div><div>00d0</div><div>00e0</div><div>00f0</div><div>0100</div><div>0110</div><div>0120</div><div>0130</div><div>0140</div><div>0150</div><div>0160</div><div>0170</div><div>0180</div><div>0190</div><div>01a0</div><div>01b0</div><div>01c0</div><div>01d0</div><div>01e0</div><div>01f0</div><div>0200</div><div>0210</div><div>0220</div><div>0230</div><div>0240</div><div>0250</div><div>0260</div><div>0270</div><div>0280</div><div>0290</div><div>02a0</div><div>02b0</div><div>02c0</div><div>02d0</div><div>02e0</div><div>02f0</div><div>0300</div><div>0310</div><div>0320</div><div>0330</div><div>0340</div><div>0350</div><div>0360</div><div>0370</div><div>0380</div><div>0390</div><div>03a0</div><div>03b0</div><div>03c0</div><div>03d0</div><div>03e0</div><div>03f0</div><div>0400</div><div>0410</div><div>0420</div><div>0430</div><div>0440</div><div>0450</div><div>0460</div><div>0470</div><div>0480</div><div>0490</div><div>04a0</div><div>04b0</div><div>04c0</div><div>04d0</div><div>04e0</div><div>04f0</div><div>0500</div><div>0510</div><div>0520</div><div>0530</div><div>0540</div><div>0550</div><div>0560</div><div>0570</div><div>0580</div><div>0590</div><div>05a0</div><div>05b0</div><div>05c0</div><div>05d0</div><div>05e0</div><div>05f0</div><div>0600</div><div>0610</div><div>0620</div><div>0630</div><div>0640</div><div>0650</div><div>0660</div><div>0670</div><div>0680</div><div>0690</div><div>06a0</div><div>06b0</div><div>06c0</div><div>06d0</div><div>06e0</div><div>06f0</div><div>0700</div><div>0710</div><div>0720</div><div>0730</div><div>0740</div><div>0750</div><div>0760</div><div>0770</div><div>0780</div><div>0790</div><div>07a0</div><div>07b0</div><div>07c0</div><div>07d0</div><div>07e0</div><div>07f0</div><div>0800</div><div>0810</div><div>0820</div><div>0830</div><div>0840</div><div>0850</div><div>0860</div><div>0870</div><div>0880</div><div>0890</div><div>08a0</div><div>08b0</div><div>08c0</div><div>08d0</div><div>08e0</div><div>08f0</div><div>0900</div><div>0910</div><div>0920</div><div>0930</div><div>0940</div><div>0950</div><div>0960</div><div>0970</div><div>0980</div><div>0990</div><div>09a0</div><div>09b0</div><div>09c0</div><div>09d0</div><div>09e0</div><div>09f0</div><div>0a00</div><div>0a10</div><div>0a20</div><div>0a30</div><div>0a40</div><div>0a50</div><div>0a60</div><div>0a70</div><div>0a80</div><div>0a90</div><div>0aa0</div><div>0ab0</div><div>0ac0</div><div>0ad0</div><div>0ae0</div><div>0af0</div><div>0b00</div><div>0b10</div><div>0b20</div><div>0b30</div><div>0b40</div><div>0b50</div><div>0b60</div><div>0b70</div><div>0b80</div><div>0b90</div><div>0ba0</div><div>0bb0</div><div>0bc0</div><div>0bd0</div><div>0be0</div><div>0bf0</div><div>0c00</div><div>0c10</div><div>0c20</div><div>0c30</div><div>0c40</div><div>0c50</div><div>0c60</div><div>0c70</div><div>0c80</div><div>0c90</div><div>0ca0</div><div>0cb0</div><div>0cc0</div><div>0cd0</div><div>0ce0</div><div>0cf0</div><div>0d00</div><div>0d10</div><div>0d20</div><div>0d30</div><div>0d40</div><div>0d50</div><div>0d60</div><div>0d70</div><div>0d80</div><div>0d90</div><div>0da0</div><div>0db0</div><div>0dc0</div><div>0dd0</div><div>0de0</div><div>0df0</div><div>0e00</div><div>0e10</div><div>0e20</div><div>0e30</div><div>0e40</div><div>0e50</div><div>0e60</div><div>0e70</div><div>0e80</div><div>0e90</div><div>0ea0</div><div>0eb0</div><div>0ec0</div><div>0ed0</div><div>0ee0</div><div>0ef0</div><div>0f00</div><div>0f10</div><div>0f20</div><div>0f30</div><div>0f40</div><div>0f50</div><div>0f60</div><div>0f70</div><div>0f80</div><div>0f90</div><div>0fa0</div><div>0fb0</div><div>0fc0</div><div>0fd0</div><div>0fe0</div><div>0ff0</div><div>1000</div><div>1010</div><div>1020</div><div>1030</div><div>1040</div><div>1050</div><div>1060</div><div>1070</div><div>1080</div><div>1090</div><div>10a0</div><div>10b0</div><div>10c0</div><div>10d0</div><div>10e0</div><div>10f0</div><div>1100</div><div>1110</div><div>1120</div><div>1130</div><div>1140</div><div>1150</div><div>1160</div><div>1170</div><div>1180</div><div>1190</div><div>11a0</div><div>11b0</div><div>11c0</div><div>11d0</div><div>11e0</div><div>11f0</div><div>1200</div><div>1210</div><div>1220</div><div>1230</div><div>1240</div><div>1250</div><div>1260</div><div>1270</div><div>1280</div><div>1290</div><div>12a0</div><div>12b0</div><div>12c0</div><div>12d0</div><div>12e0</div><div>12f0</div><div>1300</div><div>1310</div><div>1320</div><div>1330</div><div>1340</div><div>1350</div><div>1360</div><div>1370</div><div>1380</div><div>1390</div><div>13a0</div><div>13b0</div><div>13c0</div><div>13d0</div><div>13e0</div><div>13f0</div><div>1400</div><div>1410</div><div>1420</div><div>1430</div><div>1440</div><div>1450</div><div>1460</div><div>1470</div><div>1480</div><div>1490</div><div>14a0</div><div>14b0</div><div>14c0</div><div>14d0</div><div>14e0</div><div>14f0</div><div>1500</div><div>1510</div><div>1520</div><div>1530</div><div>1540</div><div>1550</div><div>1560</div><div>1570</div><div>1580</div><div>1590</div><div>15a0</div><div>15b0</div><div>15c0</div><div>15d0</div><div>15e0</div><div>15f0</div><div>1600</div><div>1610</div><div>1620</div><div>1630</div><div>1640</div><div>1650</div><div>1660</div><div>1670</div><div>1680</div><div>1690</div><div>16a0</div><div>16b0</div><div>16c0</div><div>16d0</div><div>16e0</div><div>16f0</div><div>1700</div><div>1710</div><div>1720</div><div>1730</div><div>1740</div><div>1750</div><div>1760</div><div>1770</div><div>1780</div><div>1790</div><div>17a0</div><div>17b0</div><div>17c0</div><div>17d0</div><div>17e0</div><div>17f0</div><div>1800</div><div>1810</div><div>1820</div><div>1830</div><div>1840</div><div>1850</div><div>1860</div><div>1870</div><div>1880</div><div>1890</div><div>18a0</div><div>18b0</div><div>18c0</div><div>18d0</div><div>18e0</div><div>18f0</div><div>1900</div><div>1910</div><div>1920</div><div>1930</div><div>1940</div><div>1950</div><div>1960</div><div>1970</div><div>1980</div><div>1990</div><div>19a0</div><div>19b0</div><div>19c0</div><div>19d0</div><div>19e0</div><div>19f0</div><div>1a00</div><div>1a10</div><div>1a20</div><div>1a30</div><div>1a40</div><div>1a50</div><div>1a60</div><div>1a70</div><div>1a80</div><div>1a90</div><div>1aa0</div><div>1ab0</div><div>1ac0</div><div>1ad0</div><div>1ae0</div><div>1af0</div><div>1b00</div><div>1b10</div><div>1b20</div><div>1b30</div><div>1b40</div><div>1b50</div><div>1b60</div><div>1b70</div><div>1b80</div><div>1b90</div><div>1ba0</div><div>1bb0</div><div>1bc0</div><div>1bd0</div><div>1be0</div><div>1bf0</div><div>1c00</div><div>1c10</div><div>1c20</div><div>1c30</div><div>1c40</div><div>1c50</div><div>1c60</div><div>1c70</div><div>1c80</div><div>1c90</div><div>1ca0</div><div>1cb0</div><div>1cc0</div><div>1cd0</div><div>1ce0</div><div>1cf0</div><div>1d00</div><div>1d10</div><div>1d20</div><div>1d30</div><div>1d40</div><div>1d50</div><div>1d60</div><div>1d70</div><div>1d80</div><div>1d90</div><div>1da0</div><div>1db0</div><div>1dc0</div><div>1dd0</div><div>1de0</div><div>1df0</div><div>1e00</div><div>1e10</div><div>1e20</div><div>1e30</div><div>1e40</div><div>1e50</div><div>1e60</div><div>1e70</div><div>1e80</div><div>1e90</div><div>1ea0</div><div>1eb0</div><div>1ec0</div><div>1ed0</div><div>1ee0</div><div>1ef0</div><div>1f00</div><div>1f10</div><div>1f20</div><div>1f30</div><div>1f40</div><div>1f50</div><div>1f60</div><div>1f70</div><div>1f80</div><div>1f90</div><div>1fa0</div><div>1fb0</div><div>1fc0</div><div>1fd0</div><div>1fe0</div><div>1ff0</div><div>2000</div><div>2010</div><div>2020</div><div>2030</div><div>2040</div><div>2050</div><div>2060</div><div>2070</div><div>2080</div><div>2090</div><div>20a0</div><div>20b0</div><div>20c0</div><div>20d0</div><div>20e0</div><div>20f0</div><div>2100</div><div>2110</div><div>2120</div><div>2130</div><div>2140</div><div>2150</div><div>2160</div><div>2170</div><div>2180</div><div>2190</div><div>21a0</div><div>21b0</div><div>21c0</div><div>21d0</div><div>21e0</div><div>21f0</div><div>2200</div><div>2210</div><div>2220</div><div>2230</div><div>2240</div><div>2250</div><div>2260</div><div>2270</div><div>2280</div><div>2290</div><div>22a0</div><div>22b0</div><div>22c0</div><div>22d0</div><div>22e0</div><div>22f0</div><div>2300</div><div>2310</div><div>2320</div><div>2330</div><div>2340</div><div>2350</div><div>2360</div><div>2370</div><div>2380</div><div>2390</div><div>23a0</div><div>23b0</div><div>23c0</div><div>23d0</div><div>23e0</div><div>23f0</div><div>2400</div><div>2410</div><div>2420</div><div>2430</div><div>2440</div><div>2450</div><div>2460</div><div>2470</div><div>2480</div><div>2490</div><div>24a0</div><div>24b0</div><div>24c0</div><div>24d0</div><div>24e0</div><div>24f0</div><div>2500</div><div>2510</div><div>2520</div><div>2530</div><div>2540</div><div>2550</div><div>2560</div><div>2570</div><div>2580</div><div>2590</div><div>25a0</div><div>25b0</div><div>25c0</div><div>25d0</div><div>25e0</div><div>25f0</div><div>2600</div><div>2610</div><div>2620</div><div>2630</div><div>2640</div><div>2650</div><div>2660</div><div>2670</div><div>2680</div><div>2690</div><div>26a0</div><div>26b0</div><div>26c0</div><div>26d0</div><div>26e0</div><div>26f0</div><div>2700</div><div>2710</div><div>2720</div><div>2730</div><div>2740</div><div>2750</div><div>2760</div><div>2770</div><div>2780</div><div>2790</div><div>27a0</div><div>27b0</div><div>27c0</div><div>27d0</div><div>27e0</div><div>27f0</div><div>2800</div><div>2810</div><div>2820</div><div>2830</div><div>2840</div><div>2850</div><div>2860</div><div>2870</div><div>2880</div><div>2890</div><div>28a0</div><div>28b0</div><div>28c0</div><div>28d0</div><div>28e0</div><div>28f0</div><div>2900</div><div>2910</div><div>2920</div><div>2930</div><div>2940</div><div>2950</div><div>2960</div><div>2970</div><div>2980</div><div>2990</div><div>29a0</div><div>29b0</div><div>29c0</div><div>29d0</div><div>29e0</div><div>29f0</div><div>2a00</div><div>2a10</div><div>2a20</div><div>2a30</div><div>2a40</div><div>2a50</div><div>2a60</div><div>2a70</div><div>2a80</div><div>2a90</div><div>2aa0</div><div>2ab0</div><div>2ac0</div><div>2ad0</div><div>2ae0</div><div>2af0</div><div>2b00</div><div>2b10</div><div>2b20</div><div>2b30</div><div>2b40</div><div>2b50</div><div>2b60</div><div>2b70</div><div>2b80</div><div>2b90</div><div>2ba0</div><div>2bb0</div><div>2bc0</div><div>2bd0</div><div>2be0</div><div>2bf0</div><div>2c00</div><div>2c10</div><div>2c20</div><div>2c30</div><div>2c40</div><div>2c50</div><div>2c60</div><div>2c70</div><div>2c80</div><div>2c90</div><div>2ca0</div><div>2cb0</div><div>2cc0</div><div>2cd0</div><div>2ce0</div><div>2cf0</div><div>2d00</div><div>2d10</div><div>2d20</div><div>2d30</div><div>2d40</div><div>2d50</div><div>2d60</div><div>2d70</div><div>2d80</div><div>2d90</div><div>2da0</div><div>2db0</div><div>2dc0</div><div>2dd0</div><div>2de0</div><div>2df0</div><div>2e00</div><div>2e10</div><div>2e20</div><div>2e30</div><div>2e40</div><div>2e50</div><div>2e60</div><div>2e70</div><div>2e80</div><div>2e90</div><div>2ea0</div><div>2eb0</div><div>2ec0</div><div>2ed0</div><div>2ee0</div><div>2ef0</div><div>2f00</div><div>2f10</div><div>2f20</div><div>2f30</div><div>2f40</div><div>2f50</div><div>2f60</div><div>2f70</div><div>2f80</div><div>2f90</div><div>2fa0</div><div>2fb0</div><div>2fc0</div><div>2fd0</div><div>2fe0</div><div>2ff0</div><div>3000</div><div>3010</div><div>3020</div><div>3030</div><div>3040</div><div>3050</div><div>3060</div><div>3070</div><div>3080</div><div>3090</div><div>30a0</div><div>30b0</div><div>30c0</div><div>30d0</div><div>30e0</div><div>30f0</div><div>3100</div><div>3110</div><div>3120</div><div>3130</div><div>3140</div><div>3150</div><div>3160</div><div>3170</div><div>3180</div><div>3190</div><div>31a0</div><div>31b0</div><div>31c0</div><div>31d0</div><div>31e0</div><div>31f0</div><div>3200</div><div>3210</div><div>3220</div><div>3230</div><div>3240</div><div>3250</div><div>3260</div><div>3270</div><div>3280</div><div>3290</div><div>32a0</div><div>32b0</div><div>32c0</div><div>32d0</div><div>32e0</div><div>32f0</div><div>3300</div><div>3310</div><div>3320</div><div>3330</div><div>3340</div><div>3350</div><div>3360</div><div>3370</div><div>3380</div><div>3390</div><div>33a0</div><div>33b0</div><div>33c0</div><div>33d0</div><div>33e0</div><div>33f0</div><div>3400</div><div>3410</div><div>3420</div><div>3430</div><div>3440</div><div>3450</div><div>3460</div><div>3470</div><div>3480</div><div>3490</div><div>34a0</div><div>34b0</div><div>34c0</div><div>34d0</div><div>34e0</div><div>34f0</div><div>3500</div><div>3510</div><div>3520</div><div>3530</div><div>3540</div><div>3550</div><div>3560</div><div>3570</div><div>3580</div><div>3590</div><div>35a0</div><div>35b0</div><div>35c0</div><div>35d0</div><div>35e0</div><div>35f0</div><div>3600</div><div>3610</div><div>3620</div><div>3630</div><div>3640</div><div>3650</div><div>3660</div><div>3670</div><div>3680</div><div>3690</div><div>36a0</div><div>36b0</div><div>36c0</div><div>36d0</div><div>36e0</div><div>36f0</div><div>3700</div><div>3710</div><div>3720</div><div>3730</div><div>3740</div><div>3750</div><div>3760</div><div>3770</div><div>3780</div><div>3790</div><div>37a0</div><div>37b0</div><div>37c0</div><div>37d0</div><div>37e0</div><div>37f0</div><div>3800</div><div>3810</div><div>3820</div><div>3830</div></div></div><main class="col"><p class="kicker learn">Part II · module 4 · build · 25–40 minutes</p>
+<h1><span class="num">04 ·</span> Load — what reading a file costs</h1>
+<p class="hook">This module cashes out <code>loader.load()</code>, the first line of
+the Part 0 pipeline and the one nobody looks at twice.</p>
+
+<h2 id="what">What loading means, and why it has a cost</h2>
+
+<p>Loading is the plainest stage of the pipeline to describe: bytes sit on the disk,
+your program needs them in memory, and something has to carry them across. Module 3
+made the point that loading changes where bytes are, not what they are. A loaded PDF is
+still PDF bytes, only now in a place your code can reach.</p>
+
+<p>What makes this worth a module is that the carrying is not free, and its cost has a
+surprising shape. The cost does not depend only on how many bytes you move. It depends
+heavily on how the bytes are arranged and on how many times you ask. A library call
+like <code>loader.load()</code> hides all of those asks behind one friendly name, and
+in this module you will count them yourself and watch them turn into time.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>You have 10,000 small files holding
+  37.2MB of text. You also have one single file holding the
+  same 37.2MB.</p>
+  <p>Reading the 10,000 small files takes
+  65.5&times; as long as reading the one big one. The bytes are the
+  same, and the disk is the same.</p>
+  <p>Where did the extra time go?</p>
+</div>
+
+<h2 id="mental-model">The mental model: every read is a border crossing</h2>
+
+<p>Your program cannot touch the disk. It is not allowed to; only the operating system
+is. So when you want bytes, you ask, and the ask is a
+<span class="term">syscall</span>, which is a function call with a border crossing
+inside it. Your process stops, the processor switches into the mode where the operating
+system's code runs, that code does the work, and control comes back. The crossing costs
+something every single time, no matter how few bytes you asked for.</p>
+
+<p>Reading a file takes at least three of these crossings: one to open the file, one or
+more to read its contents, and one to close it. And the open is the expensive kind,
+because of what module 1 showed it has to do: read the folder, find the name, fetch the
+record, get the block list. That work is charged per file, not per byte.</p>
+
+<p>That is the whole module. You are not measuring the disk. You are counting border
+crossings and watching the bill.</p>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/04-load/starter.py</code>. It has three <code>TODO</code>s,
+about 30 lines of your own work. You need the corpus first:</p>
+
+<figure>
+  <div class="code"><pre>python data/fetch.py --only corpus
+python exercises/04-load/starter.py
+python exercises/04-load/verify.py</pre></div>
+</figure>
+
+<p>Before the TODOs, read the <code>Crossings</code> class at the top of the file. It
+wraps three calls, <code>os.open</code>, <code>os.read</code>, and
+<code>os.close</code>, and counts them. That counter is the whole instrument.</p>
+
+<h3>Write the three loading strategies</h3>
+
+<ol>
+  <li><strong>File by file.</strong> Open each of the
+  10,000 files, read it, close it.</li>
+  <li><strong>One file, small mouthfuls.</strong> Open the single large file once and
+  ask for 4 KB at a time. This is what "read it line by line" costs underneath.</li>
+  <li><strong>One file, one big ask.</strong> The same file, 4 MB at a time.</li>
+</ol>
+
+<p>The solution adds a fourth strategy that the starter does not, and it is worth
+predicting before you look: the same 10,000 files, read with the
+big buffer. Write down what you expect that to do.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<p>Absolute times vary by machine. The column to read is <em>crossings</em>, and the
+ratio between the top row and the bottom.</p>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/04-load/solution.py — best of 3 runs,
+  37.2MB moved every time</caption>
+  <thead><tr><th>strategy</th><th class="num">opens</th><th class="num">reads</th>
+    <th class="num">crossings</th><th class="num">time</th><th class="num">vs best</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td>file by file, 64 KB buffer</td>
+      <td class="num">10,000</td>
+      <td class="num">20,000</td>
+      <td class="num">40,000</td>
+      <td class="num">139.3ms</td>
+      <td class="num">38.1&times;</td></tr>
+    <tr class="lose"><td>file by file, 4 MB buffer</td>
+      <td class="num">10,000</td>
+      <td class="num">20,000</td>
+      <td class="num">40,000</td>
+      <td class="num">239.7ms</td>
+      <td class="num">65.5&times;</td></tr>
+    <tr><td>one file, 4 KB buffer</td>
+      <td class="num">1</td>
+      <td class="num">9,525</td>
+      <td class="num">9,527</td>
+      <td class="num">6.9ms</td>
+      <td class="num">1.9&times;</td></tr>
+    <tr class="win"><td>one file, 4 MB buffer</td>
+      <td class="num">1</td>
+      <td class="num">11</td>
+      <td class="num">13</td>
+      <td class="num">3.7ms</td>
+      <td class="num">1.0&times;</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 138" preserveAspectRatio="xMinYMin meet" role="img" aria-label="wall time by read strategy"><text class="lbl" x="0" y="21">10k files, 64KB</text><rect class="bar alt" x="118" y="11" width="213.9" height="14"></rect><text x="337.9" y="22">139.3ms</text><text class="lbl" x="0" y="47">10k files, 4MB</text><rect class="bar alt" x="118" y="37" width="368.0" height="14"></rect><text x="492.0" y="48">239.7ms</text><text class="lbl" x="0" y="73">1 file, 4KB</text><rect class="bar" x="118" y="63" width="10.6" height="14"></rect><text x="134.6" y="74">6.9ms</text><text class="lbl" x="0" y="99">1 file, 4MB</text><rect class="bar" x="118" y="89" width="5.6" height="14"></rect><text x="129.6" y="100">3.7ms</text><line class="base" x1="118" y1="8" x2="118" y2="112"></line><text class="axis-title" x="118" y="132">best of 3, page cache warm — lower is better</text></svg>
+<figcaption>wall time — the two file-by-file strategies in magenta</figcaption>
+</figure>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 138" preserveAspectRatio="xMinYMin meet" role="img" aria-label="syscalls by read strategy"><text class="lbl" x="0" y="21">10k files, 64KB</text><rect class="bar alt" x="118" y="11" width="368.0" height="14"></rect><text x="492.0" y="22">40,000</text><text class="lbl" x="0" y="47">10k files, 4MB</text><rect class="bar alt" x="118" y="37" width="368.0" height="14"></rect><text x="492.0" y="48">40,000</text><text class="lbl" x="0" y="73">1 file, 4KB</text><rect class="bar alt" x="118" y="63" width="87.6" height="14"></rect><text x="211.6" y="74">9,527</text><text class="lbl" x="0" y="99">1 file, 4MB</text><rect class="bar" x="118" y="89" width="1.5" height="14"></rect><text x="125.5" y="100">13</text><line class="base" x1="118" y1="8" x2="118" y2="112"></line><text class="axis-title" x="118" y="132">open + read + close, counted exactly</text></svg>
+<figcaption>crossings into the operating system, counted exactly. the same shape,
+3,077&times; steeper</figcaption>
+</figure>
+
+<p>Three things to have seen:</p>
+
+<ul>
+  <li><strong>The ratio.</strong> There is a 65.5&times; gap
+  between slowest and fastest, for the same 37.2MB. The
+  crossings ratio is 3,077&times;.</li>
+  <li><strong>A bigger buffer helped one file and hurt many.</strong> On the single
+  file, going from 4 KB to 4 MB was 1.9&times;
+  faster. On the 10,000 files, the same change was
+  1.7&times; <em>slower</em>. If your model of the
+  problem is "use a bigger buffer", that second result has no explanation.</li>
+  <li><strong>Cost per crossing is not constant.</strong> File-by-file spent
+  3.48 µs per crossing,
+  while the small-buffer read spent
+  0.72 µs. Not all
+  crossings cost the same, and the expensive ones are the ones that involve the
+  filesystem's bookkeeping.</li>
+</ul>
+
+<h3>And the disk barely participated</h3>
+
+<p>Every number above was measured with the data already in memory. The operating
+system keeps recently read blocks in a <span class="term">page cache</span>, so a
+second read does not touch the hardware. Run it again with that cache bypassed and
+almost nothing changes:</p>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 230" preserveAspectRatio="xMinYMin meet" role="img" aria-label="warm against cold, by strategy"><line class="grid" x1="46" y1="184.0" x2="548" y2="184.0"></line><text x="40" y="187.5" text-anchor="end">0</text><line class="grid" x1="46" y1="151.6" x2="548" y2="151.6"></line><text x="40" y="155.1" text-anchor="end">50</text><line class="grid" x1="46" y1="119.2" x2="548" y2="119.2"></line><text x="40" y="122.7" text-anchor="end">100</text><line class="grid" x1="46" y1="86.8" x2="548" y2="86.8"></line><text x="40" y="90.3" text-anchor="end">150</text><line class="grid" x1="46" y1="54.4" x2="548" y2="54.4"></line><text x="40" y="57.9" text-anchor="end">200</text><line class="grid" x1="46" y1="22.0" x2="548" y2="22.0"></line><text x="40" y="25.5" text-anchor="end">250</text><rect class="bar " x="82.8" y="93.7" width="24.0" height="90.3"></rect><rect class="bar alt" x="108.8" y="86.5" width="24.0" height="97.5"></rect><text class="lbl" x="108.8" y="199" text-anchor="middle">10k files, 64KB</text><rect class="bar " x="208.2" y="28.6" width="24.0" height="155.4"></rect><rect class="bar alt" x="234.2" y="22.0" width="24.0" height="162.0"></rect><text class="lbl" x="234.2" y="199" text-anchor="middle">10k files, 4MB</text><rect class="bar " x="333.8" y="179.5" width="24.0" height="4.5"></rect><rect class="bar alt" x="359.8" y="178.8" width="24.0" height="5.2"></rect><text class="lbl" x="359.8" y="199" text-anchor="middle">1 file, 4KB</text><rect class="bar " x="459.2" y="181.6" width="24.0" height="2.4"></rect><rect class="bar alt" x="485.2" y="181.4" width="24.0" height="2.6"></rect><text class="lbl" x="485.2" y="199" text-anchor="middle">1 file, 4MB</text><rect class="bar " x="46" y="218" width="9" height="9"></rect><text x="59" y="226">page cache warm</text><rect class="bar alt" x="167" y="218" width="9" height="9"></rect><text x="180" y="226">page cache bypassed</text><text class="axis-title" x="46" y="14">milliseconds</text></svg>
+<figcaption><code>solution.py --cold</code> asks the OS not to cache these reads
+(macOS <code>F_NOCACHE</code>). the gap you measured is not the disk</figcaption>
+</figure>
+
+<p>File-by-file went from 139.3ms warm to
+150.5ms cold. The whole
+65.5&times; penalty survives with the media taken out of the
+picture, because it was never about the media.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Work backwards from the crossings column, because it explains every row.</p>
+
+<p>Reading 10,000 files cost
+40,000 crossings:
+10,000 opens,
+20,000 reads, and
+10,000 closes. That is two reads per file,
+because you cannot know you have reached the end until a read comes back empty. Reading
+the same bytes from one file cost
+13 crossings in total.</p>
+
+<p>Now recall from module 1 what an <code>open</code> actually does. It reads the
+folder's contents, finds the pair whose name matches, takes the record number, reads
+that record, and gets the list of blocks. That is real work, and it is charged per
+file, not per byte. It is why the two file-by-file rows cost about the same as each
+other regardless of buffer size: the buffer was never the expensive part.</p>
+
+<p>So why was the big buffer <em>slower</em> on many files? Because asking for 4 MB
+from a 3.8KB file still means preparing to receive
+4 MB. The runtime sets aside that much room, the kernel copies
+3.8KB into it, and the rest of the preparation is
+wasted, 10,000 times over. A buffer is a bet about how much data
+is coming. Bet too small and you pay in crossings. Bet too large and you pay in
+preparation. Neither is free, which is why "increase the buffer size" is not advice on
+its own.</p>
+
+<p>The single-file rows show the other half. Going from 4 KB to 4 MB cut crossings from
+9,527 to
+13 and cut time by
+1.9&times;. Here the buffer was the only variable,
+so making it larger did exactly what it should.</p>
+
+<h3>What loading actually is</h3>
+
+<p>Put the whole thing in one list, and notice that no step is mysterious:</p>
+
+<ol>
+  <li>Consult the database the operating system keeps about your bytes, first the
+  folder and then the record, to find which blocks belong to this file. That is
+  module 1.</li>
+  <li>Ask for those blocks, in as few crossings as you can manage.</li>
+  <li>Decode the bytes under an agreed convention. That is module 2, and it is where a
+  wrong guess about encoding enters your corpus.</li>
+  <li>Hold the result in memory.</li>
+</ol>
+
+<p>That is <code>loader.load()</code>. There is no fifth step. What a library adds is
+defaults for the choices in steps 2 and 3, namely how much to ask for at a time and
+which encoding to assume, and it does not tell you what it chose.</p>
+
+<p>One consequence is worth carrying forward. A corpus arriving as
+10,000 files is not the same problem as a corpus arriving as one
+file, even when the bytes are identical. Every production ingestion pipeline you will
+meet has an answer to this, usually "combine small files into large ones before doing
+anything else". Now you know what that is buying.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> the first line of the Part 0 pipeline is a folder lookup, a
+record read, some number of block requests, and a decode. You can now count each of
+those, and you know which one dominates. <strong>Backward:</strong> module 1 said the
+filesystem keeps bookkeeping about your bytes. This module is the invoice for
+consulting it 10,000 times.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>The bytes were arranged as 10,000 files instead of one. Nothing
+about their meaning changed. The cost changed by 65.5&times;.</p>
+
+<p>Module 9 runs this lesson backwards: when an index is too large to hold in memory,
+you deliberately write it out in pieces and merge them, and the reason that works is
+this same arithmetic. Few large transfers beat many small ones.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Petrov, <span class="title">Database Internals</span>,
+  Part I.</strong> Read it for one thing: how storage engines batch their work
+  specifically to stay off the boundary you just measured. Expect the phrase "one large
+  file" to keep appearing, and now you will know why.</p>
+
+  <ol>
+    <li>Your corpus is 37.2MB either way. Explain, in terms
+    a colleague could act on, why the arrangement into files changed the cost by
+    65.5&times;.</li>
+    <li>A 4 MB buffer helped on one file and hurt on 10,000. Give
+    the rule that predicts both.</li>
+    <li>You are handed a corpus of a million 2 KB files. Name the first thing you would
+    do, and what it costs you.</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your ratio is under 5×, your files may be larger than this corpus's
+    3.8KB average. The per-file cost is fixed, so the
+    bigger each file is, the less it matters. Check
+    <code>data/corpus_small/.complete</code> for the size the corpus was built at.</p>
+    <p>If the big buffer does <em>not</em> slow down the many-files case on your
+    machine, that is a legitimate difference: it depends on how your runtime allocates
+    the receiving buffer. The crossing counts will still be identical between those two
+    rows, and that identity is the finding. The buffer changed nothing about the number
+    of asks.</p>
+    <p>If <code>--cold</code> makes no difference at all, you are on Linux, where
+    <code>F_NOCACHE</code> does not exist and the flag is ignored. Drop the cache with
+    <code>sync &amp;&amp; echo 3 | sudo tee /proc/sys/vm/drop_caches</code> instead, or
+    skip it, since the warm numbers already carry the argument.</p>
+  </div>
+</div>
+<button class="done-toggle" type="button" aria-pressed="false" data-module="04-load"><span class="box"></span><span class="label">mark this module complete</span></button><nav class="modnav"><a class="prev" href="03-bytes-numbers.html"><span class="dir">previous</span><span class="name">03 · How numbers become bytes</span></a><a class="next" href="05-parse.html"><span class="dir">next</span><span class="name">05 · Parse — how a PDF becomes text</span></a></nav></main></div></div><script src="../assets/site.js"></script>
+</body>
+</html>

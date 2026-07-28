@@ -1,0 +1,297 @@
+<p class="kicker">Part III · module 11 · build · 50–75 minutes</p>
+<h1><span class="num">11 ·</span> How ranking stays fast at scale</h1>
+<p class="hook">This module breaks module 8's scorer. It was correct, and it is about
+to become the slowest thing in your pipeline.</p>
+
+<h2 id="what">What this module is about</h2>
+
+<p>Module 8's BM25 does its job the honest way: for every document that shares at least
+one word with the query, compute the full score, then sort. At a hundred thousand
+passages that was fine. As the corpus grows, the number of documents sharing a word
+with the query grows with it, and the honest way starts spending almost all of its time
+computing scores for documents that were never going to matter. You want ten results.
+It scores tens of thousands of candidates to find them.</p>
+
+<p>The insight this module builds is that you can often prove a document cannot reach
+the top ten <em>without scoring it</em>. Work out, once, at build time, the largest
+score each word could ever contribute to any document. At query time, keep the ten best
+scores seen so far. If a candidate document's words, at their theoretical best, cannot
+add up to more than your current tenth place, computing its actual score is provably
+wasted work, and you skip it. Done carefully, this returns <em>exactly</em> the same
+ten results while doing a small fraction of the arithmetic. It is not an approximation.
+It is a refusal to compute what cannot change the answer, and it is how real search
+engines survive their query load.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>BM25 scores every document that contains any query term. At
+  {{ 11-retrieval-at-scale.n_passages | int }} passages, a median query's terms cover
+  {{ 11-retrieval-at-scale.postings_per_query.median | int }} postings, and the worst
+  query covers {{ 11-retrieval-at-scale.postings_per_query.max | int }}.</p>
+  <p>You want ten documents. Most of the ones you are about to score cannot possibly
+  reach the top ten, and you could have known that before scoring them.</p>
+  <p>How do you skip them without ever skipping one that mattered?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/11-retrieval-at-scale/starter.py</code>. It has three
+<code>TODO</code>s, in the order the ideas depend on each other.</p>
+
+<figure>
+  <div class="code"><pre>python exercises/11-retrieval-at-scale/starter.py --scale small --queries 60
+python exercises/11-retrieval-at-scale/verify.py</pre></div>
+</figure>
+
+<h3>1 · Score document at a time</h3>
+
+<p>Module 8 scored <span class="term">term at a time</span>: take a query word, walk
+its whole posting list adding to a score map, then take the next word. It works, and it
+needs a score map holding every document any term touched.</p>
+
+<p>The alternative is <span class="term">document at a time</span>: walk all the
+posting lists together in document order, finish each document completely, and keep
+only the best ten. There is no score map, only a heap of ten. It gives the same
+answers, and it is the shape that makes everything after it possible.</p>
+
+<h3>2 · Add skip pointers</h3>
+
+<p>Posting lists are sorted. So when you need to reach document 8,000 and your cursor
+is at 300, you do not have to step through every entry between them. Look ahead a fixed
+number of entries; if the value there is still too small, move the whole block without
+reading what is inside it. That look-ahead is a
+<span class="term">skip pointer</span>, and it costs nothing to have, because the list
+was already sorted.</p>
+
+<h3>3 · Write WAND, which refuses to score what cannot win</h3>
+
+<p>Now the idea the module exists for. For each term, compute once at build time the
+largest score any single document could ever get from it, its
+<span class="term">upper bound</span>. During a query, keep the ten best scores so far.
+The tenth is your <span class="term">threshold</span>.</p>
+
+<p>Sort the cursors by the document they are currently at, and add up their upper
+bounds going down the list. The first point where the running total could exceed the
+threshold is the <span class="term">pivot</span>. Nothing before the pivot can reach
+the top ten, whatever its actual scores are, so skip straight to the pivot without
+scoring anything in between.</p>
+
+<div class="callout">
+  <p><strong>Every strategy must return the same answer.</strong> The exercise checks
+  this, and it is not a formality. Writing this module produced a version of WAND that
+  was faster and wrong: it counted a repeated query word once while term-at-a-time
+  counted it twice, so the two were scoring different things. The cross-check caught
+  it. The timings would not have.</p>
+</div>
+
+<h2 id="observe">What you should see</h2>
+
+<figure>
+{{ chart:scoring-work }}
+<figcaption>documents fully scored per query, over
+{{ 11-retrieval-at-scale.n_queries }} queries at
+{{ 11-retrieval-at-scale.n_passages | int }} passages</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/11-retrieval-at-scale/solution.py — all four
+  strategies returned identical top tens</caption>
+  <thead><tr><th>strategy</th><th class="num">postings touched</th>
+    <th class="num">documents scored</th><th class="num">median</th>
+    <th class="num">p99</th><th class="num">same answer</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td>term at a time</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.taat.postings_touched_per_query | int }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.taat.documents_scored_per_query | int }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.taat.median_seconds | time }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.taat.p99_seconds | time }}</td>
+      <td class="num">baseline</td></tr>
+    <tr class="lose"><td>document at a time</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.daat.postings_touched_per_query | int }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.daat.documents_scored_per_query | int }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.daat.median_seconds | time }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.daat.p99_seconds | time }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.daat.agreement_with_taat | pct0 }}</td></tr>
+    <tr><td>WAND, stepping one at a time</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.wand_linear.postings_touched_per_query | int }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.wand_linear.documents_scored_per_query | int }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.wand_linear.median_seconds | time }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.wand_linear.p99_seconds | time }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.wand_linear.agreement_with_taat | pct0 }}</td></tr>
+    <tr class="win"><td>WAND with skip pointers</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.wand.postings_touched_per_query | int }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.wand.documents_scored_per_query | int }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.wand.median_seconds | time }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.wand.p99_seconds | time }}</td>
+      <td class="num">{{ 11-retrieval-at-scale.strategies.wand.agreement_with_taat | pct0 }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Read the two work columns separately, because they say different things and only one
+of them is dramatic.</p>
+
+<p><strong>Documents fully scored fell
+{{ 11-retrieval-at-scale.reduction.scored_taat_vs_wand | x }}</strong>, from
+{{ 11-retrieval-at-scale.strategies.taat.documents_scored_per_query | int }} to
+{{ 11-retrieval-at-scale.strategies.wand.documents_scored_per_query | int }}. That is
+the pruning working exactly as designed: almost every document that BM25 would have
+scored was ruled out by arithmetic on upper bounds instead.</p>
+
+<figure>
+{{ chart:postings-touched }}
+<figcaption>postings stepped over per query — a smaller effect than the scoring one</figcaption>
+</figure>
+
+<p><strong>Postings touched fell only
+{{ 11-retrieval-at-scale.reduction.postings_taat_vs_wand | x }}</strong>, and skip
+pointers account for
+{{ 11-retrieval-at-scale.reduction.postings_skip_vs_linear | x }} of that within WAND.
+Pruning lets you avoid <em>scoring</em> a document. It does not let you avoid
+<em>knowing where the cursors are</em>. You still have to walk the lists, only without
+doing the arithmetic at every stop, and on short queries over passage-length documents
+that walking is most of the remaining work.</p>
+
+<div class="aside">
+  <span class="aside-label">about the wall-clock column</span>
+  These implementations are pure Python, so the timings are dominated by interpreter
+  overhead rather than by the algorithms — document-at-a-time looks terrible because it
+  runs a Python loop per document where term-at-a-time runs one per posting in a tighter
+  loop. The columns that transfer to a real implementation are <em>postings touched</em>
+  and <em>documents scored</em>. Those are counts of work, and they do not depend on the
+  language.
+</div>
+
+<h3>The median got better and the tail got worse</h3>
+
+<figure>
+{{ chart:latency-tail }}
+<figcaption>median against p99 — the same queries, ranked by how long they took</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>strategy</th><th class="num">median</th><th class="num">p99</th>
+    <th class="num">p99 ÷ median</th></tr></thead>
+  <tbody>
+    <tr><td>term at a time</td>
+      <td class="num">{{ 11-retrieval-at-scale.tail.taat.median_ms | 2f }} ms</td>
+      <td class="num">{{ 11-retrieval-at-scale.tail.taat.p99_ms | 2f }} ms</td>
+      <td class="num">{{ 11-retrieval-at-scale.tail.taat.p99_over_median | x }}</td></tr>
+    <tr><td>document at a time</td>
+      <td class="num">{{ 11-retrieval-at-scale.tail.daat.median_ms | 2f }} ms</td>
+      <td class="num">{{ 11-retrieval-at-scale.tail.daat.p99_ms | 2f }} ms</td>
+      <td class="num">{{ 11-retrieval-at-scale.tail.daat.p99_over_median | x }}</td></tr>
+    <tr class="lose"><td>WAND with skip pointers</td>
+      <td class="num">{{ 11-retrieval-at-scale.tail.wand.median_ms | 2f }} ms</td>
+      <td class="num">{{ 11-retrieval-at-scale.tail.wand.p99_ms | 2f }} ms</td>
+      <td class="num">{{ 11-retrieval-at-scale.tail.wand.p99_over_median | x }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>WAND has the best median and the <em>worst</em> spread. Its p99 is
+{{ 11-retrieval-at-scale.tail.wand.p99_over_median | x }} its median, against
+{{ 11-retrieval-at-scale.tail.taat.p99_over_median | x }} for the strategy it replaced.
+That is not a flaw in the measurement. It is what pruning does.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Start with why the upper bound works, because everything else follows from it.</p>
+
+<p>BM25's score for a document is a sum of per-term contributions. Each contribution
+depends on the term's rarity, how often it occurs in that document, and the document's
+length, all of which are known at build time. So for each term you can compute, once,
+the largest contribution it could ever make to <em>any</em> document. Add those up
+across a query's terms and you have a ceiling on what any document could score.</p>
+
+<p>Now hold ten scores. If a document's ceiling is below your tenth-best score, its
+actual score cannot beat it, so scoring it is provably wasted work. You do not need to
+know what the score would have been. That is the entire argument, and it is why WAND
+returns <em>exactly</em> the same top ten rather than an approximation. The pruning is
+sound: it only ever discards documents that could not have won.</p>
+
+<p>Notice how different that is from what module 12 is about to do. WAND gives up
+nothing, same answers, less work. Approximate nearest-neighbour search gives up
+correctness for speed. Both are called "making retrieval fast", and only one of them
+changes your results.</p>
+
+<h3>Why the tail is what production teams watch</h3>
+
+<p>Your median query got faster. Your slowest queries did not get faster by nearly as
+much, and relative to the new median they got worse.</p>
+
+<p>The reason is in the mechanism. WAND is fast when the threshold rises quickly: find
+ten good documents early and the ceiling test starts rejecting almost everything. On a
+query where the good documents are scattered, or where every term is common so no term
+has a distinguishing upper bound, the threshold stays low, the pivot barely moves, and
+WAND degrades towards scoring everything <em>plus</em> the bookkeeping it did trying
+not to.</p>
+
+<p>So the work per query became far more variable. And a user does not experience your
+median. A page that issues one search shows the user one query's latency. A page that
+issues five shows them the slowest of the five, which lands near p99 more often than
+anyone's intuition suggests. Latency budgets in production are written against p99 or
+p999 for exactly this reason, and an optimisation that improves the median while
+stretching the tail can make a system feel worse while every dashboard shows it got
+better.</p>
+
+<h3>What this means for your pipeline</h3>
+
+<p>Part 0's <code>retrieve()</code> hides all of this behind a function call. Now you
+know the questions to ask a search system: does it score document-at-a-time or
+term-at-a-time, does it prune, is the pruning sound or approximate, and what does its
+p99 look like, not its median.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>retrieve()</code>'s cost is not "scoring the
+corpus". It is scoring the documents you could not rule out, and the ruling-out is the
+engineering. <strong>Backward:</strong> module 8 built the scorer this module refuses
+to run, and module 9's sorted posting lists are what make skip pointers possible at
+all: the same sortedness that made gaps work.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Sortedness is arrangement. It was free when you built the index, and here it pays
+twice: gaps in module 9, skips in this one.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>Büttcher, Clarke &amp; Cormack,
+  <span class="title">Information Retrieval: Implementing and Evaluating Search
+  Engines</span>, the query processing chapters.</strong> WAND, MaxScore, block-max
+  variants, and the accounting for what each one skips. Expect it to be much more
+  careful than this page about the conditions under which pruning stays sound.</p>
+
+  <ol>
+    <li>WAND scored {{ 11-retrieval-at-scale.reduction.scored_taat_vs_wand | x }} fewer
+    documents but touched only
+    {{ 11-retrieval-at-scale.reduction.postings_taat_vs_wand | x }} fewer postings.
+    Explain the gap between those two numbers.</li>
+    <li>Your p99 got worse relative to your median. Describe a query where WAND does
+    badly, and say what you could measure to find such queries in your own traffic.</li>
+    <li>WAND returns exactly the right answer; module 12's HNSW will not. Why is one
+    allowed to skip work while the other has to give something up?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your strategies return different top tens, check two things before assuming a
+    logic error. First, whether they tokenize the query the same way. Counting a
+    repeated query word twice in one strategy and once in another is the bug this
+    module's own solution shipped with. Second, tie-breaking: two documents with equal
+    scores must be ordered the same way by every strategy, which means comparing whole
+    tuples rather than scores alone when replacing the worst entry in the heap.</p>
+    <p>If WAND scores <em>more</em> documents than document-at-a-time, your threshold
+    is probably never being updated. It should be set to the tenth-best score as soon
+    as the heap is full, and updated on every replacement.</p>
+    <p>If skip pointers make no difference, check where you are calling them. Advancing
+    to <code>current + 1</code> can never skip anything, because the next posting is
+    always the next posting. Skipping only pays when the target is far away, which in
+    WAND means advancing a lagging cursor to the pivot.</p>
+  </div>
+</div>

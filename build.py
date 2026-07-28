@@ -1,0 +1,443 @@
+#!/usr/bin/env python3
+"""Assemble the site.
+
+Authoring-time only. Readers never run this — the HTML committed under site/
+is complete and opens from file:// with no server and no build step.
+
+What it does:
+
+  1. reads page bodies from content/
+  2. substitutes {{ }} tokens from exercises/NN-slug/measurements.json
+  3. wraps each body in the shared shell — masthead, pipeline strip, nav
+  4. writes site/index.html, site/modules/*.html, site/reading-list.html
+
+The point of step 2: no number on this site is typed by hand. If a page wants
+to say how much slower one read strategy was, it names a measurement, and the
+build fails if that measurement was never taken.
+
+    python build.py            # build everything
+    python build.py --check    # report missing measurements, write nothing
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from datetime import date
+from html import escape
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent
+sys.path.insert(0, str(REPO))
+
+import charts                                        # noqa: E402
+from charts import MissingMeasurement, dig           # noqa: E402
+from modules import MODULES, BY_NUM, PART_TITLES, STAGES, strip_state  # noqa: E402
+
+CONTENT = REPO / "content"
+SITE = REPO / "site"
+EXERCISES = REPO / "exercises"
+
+TOKEN = re.compile(r"\{\{\s*(.+?)\s*\}\}", re.S)
+
+
+# --------------------------------------------------------------------------
+# measurements
+# --------------------------------------------------------------------------
+
+def load_measurements() -> dict:
+    out = {}
+    for path in sorted(EXERCISES.glob("*/measurements.json")):
+        try:
+            out[path.parent.name] = json.loads(path.read_text())
+        except json.JSONDecodeError as e:
+            sys.exit(f"{path}: {e}")
+    return out
+
+
+def machine_specs(M: dict) -> dict:
+    """The machine every number on this site was produced on.
+
+    Taken from the measurement files themselves rather than probed at build
+    time, so the specs describe the machine that ran the code.
+    """
+    for slug in sorted(M):
+        spec = M[slug].get("_machine")
+        if spec:
+            return spec
+    from exercises.common import machine
+    return machine()
+
+
+# --------------------------------------------------------------------------
+# token substitution
+# --------------------------------------------------------------------------
+
+def fmt(value, spec: str) -> str:
+    if spec in ("", "raw"):
+        return escape(str(value))
+    if spec == "int":
+        return f"{round(float(value)):,}"
+    if spec == "count":
+        return charts.fmt_count(value)
+    if spec == "time":
+        return charts.fmt_time(float(value))
+    if spec == "bytes":
+        return charts.fmt_bytes(float(value))
+    if spec == "x":                       # a ratio: 14.2×
+        return f"{float(value):.1f}&times;"
+    if spec == "x0":
+        return f"{round(float(value)):,}&times;"
+    if spec == "pct":
+        return f"{float(value) * 100:.1f}%"
+    if spec == "pct0":
+        return f"{float(value) * 100:.0f}%"
+    if spec == "money":
+        return f"${float(value):,.2f}"
+    if re.fullmatch(r"\d+f", spec):                # 1f, 2f, 3f …
+        return f"{float(value):.{int(spec[:-1])}f}"
+    if spec == "json":
+        return escape(json.dumps(value))
+    raise ValueError(f"unknown format '{spec}'")
+
+
+PY_KEYWORDS = {
+    "and", "as", "assert", "break", "class", "continue", "def", "del", "elif",
+    "else", "except", "False", "finally", "for", "from", "global", "if",
+    "import", "in", "is", "lambda", "None", "nonlocal", "not", "or", "pass",
+    "raise", "return", "True", "try", "while", "with", "yield",
+}
+
+PY_TOKEN = re.compile(r"""
+      (?P<comment>\#[^\n]*)
+    | (?P<string>'''.*?'''|\"\"\".*?\"\"\"|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*")
+    | (?P<def>(?<=\bdef\s)\w+)
+    | (?P<name>[A-Za-z_]\w*)
+    | (?P<number>\b\d[\w.]*)
+    | (?P<other>.)
+""", re.X | re.S)
+
+
+def highlight_python(src: str) -> str:
+    """Enough highlighting to read by, and not one colour more."""
+    out = []
+    for m in PY_TOKEN.finditer(src):
+        kind = m.lastgroup
+        text = escape(m.group())
+        if kind == "comment":
+            cls = "c-todo" if "TODO" in m.group() else "c-cm"
+            out.append(f'<span class="{cls}">{text}</span>')
+        elif kind == "string":
+            out.append(f'<span class="c-st">{text}</span>')
+        elif kind == "def":
+            out.append(f'<span class="c-fn">{text}</span>')
+        elif kind == "name" and m.group() in PY_KEYWORDS:
+            out.append(f'<span class="c-kw">{text}</span>')
+        else:
+            out.append(text)
+    return "".join(out)
+
+
+def inline_code(spec: str) -> str:
+    """{{code:path#MARK}} — put the real file on the page.
+
+    The site shows code that exists, not code that was retyped into prose.
+    """
+    path_part, _, mark = spec.partition("#")
+    path = REPO / path_part.strip()
+    if not path.exists():
+        raise MissingMeasurement(f"no such file: {path_part}")
+    src = path.read_text()
+    if mark:
+        lines = src.splitlines()
+        try:
+            a = next(i for i, l in enumerate(lines) if f"BEGIN {mark}" in l)
+            b = next(i for i, l in enumerate(lines) if f"END {mark}" in l)
+        except StopIteration:
+            raise MissingMeasurement(f"{path_part}: no BEGIN/END {mark} markers")
+        src = "\n".join(lines[a + 1:b]).strip("\n")
+    body = highlight_python(src) if path.suffix == ".py" else escape(src)
+    return f'<div class="code"><pre>{body}</pre></div>'
+
+
+def hexdump_html(M: dict, path: str, highlight: str = "") -> str:
+    """{{hex:slug.path.to.dump | 0-7}} — a real hex dump, from real bytes.
+
+    The dump rows are recorded by the exercise. This only lays them out, so
+    the bytes on the page are the bytes on disk.
+    """
+    rows = dig(M, path)
+    lo, hi = -1, -1
+    if highlight:
+        a, _, b = highlight.partition("-")
+        lo, hi = int(a), int(b or a)
+
+    out = []
+    for row in rows:
+        cells = []
+        for i, byte in enumerate(row["hex"]):
+            off = row["offset"] + i
+            gap = " " if i % 8 == 7 else ""
+            if lo <= off <= hi:
+                cells.append(f'<span class="hl">{byte}</span> {gap}')
+            else:
+                cells.append(f"{byte} {gap}")
+        pad = "   " * (16 - len(row["hex"]))
+        ascii_col = escape(row["ascii"])
+        out.append(f'<span class="off">{row["offset"]:08x}</span>  '
+                   f'{"".join(cells)}{pad} |{ascii_col}|')
+    return '<div class="hex">' + "\n".join(out) + "</div>"
+
+
+def substitute(text: str, M: dict, *, where: str) -> tuple[str, list[str]]:
+    problems: list[str] = []
+    specs = machine_specs(M)
+
+    def one(match: re.Match) -> str:
+        expr = match.group(1).strip()
+        path, _, filt = (p.strip() for p in expr.partition("|"))
+
+        try:
+            if path.startswith("code:"):
+                return inline_code(path[len("code:"):])
+            if path.startswith("hex:"):
+                return hexdump_html(M, path[len("hex:"):].strip(), filt)
+            if path.startswith("chart:"):
+                name = path[len("chart:"):].strip()
+                fn = charts.REGISTRY.get(name)
+                if fn is None:
+                    raise MissingMeasurement(f"no chart named '{name}'")
+                return fn(M)
+            if path.startswith("machine."):
+                node = specs
+                for part in path[len("machine."):].split("."):
+                    node = node[part]
+                return fmt(node, filt)
+            return fmt(dig(M, path), filt)
+        except (MissingMeasurement, KeyError, IndexError, TypeError, ValueError) as e:
+            problems.append(f"{where}: {{{{{expr}}}}} — {e}")
+            return ('<span style="background:#f8e4ee;color:#a51f5c;'
+                    'font-family:monospace;padding:0 .2em">?</span>')
+
+    return TOKEN.sub(one, text), problems
+
+
+# --------------------------------------------------------------------------
+# shell
+# --------------------------------------------------------------------------
+
+GUTTER_ROWS = 900
+
+
+def gutter_html() -> str:
+    """Byte offsets down the margin. Purely decorative, and wrapped so it can
+    be taken out of flow — otherwise a short page inherits the gutter's height
+    and scrolls for thousands of pixels past its own content."""
+    marks = "".join(f"<div>{i * 16:04x}</div>" for i in range(GUTTER_ROWS))
+    return f'<div class="marks">{marks}</div>' 
+
+
+def strip_html(mod, *, depth: int) -> str:
+    """The signature element: the Part 0 pipeline, drawn as a strip.
+
+    Outlined means not reached. Filled means you built it. Filled with a
+    magenta rule means a later module broke it and you fixed it.
+    """
+    base = "" if depth else "modules/"
+    parts = ['<nav class="strip" aria-label="the pipeline">']
+    for cell in strip_state(mod):
+        cls = ("stage " + cell["state"]).strip()
+        href = f'{base}{cell["href"]}' if cell["href"] else "#"
+        parts.append(
+            f'<a class="{cls}" href="{href}" title="{escape(cell["title"])}">'
+            f'<span class="n">{cell["nums"]}</span>{cell["stage"]}</a>')
+    parts.append("</nav>")
+
+    m14 = BY_NUM[14]
+    lane_cls = "branch"
+    if mod.num == 14:
+        lane_cls += " here"
+    elif mod.num > 14:
+        lane_cls += " done"
+    parts.append(
+        f'<div class="lane2"><span class="spacer"></span>'
+        f'<a class="{lane_cls}" href="{base}{m14.slug}.html" '
+        f'title="module 14 — the structured path">14 · structured</a></div>')
+    return "".join(parts)
+
+
+HEAD = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<meta name="description" content="{desc}">
+<link rel="stylesheet" href="{assets}style.css">
+</head>
+<body>
+"""
+
+FOOT = """<script src="{assets}site.js"></script>
+</body>
+</html>
+"""
+
+
+def masthead(mod, *, depth: int, show_strip: bool = True) -> str:
+    assets = "assets/" if depth == 0 else "../assets/"
+    home = "index.html" if depth == 0 else "../index.html"
+    part = PART_TITLES[mod.part]
+    counter = (f'<span class="progress-label">{mod.nn} / 15</span>'
+               if mod.num else
+               '<span class="progress-label" data-progress-count>0 / 15 complete</span>')
+    strip = strip_html(mod, depth=depth) if show_strip else ""
+    return (
+        '<header class="masthead"><div class="masthead-inner">'
+        f'<div class="brandrow">'
+        f'<a class="brand" href="{home}"><b>Beneath the Pipeline</b> '
+        f'&nbsp;/&nbsp; {escape(part.lower())}</a>{counter}</div>'
+        f'{strip}</div></header>'
+    )
+
+
+def modnav(mod, *, depth: int = 1) -> str:
+    """Previous/next links. `depth` is 0 for the index page, which lives one
+    directory up from the modules and needs a different prefix."""
+    base = "" if depth else "modules/"
+    prev_m = BY_NUM.get(mod.num - 1)
+    next_m = BY_NUM.get(mod.num + 1)
+    out = ['<nav class="modnav">']
+    if prev_m is not None:
+        href = "../index.html" if prev_m.num == 0 else f"{prev_m.slug}.html"
+        out.append(f'<a class="prev" href="{href}"><span class="dir">previous</span>'
+                   f'<span class="name">{prev_m.nn} · {escape(prev_m.title)}</span></a>')
+    if next_m is not None:
+        out.append(f'<a class="next" href="{base}{next_m.slug}.html">'
+                   f'<span class="dir">{"begin" if mod.num == 0 else "next"}</span>'
+                   f'<span class="name">{next_m.nn} · {escape(next_m.title)}</span></a>')
+    else:
+        out.append(f'<a class="next" href="{"reading-list.html" if depth == 0 else "../reading-list.html"}">'
+                   '<span class="dir">appendix</span>'
+                   '<span class="name">The reading list</span></a>')
+    out.append("</nav>")
+    return "".join(out)
+
+
+def done_toggle(mod) -> str:
+    return (f'<button class="done-toggle" type="button" aria-pressed="false" '
+            f'data-module="{mod.slug}"><span class="box"></span>'
+            f'<span class="label">mark this module complete</span></button>')
+
+
+def render_page(mod, body: str, *, depth: int, show_strip=True,
+                show_nav=True, show_toggle=True) -> str:
+    assets = "assets/" if depth == 0 else "../assets/"
+    title = ("Beneath the Pipeline" if mod.num == 0
+             else f"{mod.nn} · {mod.title} — Beneath the Pipeline")
+    parts = [
+        HEAD.format(title=escape(title), desc=escape(mod.desc), assets=assets),
+        masthead(mod, depth=depth, show_strip=show_strip),
+        '<div class="wrap"><div class="layout">',
+        f'<div class="gutter" aria-hidden="true">{gutter_html()}</div>',
+        '<main class="col">',
+        body,
+    ]
+    if show_toggle and mod.num:
+        parts.append(done_toggle(mod))
+    if show_nav:
+        parts.append(modnav(mod, depth=depth))
+    parts += ['</main></div></div>', FOOT.format(assets=assets)]
+    return "".join(parts)
+
+
+# --------------------------------------------------------------------------
+# data file — the same numbers, readable by anything that wants them
+# --------------------------------------------------------------------------
+
+def write_data_js(M: dict) -> None:
+    """site/assets/data/measurements.js
+
+    Loaded with <script src>, never fetched: fetch() is blocked under
+    file://, so a JSON file would be unreadable to the page.
+    """
+    out = SITE / "assets" / "data" / "measurements.js"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(
+        "/* Generated by build.py. Every number the site prints, in one place. */\n"
+        "window.BTP_MEASUREMENTS = " + json.dumps(M, indent=1, sort_keys=True) + ";\n")
+
+
+# --------------------------------------------------------------------------
+
+def build(check_only: bool = False) -> int:
+    M = load_measurements()
+    problems: list[str] = []
+    written = 0
+    missing_content = []
+
+    for mod in MODULES:
+        src = CONTENT / f"{mod.slug}.html"
+        if not src.exists():
+            missing_content.append(mod.slug)
+            continue
+        body, probs = substitute(src.read_text(), M, where=f"{mod.slug}.html")
+        problems += probs
+        depth = 0 if mod.num == 0 else 1
+        html = render_page(mod, body, depth=depth,
+                           show_toggle=mod.num != 0)
+        dest = (SITE / "index.html") if mod.num == 0 else (
+            SITE / "modules" / f"{mod.slug}.html")
+        if not check_only:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(html)
+            written += 1
+
+    # the reading list — same shell, no strip, no progress toggle
+    rl = CONTENT / "reading-list.html"
+    if rl.exists():
+        body, probs = substitute(rl.read_text(), M, where="reading-list.html")
+        problems += probs
+        shell = BY_NUM[0]
+        html = render_page(shell, body, depth=1, show_strip=False,
+                           show_nav=False, show_toggle=False)
+        html = html.replace("<title>Beneath the Pipeline</title>",
+                            "<title>The reading list — Beneath the Pipeline</title>")
+        if not check_only:
+            (SITE / "reading-list.html").write_text(
+                html.replace('href="../assets/', 'href="assets/')
+                    .replace('src="../assets/', 'src="assets/')
+                    .replace('href="../index.html"', 'href="index.html"'))
+            written += 1
+    else:
+        missing_content.append("reading-list")
+
+    if not check_only:
+        write_data_js(M)
+
+    if missing_content:
+        print(f"content not written yet: {', '.join(missing_content)}")
+    if problems:
+        print(f"\n{len(problems)} unresolved token(s):")
+        for p in problems[:40]:
+            print("  " + p)
+        if len(problems) > 40:
+            print(f"  … and {len(problems) - 40} more")
+    print(f"\n{written} page(s) written to {SITE}"
+          f"{' (check only — nothing written)' if check_only else ''}")
+    print(f"measurements loaded for: {', '.join(sorted(M)) or '(none yet)'}")
+    return 1 if problems else 0
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--check", action="store_true",
+                    help="report unresolved tokens without writing files")
+    args = ap.parse_args()
+    sys.exit(build(check_only=args.check))
+
+
+if __name__ == "__main__":
+    main()

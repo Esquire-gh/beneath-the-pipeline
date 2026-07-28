@@ -1,0 +1,313 @@
+<p class="kicker learn">Part II · module 5 · build · 30–45 minutes</p>
+<h1><span class="num">05 ·</span> Parse — how a PDF becomes text</h1>
+<p class="hook">This is the pipeline line every tutorial spends one line on.
+<code>page.get_text()</code> looks like reading a field out of a file. It is not.</p>
+
+<h2 id="what">What parsing is</h2>
+
+<p>Module 3 gave you the definition, and this module puts it to work. Every file is
+bytes written under some agreement, and parsing is converting data from one agreement
+to another. After <code>load()</code>, what sits in memory is still PDF bytes,
+organized exactly the way the PDF format says. Your pipeline needs something different:
+a plain string of text, in reading order, under the much simpler agreement that module
+2 described. <code>parse()</code> is the conversion between those two.</p>
+
+<p>How hard that conversion is depends entirely on what the source agreement wrote
+down. For a format like CSV or JSON, the structure you want is recorded in the bytes,
+so a parser follows the rules and the answer comes out the same every time, from every
+correct parser. You will write one of those in this module, in twenty lines, to feel
+what that is like. Then you will open a PDF and discover that its agreement recorded
+something else entirely, which is why this stage of the pipeline, alone among the six,
+gives different answers depending on which library you picked.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Take one PDF, <code>acl-2col-01.pdf</code>, an ordinary conference paper. Extract
+  its text twice, using two well-maintained, widely used libraries, and compare what
+  comes out.</p>
+  <p>One library returns {{ 05-parse.extractions.acl-2col-01.words_a | int }} words.
+  The other returns {{ 05-parse.extractions.acl-2col-01.words_b | int }} words. The
+  character similarity between the two outputs is
+  {{ 05-parse.extractions.acl-2col-01.char_ratio | 3f }}, and the differences are not
+  formatting. They are different words, in a different order, from the same bytes.</p>
+  <p>Neither library has a bug. How can two correct programs disagree about what a file
+  says?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/05-parse/starter.py</code>. It has three <code>TODO</code>s.</p>
+
+<figure>
+  <div class="code"><pre>pip install pymupdf pdfplumber
+python data/fetch.py --only pdfs
+python exercises/05-parse/starter.py
+python exercises/05-parse/verify.py</pre></div>
+</figure>
+
+<h3>1 · Write a parser for a format that records structure</h3>
+
+<p>Before the hard case, do an easy one, so you know what "easy" looks like. Here is
+CSV's agreement in full: fields are separated by commas; a field may be wrapped in
+double quotes; inside quotes a comma is data; inside quotes two double quotes mean one
+literal double quote; an empty field is an empty string.</p>
+
+<p>That is the whole format. Write a parser for it, twenty lines, one character at a
+time, no library. Then parse the same data as JSON with the standard library and say
+what <em>its</em> agreement is: brackets and escapes instead of delimiters and quoting.
+Different rules, same kind of thing.</p>
+
+<p>The point of doing this by hand is not that CSV is interesting. It is that
+<strong>you can write it at all</strong>, and that when you are done, the answer is not
+a matter of opinion:</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">measured — exercises/05-parse/solution.py</div>
+<pre><span class="prompt">input</span>  {{ 05-parse.csv.input }}
+<span class="out">field 0</span>  {{ 05-parse.csv.fields.0 }}
+<span class="out">field 1</span>  {{ 05-parse.csv.fields.1 }}
+<span class="out">field 2</span>  {{ 05-parse.csv.fields.2 }}
+<span class="out">field 3</span>  {{ 05-parse.csv.fields.3 }}
+<span class="out">field 4</span>  {{ 05-parse.csv.fields.4 }}
+<span class="out">field 5</span>  (empty)
+
+matches the standard library's reader: {{ 05-parse.csv.matches_stdlib }}</pre>
+  </div>
+</figure>
+
+<h3>2 · Go looking for the text in a PDF, and fail</h3>
+
+<p>Open a PDF as bytes and count how many times a word you can plainly see on the page
+appears in them. You know how to look at bytes from module 2. Do it honestly and report
+the number.</p>
+
+<h3>3 · Measure how far two libraries disagree</h3>
+
+<p>Run PyMuPDF and pdfplumber over the same documents and compute, for each pair, the
+character similarity, whether the two outputs contain the same bag of words, and how
+many words appear in one and not the other. That last distinction matters, because the
+same words in a different order is a different failure from missing words.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>The text is not in the file</h3>
+
+<div class="table-wrap">
+<table>
+  <caption>{{ 05-parse.raw_bytes.file }} — measured by the exercise</caption>
+  <thead><tr><th>word</th><th class="num">times in the raw bytes</th><th class="num">times on the page</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td><code>storage</code></td><td class="num">{{ 05-parse.raw_bytes.raw_counts.storage }}</td><td class="num">{{ 05-parse.raw_bytes.page_counts.storage }}</td></tr>
+    <tr class="lose"><td><code>block</code></td><td class="num">{{ 05-parse.raw_bytes.raw_counts.block }}</td><td class="num">{{ 05-parse.raw_bytes.page_counts.block }}</td></tr>
+    <tr class="lose"><td><code>device</code></td><td class="num">{{ 05-parse.raw_bytes.raw_counts.device }}</td><td class="num">{{ 05-parse.raw_bytes.page_counts.device }}</td></tr>
+    <tr class="lose"><td><code>The</code></td><td class="num">{{ 05-parse.raw_bytes.raw_counts.The }}</td><td class="num">{{ 05-parse.raw_bytes.page_counts.The }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Zero, every time. The first reason is mundane: the file declares
+<code>/FlateDecode</code> at offset
+{{ 05-parse.raw_bytes.compression.at_offset | int }}, meaning the page's contents are
+compressed. Decompress them and you get
+{{ 05-parse.content_stream.total_bytes | int }} bytes, and this is where the module
+turns, because those bytes are not text either:</p>
+
+<figure>
+  <div class="code wide"><pre>{{ 05-parse.content_stream.excerpt }}</pre></div>
+  <figcaption>the decompressed content stream of page 1 of
+  {{ 05-parse.raw_bytes.file }} — what the page actually holds</figcaption>
+</figure>
+
+<p>Read what those commands say. <code>Tf</code> selects a font.
+<code>Td</code> moves the pen to a coordinate. <code>Tj</code> draws a run of glyphs at
+wherever the pen currently is. On this one page there are
+{{ 05-parse.content_stream.n_Tf }} font selections and
+{{ 05-parse.content_stream.n_Tj }} draw commands.</p>
+
+<p>There is no command that says "this is a paragraph". There is no command that says
+"this word is followed by that word". There is not even a space character between words
+in most PDFs, because the gap you see is the pen being moved. <strong>A PDF page
+records where to put ink, not what the text says.</strong></p>
+
+<h3>Which is why two libraries disagree</h3>
+
+<figure>
+{{ chart:parse-agreement }}
+<figcaption>character similarity between PyMuPDF's and pdfplumber's extraction of the
+same file. 1.000 would be identical output</figcaption>
+</figure>
+
+<figure>
+{{ chart:parse-words }}
+<figcaption>how many words each library got out of the same bytes</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/05-parse/solution.py</caption>
+  <thead><tr><th>document</th><th class="num">similarity</th><th class="num">PyMuPDF words</th>
+    <th class="num">pdfplumber words</th><th>same bag of words?</th></tr></thead>
+  <tbody>
+    <tr class="win"><td>clean, one column</td>
+      <td class="num">{{ 05-parse.extractions.gen-clean-1col.char_ratio | 3f }}</td>
+      <td class="num">{{ 05-parse.extractions.gen-clean-1col.words_a | int }}</td>
+      <td class="num">{{ 05-parse.extractions.gen-clean-1col.words_b | int }}</td>
+      <td>{{ 05-parse.extractions.gen-clean-1col.same_words }}</td></tr>
+    <tr><td>two columns</td>
+      <td class="num">{{ 05-parse.extractions.gen-2col.char_ratio | 3f }}</td>
+      <td class="num">{{ 05-parse.extractions.gen-2col.words_a | int }}</td>
+      <td class="num">{{ 05-parse.extractions.gen-2col.words_b | int }}</td>
+      <td>{{ 05-parse.extractions.gen-2col.same_words }}</td></tr>
+    <tr><td>ruled tables</td>
+      <td class="num">{{ 05-parse.extractions.gen-tables.char_ratio | 3f }}</td>
+      <td class="num">{{ 05-parse.extractions.gen-tables.words_a | int }}</td>
+      <td class="num">{{ 05-parse.extractions.gen-tables.words_b | int }}</td>
+      <td>{{ 05-parse.extractions.gen-tables.same_words }}</td></tr>
+    <tr class="lose"><td>a real conference paper</td>
+      <td class="num">{{ 05-parse.extractions.acl-2col-01.char_ratio | 3f }}</td>
+      <td class="num">{{ 05-parse.extractions.acl-2col-01.words_a | int }}</td>
+      <td class="num">{{ 05-parse.extractions.acl-2col-01.words_b | int }}</td>
+      <td>{{ 05-parse.extractions.acl-2col-01.same_words }}</td></tr>
+    <tr class="lose"><td>a real tax form</td>
+      <td class="num">{{ 05-parse.extractions.irs-1040.char_ratio | 3f }}</td>
+      <td class="num">{{ 05-parse.extractions.irs-1040.words_a | int }}</td>
+      <td class="num">{{ 05-parse.extractions.irs-1040.words_b | int }}</td>
+      <td>{{ 05-parse.extractions.irs-1040.same_words }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Read the table in two halves, because they say different things.</p>
+
+<p>On the generated documents the two libraries produced the <em>same words</em>, as
+the "same bag of words" column shows, but arranged them differently. Similarity falls
+from {{ 05-parse.extractions.gen-clean-1col.char_ratio | 3f }} on the clean page to
+{{ 05-parse.extractions.gen-tables.char_ratio | 3f }} on the table page purely because
+of order.</p>
+
+<p>On the real documents it is worse than order. The conference paper gave one library
+{{ 05-parse.extractions.acl-2col-01.words_a | int }} words and the other
+{{ 05-parse.extractions.acl-2col-01.words_b | int }}. That is a gap of
+{{ 05-parse.extractions.acl-2col-01.word_gap | int }} words, or
+{{ 05-parse.extractions.acl-2col-01.word_gap_pct | pct0 }} of the larger extraction,
+that one of them did not report at all. Ligatures, hyphenation across line breaks,
+header and footer handling, whether a caption belongs to the flow: each library made
+its own call, and none of those calls is written down in the file.</p>
+
+<h3>And the same library disagrees with itself</h3>
+
+<p>Here is one extractor, one document, and one argument changed: whether to reason
+about layout or read in pure coordinate order.</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">two-column page, read top to bottom by coordinate</div>
+<pre class="out">{{ 05-parse.reading_order.naive_excerpt }}</pre>
+  </div>
+  <figcaption>similarity to the layout-aware reading:
+  {{ 05-parse.reading_order.char_ratio | 3f }}</figcaption>
+</figure>
+
+<p>The left column and the right column interleave, sentence by sentence, because the
+pen visited them alternately going down the page. Every word is present. The meaning is
+gone.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Parsing is honouring the writer's agreement, and the whole difficulty of this stage
+is that some agreements record less than you need.</p>
+
+<p>CSV records structure. The commas <em>are</em> the field boundaries, and the quoting
+rules <em>are</em> how ambiguity gets resolved. Two correct CSV parsers cannot disagree
+about where a field ends, because the format wrote it down. The same holds for JSON,
+for HTML, and for XML. You get determinism because the structure is in the file.</p>
+
+<p>PDF records presentation. Its agreement is complete and precise. The specification
+runs nine hundred pages, and PyMuPDF honours it faithfully. But what it specifies is
+<em>where glyphs go on a page</em>. Reading order is not stored. Word boundaries are
+not stored. Paragraphs are not stored. A table is some numbers positioned near some
+lines, and the lines are drawing commands, unconnected to the numbers.</p>
+
+<p>So a PDF text extractor cannot read the structure. It has to
+<strong>reconstruct</strong> it, from coordinates, gaps, and font sizes. Should two
+runs of glyphs 4 points apart be one word or two? Is that block at the top a heading,
+or a running header to discard? Do these two columns of coordinates mean two columns of
+text, or one wide table?</p>
+
+<p>Every one of those is a judgement call, and the two libraries make different ones.
+That is the entire explanation for the table above. Neither library is broken. They
+have different heuristics for a problem the format left open, and the more visual
+structure a document carries, the further apart their answers land. That is exactly the
+shape of the chart: the clean page at
+{{ 05-parse.extractions.gen-clean-1col.char_ratio | 3f }}, the table page at
+{{ 05-parse.extractions.gen-tables.char_ratio | 3f }}.</p>
+
+<p>Two things follow, and both are load-bearing for the rest of the site.</p>
+
+<p>First, <em>"parse the PDF" is not one operation with a right answer.</em> It is a
+reconstruction with a quality, and the quality varies by document. Any pipeline that
+treats <code>parse()</code> as a settled step has an unmeasured variable in it. Module
+15 measures that variable and finds it larger than the retrieval architecture.</p>
+
+<p>Second, this only gets harder. Everything above assumed the glyphs are in the file
+at all. When a document has been scanned, the page is a picture, there are no glyphs,
+and there is nothing to reconstruct from. Why that situation is genuinely hard, and
+what it takes to do well in it, is module 13's whole subject.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>parse()</code> is not extraction, it is
+reconstruction, and it returns one library's opinion. <strong>Backward:</strong> module
+2 said a file format is an agreement grown large, and that a parser can only recover
+what the agreement recorded. This module is the first time that sentence costs you
+something.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Here both halves bite at once. The convention was honoured perfectly and still did
+not carry the meaning, because the meaning was in the arrangement of ink, and
+arrangement is exactly what a reader has to pay to reconstruct.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>The PDF specification (ISO 32000), the content-stream
+  section.</strong> An afternoon that permanently explains why extraction is hard. Read
+  the text-showing operators, <code>Tj</code>, <code>TJ</code>, <code>Td</code>, and
+  <code>Tf</code>, the ones you just watched go past in the dump above, and notice what
+  the operator list does <em>not</em> contain.</p>
+
+  <p><strong>There is no canonical book for this stage of the pipeline.</strong> That
+  is worth saying plainly: the line your pipeline spends the least time on is the one
+  with no textbook behind it. Module 13 uses papers, because papers are the
+  literature.</p>
+
+  <ol>
+    <li>Why can two correct CSV parsers never disagree about field boundaries, while
+    two correct PDF parsers routinely disagree about word order?</li>
+    <li>Your retrieval quality drops after switching PDF libraries, with no other
+    change. Give the mechanism, in one sentence, and name the measurement you would
+    take first.</li>
+    <li>A table in your corpus comes out as a run of numbers with no columns. What was
+    stored in the file, and what was not?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your similarity on the clean document is below about 0.95, check whether
+    pdfplumber returned <code>None</code> for a page. It does that on pages with no
+    extractable text, and joining <code>None</code> as an empty string quietly shortens
+    the output. The starter's plumbing already guards for this.</p>
+    <p>If both libraries return exactly the same text on every document, you are
+    probably testing only single-column, generated PDFs. Add a real paper, such as
+    <code>acl-2col-01.pdf</code> in <code>data/hard_pdfs/</code>, where the layout
+    decisions are real.</p>
+    <p>If <code>count_word_in_raw_bytes</code> returns a number greater than zero, your
+    PDF may be uncompressed. Some tools write PDFs with plain-text content streams. The
+    words are then findable, and the rest of the module's argument is unchanged,
+    because what you would find is still <code>Tj</code> commands rather than
+    sentences.</p>
+  </div>
+</div>

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · Parse — how a PDF becomes text — Beneath the Pipeline</title>
+<meta name="description" content="Two libraries, one PDF, two different texts.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead"><div class="masthead-inner"><div class="brandrow"><a class="brand" href="../index.html"><b>Beneath the Pipeline</b> &nbsp;/&nbsp; part ii · the pipeline, one line at a time</a><span class="progress-label">05 / 15</span></div><nav class="strip" aria-label="the pipeline"><a class="stage done" href="04-load.html" title="load() — built in module 4; stressed in module 9"><span class="n">04·09</span>load</a><a class="stage here" href="05-parse.html" title="parse() — built in module 5; stressed in module 13"><span class="n">05·13</span>parse</a><a class="stage" href="06-chunk-embed.html" title="chunk() — built in module 6"><span class="n">06</span>chunk</a><a class="stage" href="06-chunk-embed.html" title="embed() — built in module 6; stressed in module 12"><span class="n">06·12</span>embed</a><a class="stage" href="07-index.html" title="index() — built in module 7; stressed in module 9, 10, 12"><span class="n">07·09·10·12</span>index</a><a class="stage" href="08-retrieve.html" title="retrieve() — built in module 8; stressed in module 11, 14"><span class="n">08·11·14</span>retrieve</a></nav><div class="lane2"><span class="spacer"></span><a class="branch" href="14-what-vectors-cant-answer.html" title="module 14 — the structured path">14 · structured</a></div></div></header><div class="wrap"><div class="layout"><div class="gutter" aria-hidden="true"><div class="marks"><div>0000</div><div>0010</div><div>0020</div><div>0030</div><div>0040</div><div>0050</div><div>0060</div><div>0070</div><div>0080</div><div>0090</div><div>00a0</div><div>00b0</div><div>00c0</div><div>00d0</div><div>00e0</div><div>00f0</div><div>0100</div><div>0110</div><div>0120</div><div>0130</div><div>0140</div><div>0150</div><div>0160</div><div>0170</div><div>0180</div><div>0190</div><div>01a0</div><div>01b0</div><div>01c0</div><div>01d0</div><div>01e0</div><div>01f0</div><div>0200</div><div>0210</div><div>0220</div><div>0230</div><div>0240</div><div>0250</div><div>0260</div><div>0270</div><div>0280</div><div>0290</div><div>02a0</div><div>02b0</div><div>02c0</div><div>02d0</div><div>02e0</div><div>02f0</div><div>0300</div><div>0310</div><div>0320</div><div>0330</div><div>0340</div><div>0350</div><div>0360</div><div>0370</div><div>0380</div><div>0390</div><div>03a0</div><div>03b0</div><div>03c0</div><div>03d0</div><div>03e0</div><div>03f0</div><div>0400</div><div>0410</div><div>0420</div><div>0430</div><div>0440</div><div>0450</div><div>0460</div><div>0470</div><div>0480</div><div>0490</div><div>04a0</div><div>04b0</div><div>04c0</div><div>04d0</div><div>04e0</div><div>04f0</div><div>0500</div><div>0510</div><div>0520</div><div>0530</div><div>0540</div><div>0550</div><div>0560</div><div>0570</div><div>0580</div><div>0590</div><div>05a0</div><div>05b0</div><div>05c0</div><div>05d0</div><div>05e0</div><div>05f0</div><div>0600</div><div>0610</div><div>0620</div><div>0630</div><div>0640</div><div>0650</div><div>0660</div><div>0670</div><div>0680</div><div>0690</div><div>06a0</div><div>06b0</div><div>06c0</div><div>06d0</div><div>06e0</div><div>06f0</div><div>0700</div><div>0710</div><div>0720</div><div>0730</div><div>0740</div><div>0750</div><div>0760</div><div>0770</div><div>0780</div><div>0790</div><div>07a0</div><div>07b0</div><div>07c0</div><div>07d0</div><div>07e0</div><div>07f0</div><div>0800</div><div>0810</div><div>0820</div><div>0830</div><div>0840</div><div>0850</div><div>0860</div><div>0870</div><div>0880</div><div>0890</div><div>08a0</div><div>08b0</div><div>08c0</div><div>08d0</div><div>08e0</div><div>08f0</div><div>0900</div><div>0910</div><div>0920</div><div>0930</div><div>0940</div><div>0950</div><div>0960</div><div>0970</div><div>0980</div><div>0990</div><div>09a0</div><div>09b0</div><div>09c0</div><div>09d0</div><div>09e0</div><div>09f0</div><div>0a00</div><div>0a10</div><div>0a20</div><div>0a30</div><div>0a40</div><div>0a50</div><div>0a60</div><div>0a70</div><div>0a80</div><div>0a90</div><div>0aa0</div><div>0ab0</div><div>0ac0</div><div>0ad0</div><div>0ae0</div><div>0af0</div><div>0b00</div><div>0b10</div><div>0b20</div><div>0b30</div><div>0b40</div><div>0b50</div><div>0b60</div><div>0b70</div><div>0b80</div><div>0b90</div><div>0ba0</div><div>0bb0</div><div>0bc0</div><div>0bd0</div><div>0be0</div><div>0bf0</div><div>0c00</div><div>0c10</div><div>0c20</div><div>0c30</div><div>0c40</div><div>0c50</div><div>0c60</div><div>0c70</div><div>0c80</div><div>0c90</div><div>0ca0</div><div>0cb0</div><div>0cc0</div><div>0cd0</div><div>0ce0</div><div>0cf0</div><div>0d00</div><div>0d10</div><div>0d20</div><div>0d30</div><div>0d40</div><div>0d50</div><div>0d60</div><div>0d70</div><div>0d80</div><div>0d90</div><div>0da0</div><div>0db0</div><div>0dc0</div><div>0dd0</div><div>0de0</div><div>0df0</div><div>0e00</div><div>0e10</div><div>0e20</div><div>0e30</div><div>0e40</div><div>0e50</div><div>0e60</div><div>0e70</div><div>0e80</div><div>0e90</div><div>0ea0</div><div>0eb0</div><div>0ec0</div><div>0ed0</div><div>0ee0</div><div>0ef0</div><div>0f00</div><div>0f10</div><div>0f20</div><div>0f30</div><div>0f40</div><div>0f50</div><div>0f60</div><div>0f70</div><div>0f80</div><div>0f90</div><div>0fa0</div><div>0fb0</div><div>0fc0</div><div>0fd0</div><div>0fe0</div><div>0ff0</div><div>1000</div><div>1010</div><div>1020</div><div>1030</div><div>1040</div><div>1050</div><div>1060</div><div>1070</div><div>1080</div><div>1090</div><div>10a0</div><div>10b0</div><div>10c0</div><div>10d0</div><div>10e0</div><div>10f0</div><div>1100</div><div>1110</div><div>1120</div><div>1130</div><div>1140</div><div>1150</div><div>1160</div><div>1170</div><div>1180</div><div>1190</div><div>11a0</div><div>11b0</div><div>11c0</div><div>11d0</div><div>11e0</div><div>11f0</div><div>1200</div><div>1210</div><div>1220</div><div>1230</div><div>1240</div><div>1250</div><div>1260</div><div>1270</div><div>1280</div><div>1290</div><div>12a0</div><div>12b0</div><div>12c0</div><div>12d0</div><div>12e0</div><div>12f0</div><div>1300</div><div>1310</div><div>1320</div><div>1330</div><div>1340</div><div>1350</div><div>1360</div><div>1370</div><div>1380</div><div>1390</div><div>13a0</div><div>13b0</div><div>13c0</div><div>13d0</div><div>13e0</div><div>13f0</div><div>1400</div><div>1410</div><div>1420</div><div>1430</div><div>1440</div><div>1450</div><div>1460</div><div>1470</div><div>1480</div><div>1490</div><div>14a0</div><div>14b0</div><div>14c0</div><div>14d0</div><div>14e0</div><div>14f0</div><div>1500</div><div>1510</div><div>1520</div><div>1530</div><div>1540</div><div>1550</div><div>1560</div><div>1570</div><div>1580</div><div>1590</div><div>15a0</div><div>15b0</div><div>15c0</div><div>15d0</div><div>15e0</div><div>15f0</div><div>1600</div><div>1610</div><div>1620</div><div>1630</div><div>1640</div><div>1650</div><div>1660</div><div>1670</div><div>1680</div><div>1690</div><div>16a0</div><div>16b0</div><div>16c0</div><div>16d0</div><div>16e0</div><div>16f0</div><div>1700</div><div>1710</div><div>1720</div><div>1730</div><div>1740</div><div>1750</div><div>1760</div><div>1770</div><div>1780</div><div>1790</div><div>17a0</div><div>17b0</div><div>17c0</div><div>17d0</div><div>17e0</div><div>17f0</div><div>1800</div><div>1810</div><div>1820</div><div>1830</div><div>1840</div><div>1850</div><div>1860</div><div>1870</div><div>1880</div><div>1890</div><div>18a0</div><div>18b0</div><div>18c0</div><div>18d0</div><div>18e0</div><div>18f0</div><div>1900</div><div>1910</div><div>1920</div><div>1930</div><div>1940</div><div>1950</div><div>1960</div><div>1970</div><div>1980</div><div>1990</div><div>19a0</div><div>19b0</div><div>19c0</div><div>19d0</div><div>19e0</div><div>19f0</div><div>1a00</div><div>1a10</div><div>1a20</div><div>1a30</div><div>1a40</div><div>1a50</div><div>1a60</div><div>1a70</div><div>1a80</div><div>1a90</div><div>1aa0</div><div>1ab0</div><div>1ac0</div><div>1ad0</div><div>1ae0</div><div>1af0</div><div>1b00</div><div>1b10</div><div>1b20</div><div>1b30</div><div>1b40</div><div>1b50</div><div>1b60</div><div>1b70</div><div>1b80</div><div>1b90</div><div>1ba0</div><div>1bb0</div><div>1bc0</div><div>1bd0</div><div>1be0</div><div>1bf0</div><div>1c00</div><div>1c10</div><div>1c20</div><div>1c30</div><div>1c40</div><div>1c50</div><div>1c60</div><div>1c70</div><div>1c80</div><div>1c90</div><div>1ca0</div><div>1cb0</div><div>1cc0</div><div>1cd0</div><div>1ce0</div><div>1cf0</div><div>1d00</div><div>1d10</div><div>1d20</div><div>1d30</div><div>1d40</div><div>1d50</div><div>1d60</div><div>1d70</div><div>1d80</div><div>1d90</div><div>1da0</div><div>1db0</div><div>1dc0</div><div>1dd0</div><div>1de0</div><div>1df0</div><div>1e00</div><div>1e10</div><div>1e20</div><div>1e30</div><div>1e40</div><div>1e50</div><div>1e60</div><div>1e70</div><div>1e80</div><div>1e90</div><div>1ea0</div><div>1eb0</div><div>1ec0</div><div>1ed0</div><div>1ee0</div><div>1ef0</div><div>1f00</div><div>1f10</div><div>1f20</div><div>1f30</div><div>1f40</div><div>1f50</div><div>1f60</div><div>1f70</div><div>1f80</div><div>1f90</div><div>1fa0</div><div>1fb0</div><div>1fc0</div><div>1fd0</div><div>1fe0</div><div>1ff0</div><div>2000</div><div>2010</div><div>2020</div><div>2030</div><div>2040</div><div>2050</div><div>2060</div><div>2070</div><div>2080</div><div>2090</div><div>20a0</div><div>20b0</div><div>20c0</div><div>20d0</div><div>20e0</div><div>20f0</div><div>2100</div><div>2110</div><div>2120</div><div>2130</div><div>2140</div><div>2150</div><div>2160</div><div>2170</div><div>2180</div><div>2190</div><div>21a0</div><div>21b0</div><div>21c0</div><div>21d0</div><div>21e0</div><div>21f0</div><div>2200</div><div>2210</div><div>2220</div><div>2230</div><div>2240</div><div>2250</div><div>2260</div><div>2270</div><div>2280</div><div>2290</div><div>22a0</div><div>22b0</div><div>22c0</div><div>22d0</div><div>22e0</div><div>22f0</div><div>2300</div><div>2310</div><div>2320</div><div>2330</div><div>2340</div><div>2350</div><div>2360</div><div>2370</div><div>2380</div><div>2390</div><div>23a0</div><div>23b0</div><div>23c0</div><div>23d0</div><div>23e0</div><div>23f0</div><div>2400</div><div>2410</div><div>2420</div><div>2430</div><div>2440</div><div>2450</div><div>2460</div><div>2470</div><div>2480</div><div>2490</div><div>24a0</div><div>24b0</div><div>24c0</div><div>24d0</div><div>24e0</div><div>24f0</div><div>2500</div><div>2510</div><div>2520</div><div>2530</div><div>2540</div><div>2550</div><div>2560</div><div>2570</div><div>2580</div><div>2590</div><div>25a0</div><div>25b0</div><div>25c0</div><div>25d0</div><div>25e0</div><div>25f0</div><div>2600</div><div>2610</div><div>2620</div><div>2630</div><div>2640</div><div>2650</div><div>2660</div><div>2670</div><div>2680</div><div>2690</div><div>26a0</div><div>26b0</div><div>26c0</div><div>26d0</div><div>26e0</div><div>26f0</div><div>2700</div><div>2710</div><div>2720</div><div>2730</div><div>2740</div><div>2750</div><div>2760</div><div>2770</div><div>2780</div><div>2790</div><div>27a0</div><div>27b0</div><div>27c0</div><div>27d0</div><div>27e0</div><div>27f0</div><div>2800</div><div>2810</div><div>2820</div><div>2830</div><div>2840</div><div>2850</div><div>2860</div><div>2870</div><div>2880</div><div>2890</div><div>28a0</div><div>28b0</div><div>28c0</div><div>28d0</div><div>28e0</div><div>28f0</div><div>2900</div><div>2910</div><div>2920</div><div>2930</div><div>2940</div><div>2950</div><div>2960</div><div>2970</div><div>2980</div><div>2990</div><div>29a0</div><div>29b0</div><div>29c0</div><div>29d0</div><div>29e0</div><div>29f0</div><div>2a00</div><div>2a10</div><div>2a20</div><div>2a30</div><div>2a40</div><div>2a50</div><div>2a60</div><div>2a70</div><div>2a80</div><div>2a90</div><div>2aa0</div><div>2ab0</div><div>2ac0</div><div>2ad0</div><div>2ae0</div><div>2af0</div><div>2b00</div><div>2b10</div><div>2b20</div><div>2b30</div><div>2b40</div><div>2b50</div><div>2b60</div><div>2b70</div><div>2b80</div><div>2b90</div><div>2ba0</div><div>2bb0</div><div>2bc0</div><div>2bd0</div><div>2be0</div><div>2bf0</div><div>2c00</div><div>2c10</div><div>2c20</div><div>2c30</div><div>2c40</div><div>2c50</div><div>2c60</div><div>2c70</div><div>2c80</div><div>2c90</div><div>2ca0</div><div>2cb0</div><div>2cc0</div><div>2cd0</div><div>2ce0</div><div>2cf0</div><div>2d00</div><div>2d10</div><div>2d20</div><div>2d30</div><div>2d40</div><div>2d50</div><div>2d60</div><div>2d70</div><div>2d80</div><div>2d90</div><div>2da0</div><div>2db0</div><div>2dc0</div><div>2dd0</div><div>2de0</div><div>2df0</div><div>2e00</div><div>2e10</div><div>2e20</div><div>2e30</div><div>2e40</div><div>2e50</div><div>2e60</div><div>2e70</div><div>2e80</div><div>2e90</div><div>2ea0</div><div>2eb0</div><div>2ec0</div><div>2ed0</div><div>2ee0</div><div>2ef0</div><div>2f00</div><div>2f10</div><div>2f20</div><div>2f30</div><div>2f40</div><div>2f50</div><div>2f60</div><div>2f70</div><div>2f80</div><div>2f90</div><div>2fa0</div><div>2fb0</div><div>2fc0</div><div>2fd0</div><div>2fe0</div><div>2ff0</div><div>3000</div><div>3010</div><div>3020</div><div>3030</div><div>3040</div><div>3050</div><div>3060</div><div>3070</div><div>3080</div><div>3090</div><div>30a0</div><div>30b0</div><div>30c0</div><div>30d0</div><div>30e0</div><div>30f0</div><div>3100</div><div>3110</div><div>3120</div><div>3130</div><div>3140</div><div>3150</div><div>3160</div><div>3170</div><div>3180</div><div>3190</div><div>31a0</div><div>31b0</div><div>31c0</div><div>31d0</div><div>31e0</div><div>31f0</div><div>3200</div><div>3210</div><div>3220</div><div>3230</div><div>3240</div><div>3250</div><div>3260</div><div>3270</div><div>3280</div><div>3290</div><div>32a0</div><div>32b0</div><div>32c0</div><div>32d0</div><div>32e0</div><div>32f0</div><div>3300</div><div>3310</div><div>3320</div><div>3330</div><div>3340</div><div>3350</div><div>3360</div><div>3370</div><div>3380</div><div>3390</div><div>33a0</div><div>33b0</div><div>33c0</div><div>33d0</div><div>33e0</div><div>33f0</div><div>3400</div><div>3410</div><div>3420</div><div>3430</div><div>3440</div><div>3450</div><div>3460</div><div>3470</div><div>3480</div><div>3490</div><div>34a0</div><div>34b0</div><div>34c0</div><div>34d0</div><div>34e0</div><div>34f0</div><div>3500</div><div>3510</div><div>3520</div><div>3530</div><div>3540</div><div>3550</div><div>3560</div><div>3570</div><div>3580</div><div>3590</div><div>35a0</div><div>35b0</div><div>35c0</div><div>35d0</div><div>35e0</div><div>35f0</div><div>3600</div><div>3610</div><div>3620</div><div>3630</div><div>3640</div><div>3650</div><div>3660</div><div>3670</div><div>3680</div><div>3690</div><div>36a0</div><div>36b0</div><div>36c0</div><div>36d0</div><div>36e0</div><div>36f0</div><div>3700</div><div>3710</div><div>3720</div><div>3730</div><div>3740</div><div>3750</div><div>3760</div><div>3770</div><div>3780</div><div>3790</div><div>37a0</div><div>37b0</div><div>37c0</div><div>37d0</div><div>37e0</div><div>37f0</div><div>3800</div><div>3810</div><div>3820</div><div>3830</div></div></div><main class="col"><p class="kicker learn">Part II · module 5 · build · 30–45 minutes</p>
+<h1><span class="num">05 ·</span> Parse — how a PDF becomes text</h1>
+<p class="hook">This is the pipeline line every tutorial spends one line on.
+<code>page.get_text()</code> looks like reading a field out of a file. It is not.</p>
+
+<h2 id="what">What parsing is</h2>
+
+<p>Module 3 gave you the definition, and this module puts it to work. Every file is
+bytes written under some agreement, and parsing is converting data from one agreement
+to another. After <code>load()</code>, what sits in memory is still PDF bytes,
+organized exactly the way the PDF format says. Your pipeline needs something different:
+a plain string of text, in reading order, under the much simpler agreement that module
+2 described. <code>parse()</code> is the conversion between those two.</p>
+
+<p>How hard that conversion is depends entirely on what the source agreement wrote
+down. For a format like CSV or JSON, the structure you want is recorded in the bytes,
+so a parser follows the rules and the answer comes out the same every time, from every
+correct parser. You will write one of those in this module, in twenty lines, to feel
+what that is like. Then you will open a PDF and discover that its agreement recorded
+something else entirely, which is why this stage of the pipeline, alone among the six,
+gives different answers depending on which library you picked.</p>
+
+<h2 id="puzzle">The puzzle</h2>
+
+<div class="puzzle">
+  <p>Take one PDF, <code>acl-2col-01.pdf</code>, an ordinary conference paper. Extract
+  its text twice, using two well-maintained, widely used libraries, and compare what
+  comes out.</p>
+  <p>One library returns 6,983 words.
+  The other returns 5,202 words. The
+  character similarity between the two outputs is
+  0.184, and the differences are not
+  formatting. They are different words, in a different order, from the same bytes.</p>
+  <p>Neither library has a bug. How can two correct programs disagree about what a file
+  says?</p>
+</div>
+
+<h2 id="do">Build it yourself</h2>
+
+<p>Open <code>exercises/05-parse/starter.py</code>. It has three <code>TODO</code>s.</p>
+
+<figure>
+  <div class="code"><pre>pip install pymupdf pdfplumber
+python data/fetch.py --only pdfs
+python exercises/05-parse/starter.py
+python exercises/05-parse/verify.py</pre></div>
+</figure>
+
+<h3>1 · Write a parser for a format that records structure</h3>
+
+<p>Before the hard case, do an easy one, so you know what "easy" looks like. Here is
+CSV's agreement in full: fields are separated by commas; a field may be wrapped in
+double quotes; inside quotes a comma is data; inside quotes two double quotes mean one
+literal double quote; an empty field is an empty string.</p>
+
+<p>That is the whole format. Write a parser for it, twenty lines, one character at a
+time, no library. Then parse the same data as JSON with the standard library and say
+what <em>its</em> agreement is: brackets and escapes instead of delimiters and quoting.
+Different rules, same kind of thing.</p>
+
+<p>The point of doing this by hand is not that CSV is interesting. It is that
+<strong>you can write it at all</strong>, and that when you are done, the answer is not
+a matter of opinion:</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">measured — exercises/05-parse/solution.py</div>
+<pre><span class="prompt">input</span>  INV-10007,&quot;Acme Corp, Ltd.&quot;,3,&quot;He said &quot;&quot;ship it&quot;&quot;&quot;,1240.50,
+<span class="out">field 0</span>  INV-10007
+<span class="out">field 1</span>  Acme Corp, Ltd.
+<span class="out">field 2</span>  3
+<span class="out">field 3</span>  He said &quot;ship it&quot;
+<span class="out">field 4</span>  1240.50
+<span class="out">field 5</span>  (empty)
+
+matches the standard library's reader: True</pre>
+  </div>
+</figure>
+
+<h3>2 · Go looking for the text in a PDF, and fail</h3>
+
+<p>Open a PDF as bytes and count how many times a word you can plainly see on the page
+appears in them. You know how to look at bytes from module 2. Do it honestly and report
+the number.</p>
+
+<h3>3 · Measure how far two libraries disagree</h3>
+
+<p>Run PyMuPDF and pdfplumber over the same documents and compute, for each pair, the
+character similarity, whether the two outputs contain the same bag of words, and how
+many words appear in one and not the other. That last distinction matters, because the
+same words in a different order is a different failure from missing words.</p>
+
+<h2 id="observe">What you should see</h2>
+
+<h3>The text is not in the file</h3>
+
+<div class="table-wrap">
+<table>
+  <caption>gen-clean-1col.pdf — measured by the exercise</caption>
+  <thead><tr><th>word</th><th class="num">times in the raw bytes</th><th class="num">times on the page</th></tr></thead>
+  <tbody>
+    <tr class="lose"><td><code>storage</code></td><td class="num">0</td><td class="num">1</td></tr>
+    <tr class="lose"><td><code>block</code></td><td class="num">0</td><td class="num">5</td></tr>
+    <tr class="lose"><td><code>device</code></td><td class="num">0</td><td class="num">2</td></tr>
+    <tr class="lose"><td><code>The</code></td><td class="num">0</td><td class="num">8</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Zero, every time. The first reason is mundane: the file declares
+<code>/FlateDecode</code> at offset
+1,100, meaning the page's contents are
+compressed. Decompress them and you get
+3,927 bytes, and this is where the module
+turns, because those bytes are not text either:</p>
+
+<figure>
+  <div class="code wide"><pre>1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 85.2 696 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 3 Tm /F2 15 Tf 18 TL 84.345 0 Td (Block Devices and the Cost of Small Reads) Tj T* -84.345 0 Td ET
+Q
+Q
+q
+1 0 0 1 85.2 673.5 cm
+q
+BT 1 0 0 1 0 3 Tm 12.5 TL /F3 9.5 Tf 0 0 0 rg (R. Ackon \267 Beneath the Pipeline) Tj T* ET
+Q
+Q
+q
+1 0 0 1 85.2 659.5 cm
+Q
+q
+1 0 0 1 85.2 616 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 28 Tm /F3 9.5 Tf 12.5 TL .82945 Tw (A storage device presents one interface to the software above it: a long row of numbered blocks, each of a fixed) Tj T* 0 Tw .138625 Tw (size. A common size is 4096 bytes. The devic</pre></div>
+  <figcaption>the decompressed content stream of page 1 of
+  gen-clean-1col.pdf — what the page actually holds</figcaption>
+</figure>
+
+<p>Read what those commands say. <code>Tf</code> selects a font.
+<code>Td</code> moves the pen to a coordinate. <code>Tj</code> draws a run of glyphs at
+wherever the pen currently is. On this one page there are
+11 font selections and
+40 draw commands.</p>
+
+<p>There is no command that says "this is a paragraph". There is no command that says
+"this word is followed by that word". There is not even a space character between words
+in most PDFs, because the gap you see is the pen being moved. <strong>A PDF page
+records where to put ink, not what the text says.</strong></p>
+
+<h3>Which is why two libraries disagree</h3>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 164" preserveAspectRatio="xMinYMin meet" role="img" aria-label="how far two PDF libraries agree, by document"><text class="lbl" x="0" y="21">clean, 1 column</text><rect class="bar" x="124" y="11" width="362.0" height="14"></rect><text x="492.0" y="22">0.992</text><text class="lbl" x="0" y="47">2 columns</text><rect class="bar alt" x="124" y="37" width="205.0" height="14"></rect><text x="335.0" y="48">0.562</text><text class="lbl" x="0" y="73">ruled tables</text><rect class="bar alt" x="124" y="63" width="66.1" height="14"></rect><text x="196.1" y="74">0.181</text><text class="lbl" x="0" y="99">real paper, 2 col</text><rect class="bar alt" x="124" y="89" width="67.2" height="14"></rect><text x="197.2" y="100">0.184</text><text class="lbl" x="0" y="125">real tax form</text><rect class="bar alt" x="124" y="115" width="185.8" height="14"></rect><text x="315.8" y="126">0.509</text><line class="base" x1="124" y1="8" x2="124" y2="138"></line><text class="axis-title" x="124" y="158">character similarity, 1.000 = identical — higher is better</text></svg>
+<figcaption>character similarity between PyMuPDF's and pdfplumber's extraction of the
+same file. 1.000 would be identical output</figcaption>
+</figure>
+
+<figure>
+<svg class="chart" viewBox="0 0 560 250" preserveAspectRatio="xMinYMin meet" role="img" aria-label="words extracted from the same file, by library"><line class="grid" x1="46" y1="204.0" x2="548" y2="204.0"></line><text x="40" y="207.5" text-anchor="end">0</text><line class="grid" x1="46" y1="151.9" x2="548" y2="151.9"></line><text x="40" y="155.4" text-anchor="end">2,000</text><line class="grid" x1="46" y1="99.7" x2="548" y2="99.7"></line><text x="40" y="103.2" text-anchor="end">4,000</text><line class="grid" x1="46" y1="47.6" x2="548" y2="47.6"></line><text x="40" y="51.1" text-anchor="end">6,000</text><rect class="bar " x="70.2" y="195.2" width="24.0" height="8.8"></rect><rect class="bar alt" x="96.2" y="195.2" width="24.0" height="8.8"></rect><text class="lbl" x="96.2" y="219" text-anchor="middle">clean, 1 column</text><rect class="bar " x="170.6" y="195.2" width="24.0" height="8.8"></rect><rect class="bar alt" x="196.6" y="195.2" width="24.0" height="8.8"></rect><text class="lbl" x="196.6" y="219" text-anchor="middle">2 columns</text><rect class="bar " x="271.0" y="196.7" width="24.0" height="7.3"></rect><rect class="bar alt" x="297.0" y="196.7" width="24.0" height="7.3"></rect><text class="lbl" x="297.0" y="219" text-anchor="middle">ruled tables</text><rect class="bar " x="371.4" y="22.0" width="24.0" height="182.0"></rect><rect class="bar alt" x="397.4" y="68.4" width="24.0" height="135.6"></rect><text class="lbl" x="397.4" y="219" text-anchor="middle">real paper, 2 col</text><rect class="bar " x="471.8" y="145.9" width="24.0" height="58.1"></rect><rect class="bar alt" x="497.8" y="146.0" width="24.0" height="58.0"></rect><text class="lbl" x="497.8" y="219" text-anchor="middle">real tax form</text><rect class="bar " x="46" y="238" width="9" height="9"></rect><text x="59" y="246">PyMuPDF</text><rect class="bar alt" x="111" y="238" width="9" height="9"></rect><text x="124" y="246">pdfplumber</text><text class="axis-title" x="46" y="14">words extracted</text></svg>
+<figcaption>how many words each library got out of the same bytes</figcaption>
+</figure>
+
+<div class="table-wrap">
+<table>
+  <caption>measured by exercises/05-parse/solution.py</caption>
+  <thead><tr><th>document</th><th class="num">similarity</th><th class="num">PyMuPDF words</th>
+    <th class="num">pdfplumber words</th><th>same bag of words?</th></tr></thead>
+  <tbody>
+    <tr class="win"><td>clean, one column</td>
+      <td class="num">0.992</td>
+      <td class="num">339</td>
+      <td class="num">339</td>
+      <td>True</td></tr>
+    <tr><td>two columns</td>
+      <td class="num">0.562</td>
+      <td class="num">339</td>
+      <td class="num">339</td>
+      <td>True</td></tr>
+    <tr><td>ruled tables</td>
+      <td class="num">0.181</td>
+      <td class="num">279</td>
+      <td class="num">279</td>
+      <td>True</td></tr>
+    <tr class="lose"><td>a real conference paper</td>
+      <td class="num">0.184</td>
+      <td class="num">6,983</td>
+      <td class="num">5,202</td>
+      <td>False</td></tr>
+    <tr class="lose"><td>a real tax form</td>
+      <td class="num">0.509</td>
+      <td class="num">2,230</td>
+      <td class="num">2,226</td>
+      <td>False</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Read the table in two halves, because they say different things.</p>
+
+<p>On the generated documents the two libraries produced the <em>same words</em>, as
+the "same bag of words" column shows, but arranged them differently. Similarity falls
+from 0.992 on the clean page to
+0.181 on the table page purely because
+of order.</p>
+
+<p>On the real documents it is worse than order. The conference paper gave one library
+6,983 words and the other
+5,202. That is a gap of
+1,781 words, or
+26% of the larger extraction,
+that one of them did not report at all. Ligatures, hyphenation across line breaks,
+header and footer handling, whether a caption belongs to the flow: each library made
+its own call, and none of those calls is written down in the file.</p>
+
+<h3>And the same library disagrees with itself</h3>
+
+<p>Here is one extractor, one document, and one argument changed: whether to reason
+about layout or read in pure coordinate order.</p>
+
+<figure>
+  <div class="term-block">
+    <div class="term-head">two-column page, read top to bottom by coordinate</div>
+<pre class="out">n so that a question becomes cheap to common size is 4096 bytes. The device will not hand back answer. The work does not disappear; it moves from query less than a block, and it will not write less than a block. time to build time, and is paid for in memory, in build Every abstraction above it — files, folders, databases,</pre>
+  </div>
+  <figcaption>similarity to the layout-aware reading:
+  0.488</figcaption>
+</figure>
+
+<p>The left column and the right column interleave, sentence by sentence, because the
+pen visited them alternately going down the page. Every word is present. The meaning is
+gone.</p>
+
+<h2 id="explain">Why it behaves this way</h2>
+
+<p>Parsing is honouring the writer's agreement, and the whole difficulty of this stage
+is that some agreements record less than you need.</p>
+
+<p>CSV records structure. The commas <em>are</em> the field boundaries, and the quoting
+rules <em>are</em> how ambiguity gets resolved. Two correct CSV parsers cannot disagree
+about where a field ends, because the format wrote it down. The same holds for JSON,
+for HTML, and for XML. You get determinism because the structure is in the file.</p>
+
+<p>PDF records presentation. Its agreement is complete and precise. The specification
+runs nine hundred pages, and PyMuPDF honours it faithfully. But what it specifies is
+<em>where glyphs go on a page</em>. Reading order is not stored. Word boundaries are
+not stored. Paragraphs are not stored. A table is some numbers positioned near some
+lines, and the lines are drawing commands, unconnected to the numbers.</p>
+
+<p>So a PDF text extractor cannot read the structure. It has to
+<strong>reconstruct</strong> it, from coordinates, gaps, and font sizes. Should two
+runs of glyphs 4 points apart be one word or two? Is that block at the top a heading,
+or a running header to discard? Do these two columns of coordinates mean two columns of
+text, or one wide table?</p>
+
+<p>Every one of those is a judgement call, and the two libraries make different ones.
+That is the entire explanation for the table above. Neither library is broken. They
+have different heuristics for a problem the format left open, and the more visual
+structure a document carries, the further apart their answers land. That is exactly the
+shape of the chart: the clean page at
+0.992, the table page at
+0.181.</p>
+
+<p>Two things follow, and both are load-bearing for the rest of the site.</p>
+
+<p>First, <em>"parse the PDF" is not one operation with a right answer.</em> It is a
+reconstruction with a quality, and the quality varies by document. Any pipeline that
+treats <code>parse()</code> as a settled step has an unmeasured variable in it. Module
+15 measures that variable and finds it larger than the retrieval architecture.</p>
+
+<p>Second, this only gets harder. Everything above assumed the glyphs are in the file
+at all. When a document has been scanned, the page is a picture, there are no glyphs,
+and there is nothing to reconstruct from. Why that situation is genuinely hard, and
+what it takes to do well in it, is module 13's whole subject.</p>
+
+<h2 id="connect">How this fits the pipeline</h2>
+
+<p><strong>Upward:</strong> <code>parse()</code> is not extraction, it is
+reconstruction, and it returns one library's opinion. <strong>Backward:</strong> module
+2 said a file format is an agreement grown large, and that a parser can only recover
+what the agreement recorded. This module is the first time that sentence costs you
+something.</p>
+
+<p class="thesis">meaning is a convention; arrangement is a cost.</p>
+
+<p>Here both halves bite at once. The convention was honoured perfectly and still did
+not carry the meaning, because the meaning was in the arrangement of ink, and
+arrangement is exactly what a reader has to pay to reconstruct.</p>
+
+<h2 id="read">Read further, then check yourself</h2>
+
+<div class="check">
+  <p class="book"><strong>The PDF specification (ISO 32000), the content-stream
+  section.</strong> An afternoon that permanently explains why extraction is hard. Read
+  the text-showing operators, <code>Tj</code>, <code>TJ</code>, <code>Td</code>, and
+  <code>Tf</code>, the ones you just watched go past in the dump above, and notice what
+  the operator list does <em>not</em> contain.</p>
+
+  <p><strong>There is no canonical book for this stage of the pipeline.</strong> That
+  is worth saying plainly: the line your pipeline spends the least time on is the one
+  with no textbook behind it. Module 13 uses papers, because papers are the
+  literature.</p>
+
+  <ol>
+    <li>Why can two correct CSV parsers never disagree about field boundaries, while
+    two correct PDF parsers routinely disagree about word order?</li>
+    <li>Your retrieval quality drops after switching PDF libraries, with no other
+    change. Give the mechanism, in one sentence, and name the measurement you would
+    take first.</li>
+    <li>A table in your corpus comes out as a run of numbers with no columns. What was
+    stored in the file, and what was not?</li>
+  </ol>
+
+  <div class="trouble">
+    <b>If what you saw didn't match</b>
+    <p>If your similarity on the clean document is below about 0.95, check whether
+    pdfplumber returned <code>None</code> for a page. It does that on pages with no
+    extractable text, and joining <code>None</code> as an empty string quietly shortens
+    the output. The starter's plumbing already guards for this.</p>
+    <p>If both libraries return exactly the same text on every document, you are
+    probably testing only single-column, generated PDFs. Add a real paper, such as
+    <code>acl-2col-01.pdf</code> in <code>data/hard_pdfs/</code>, where the layout
+    decisions are real.</p>
+    <p>If <code>count_word_in_raw_bytes</code> returns a number greater than zero, your
+    PDF may be uncompressed. Some tools write PDFs with plain-text content streams. The
+    words are then findable, and the rest of the module's argument is unchanged,
+    because what you would find is still <code>Tj</code> commands rather than
+    sentences.</p>
+  </div>
+</div>
+<button class="done-toggle" type="button" aria-pressed="false" data-module="05-parse"><span class="box"></span><span class="label">mark this module complete</span></button><nav class="modnav"><a class="prev" href="04-load.html"><span class="dir">previous</span><span class="name">04 · Load — what reading a file costs</span></a><a class="next" href="06-chunk-embed.html"><span class="dir">next</span><span class="name">06 · Chunk &amp; Embed — how text becomes vectors</span></a></nav></main></div></div><script src="../assets/site.js"></script>
+</body>
+</html>
