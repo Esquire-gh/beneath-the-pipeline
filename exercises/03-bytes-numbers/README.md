@@ -1,4 +1,4 @@
-# 03 · Data is bytes by agreement — numbers
+# 03 · How numbers become bytes
 
 **Dependencies: none.** Python standard library only (`struct`, `wave`, `decimal`).
 

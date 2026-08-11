@@ -3,6 +3,10 @@
 **Dependencies: none.** Shell and the Python standard library. Nothing to install.
 macOS and Linux both work; on Windows use WSL.
 
+Optional: `python data/fetch.py --only corpus` (a one-second unpack of the zip that
+ships with the repo) lets `investigate.py` also measure the block-rounding waste
+across the real 10,000-file corpus. Without it, that one measurement is skipped.
+
 Work in a scratch directory — you are about to create a file that claims to be a
 gigabyte.
 

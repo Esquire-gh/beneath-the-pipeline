@@ -1,4 +1,4 @@
-# 14 · What vectors can't answer — structure
+# 14 · What vectors can't answer
 
 **Dependencies:** `pymupdf`, `sentence-transformers`, `numpy`. `sqlite3` is stdlib.
 Needs the corpus: `python data/fetch.py --only invoices`.

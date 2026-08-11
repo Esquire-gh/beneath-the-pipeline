@@ -1,4 +1,4 @@
-# 12 · Vector search at scale — approximation with a knob
+# 12 · How vector search scales
 
 **Dependencies:** `hnswlib`, `numpy`, `sentence-transformers`.
 Needs the corpus and cached vectors: `python data/fetch.py --only msmarco`.

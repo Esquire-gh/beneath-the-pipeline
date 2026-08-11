@@ -1,4 +1,4 @@
-# 10 · Ingestion vs query speed — and keeping what you built
+# 10 · Keeping the index fresh as documents arrive
 
 **Dependencies: none** beyond the standard library.
 

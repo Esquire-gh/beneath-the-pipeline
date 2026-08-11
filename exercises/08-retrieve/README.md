@@ -1,4 +1,4 @@
-# 08 · Retrieve — ranked by what?
+# 08 · Retrieve — how results get ranked
 
 **Dependencies:** `numpy`, `sentence-transformers`.
 Needs the corpus and its judgments: `python data/fetch.py --only msmarco`.

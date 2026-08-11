@@ -1,4 +1,4 @@
-# 09 · The index that doesn't fit
+# 09 · When the index doesn't fit in memory
 
 **Dependencies: none** beyond the standard library.
 Needs the corpus: `python data/fetch.py --only msmarco`.

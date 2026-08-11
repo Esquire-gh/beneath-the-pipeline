@@ -1,4 +1,4 @@
-# 07 · Index — what `db.add()` built
+# 07 · Index — how search gets fast
 
 **Dependencies:** `numpy` (and `sentence-transformers` for the cached vectors).
 Needs the corpus: `python data/fetch.py --only msmarco`.

@@ -1,4 +1,4 @@
-# 05 · Parse — the agreement, honoured or not
+# 05 · Parse — how a PDF becomes text
 
 **Dependencies:** `pymupdf`, `pdfplumber`.
 Needs the documents: `python data/fetch.py --only pdfs`.

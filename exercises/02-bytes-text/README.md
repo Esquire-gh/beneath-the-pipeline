@@ -1,4 +1,4 @@
-# 02 · Data is bytes by agreement — text
+# 02 · How text becomes bytes
 
 **Dependencies: none.** Shell and the Python standard library.
 `xxd` ships with macOS and most Linux systems; where it doesn't, `hexdump -C` prints

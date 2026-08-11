@@ -1,4 +1,4 @@
-# 15 · The pipeline, rebuilt — and measured against reality
+# 15 · The pipeline, rebuilt and measured
 
 **Dependencies:** `pymupdf`, `pdfplumber`, `pytesseract` + Tesseract,
 `sentence-transformers`, `numpy`.

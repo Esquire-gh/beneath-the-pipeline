@@ -1,4 +1,4 @@
-# 06 · Chunk & Embed — text becomes vectors
+# 06 · Chunk & Embed — how text becomes vectors
 
 **Dependencies:** `sentence-transformers`, `numpy`.
 Needs the corpus: `python data/fetch.py --only msmarco --small`.

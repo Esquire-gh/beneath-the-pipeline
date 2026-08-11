@@ -1,7 +1,8 @@
-# 04 · Load — from disk to memory
+# 04 · Load — what reading a file costs
 
 **Dependencies: none** beyond the standard library.
-Needs the corpus: `python data/fetch.py --only corpus`.
+Needs the corpus: `python data/fetch.py --only corpus`. This unpacks
+`data/corpus_small.zip`, which ships with the repo — about a second, no download.
 
 ```sh
 python exercises/04-load/starter.py     # run yours

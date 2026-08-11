@@ -1,4 +1,4 @@
-# 11 · Retrieval at scale — not scoring what can't win
+# 11 · How ranking stays fast at scale
 
 **Dependencies:** `numpy`.
 Needs the corpus: `python data/fetch.py --only msmarco`.
