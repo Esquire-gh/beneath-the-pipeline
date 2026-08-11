@@ -44,6 +44,7 @@ MSMARCO_DIR = HERE / "msmarco"
 PDF_DIR = HERE / "hard_pdfs"
 INVOICE_DIR = HERE / "invoices"
 SMALL_CORPUS_DIR = HERE / "corpus_small"
+SMALL_CORPUS_ZIP = HERE / "corpus_small.zip"   # shipped with the repo
 
 COLLECTION_URL = (
     "https://msmarco.z22.web.core.windows.net/msmarcoranking/"
@@ -332,6 +333,26 @@ def build_small_corpus(n_files: int = 10_000) -> None:
     marker = SMALL_CORPUS_DIR / ".complete"
     if marker.exists() and json.loads(marker.read_text())["files"] == n_files:
         print(f"  have  {n_files:,} files")
+        return
+
+    # The repo ships the corpus as one zip so cloning stays fast; the ten
+    # thousand files only exist after this extraction.
+    if SMALL_CORPUS_ZIP.exists() and n_files == 10_000:
+        import zipfile
+        print(f"  unpacking {SMALL_CORPUS_ZIP.name}")
+        files_dir = SMALL_CORPUS_DIR / "files"
+        if files_dir.exists():
+            shutil.rmtree(files_dir)
+        with zipfile.ZipFile(SMALL_CORPUS_ZIP) as z:
+            shipped = json.loads(z.read("manifest.json"))
+            z.extractall(SMALL_CORPUS_DIR)
+        (SMALL_CORPUS_DIR / "manifest.json").unlink()
+        with (SMALL_CORPUS_DIR / "all.txt").open("w", encoding="utf-8") as big:
+            for f in sorted(files_dir.glob("*.txt")):
+                big.write(f.read_text(encoding="utf-8"))
+        marker.write_text(json.dumps(shipped, indent=2) + "\n")
+        print(f"  {shipped['files']:,} files of ~{_fmt(shipped['bytes'] / shipped['files'])} "
+              f"and one {_fmt(shipped['bytes'])} file, from {shipped['origin']}")
         return
 
     files_dir = SMALL_CORPUS_DIR / "files"

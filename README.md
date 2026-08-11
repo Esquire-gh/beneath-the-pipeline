@@ -36,6 +36,10 @@ python data/fetch.py            # ~4 GB: MS MARCO, difficult PDFs, generated cor
 python data/fetch.py --small    # or 100k passages instead of 8.8M
 ```
 
+Module 4's ten-thousand-file corpus ships with the repo as `data/corpus_small.zip`,
+so `python data/fetch.py --only corpus` unpacks it in about a second — no download
+needed. The full MS MARCO download is only required from module 7 onward.
+
 **Part I needs nothing installed.** Modules 1 and 2 are shell only; module 3 is the
 Python standard library. Nobody hits a dependency wall before understanding what a file
 is. Each exercise's README declares the subset it actually needs.
