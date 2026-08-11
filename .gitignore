@@ -5,7 +5,6 @@ data/invoices/
 data/corpus_small/
 data/*.tar.gz
 data/*.part
-pipeline/sample_pdfs/
 exercises/*/_scratch/
 exercises/*/_index/
 __pycache__/
