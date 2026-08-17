@@ -119,10 +119,54 @@
     }
   }
 
+  /* ---- the sidebar ticks the modules you have finished ---------------- */
+
+  function markSidebar() {
+    var done = readDone();
+    var links = document.querySelectorAll('.sitenav a[data-module]');
+    Array.prototype.forEach.call(links, function (a) {
+      if (done.indexOf(a.getAttribute('data-module')) !== -1) {
+        a.classList.add('done');
+      }
+    });
+  }
+
+  /* ---- on a narrow screen the sidebar is behind the menu button ------- */
+
+  function wireNavToggle() {
+    var btn = document.querySelector('.nav-toggle');
+    var rail = document.getElementById('sitenav-panel');
+    if (!btn || !rail) { return; }
+    btn.addEventListener('click', function () {
+      var open = rail.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.textContent = open ? 'close' : 'menu';
+    });
+  }
+
+  /* ---- keep the current module in view inside a long sidebar ---------- */
+
+  function scrollNavToCurrent() {
+    var rail = document.getElementById('sitenav-panel');
+    var current = rail && rail.querySelector('.current');
+    /* A rail with no height has not been laid out yet — a background tab, for
+       instance. Measuring it now would just pin the scroll to the top. */
+    if (!rail || !current || !rail.clientHeight) { return; }
+    var top = current.offsetTop - rail.clientHeight / 2;
+    rail.scrollTop = top > 0 ? top : 0;
+  }
+
+  function scrollNavToCurrentSoon() {
+    window.requestAnimationFrame(scrollNavToCurrent);
+  }
+
   function init() {
     addCopyButtons();
     wireDoneToggle();
     markTableOfContents();
+    markSidebar();
+    wireNavToggle();
+    scrollNavToCurrent();
   }
 
   if (document.readyState === 'loading') {
@@ -130,4 +174,10 @@
   } else {
     init();
   }
+
+  /* The rail can only be measured once it is laid out, and a page that opens in
+     a background tab is not laid out until it is looked at. */
+  window.addEventListener('load', scrollNavToCurrentSoon);
+  document.addEventListener('visibilitychange', scrollNavToCurrentSoon);
+  window.setTimeout(scrollNavToCurrent, 200);
 }());

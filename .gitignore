@@ -13,3 +13,6 @@ __pycache__/
 data/eval_docs/
 data/vectors/
 cowork-prompt-bytes-to-retrieval.md
+
+# local preview config
+.claude/

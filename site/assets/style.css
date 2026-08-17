@@ -69,22 +69,101 @@ body {
   background: var(--surface);
   border-bottom: 1px solid var(--rule-hard);
 }
-.masthead-inner { max-width: var(--page); margin: 0 auto; padding: .55rem 1.5rem .65rem; }
+.masthead-inner {
+  max-width: var(--page); margin: 0 auto; padding: .6rem 1.5rem;
+  display: flex; align-items: baseline; gap: 1rem;
+}
 
-.brandrow { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
 .brand {
   font-family: var(--mono); font-size: .72rem; letter-spacing: .16em;
   text-transform: uppercase; color: var(--ink-2);
-  text-decoration: none;
+  text-decoration: none; flex: none;
 }
 .brand b { color: var(--ink); font-weight: 600; }
 .brand:hover b { color: var(--learn); }
+
+/* Where you are, named — the page's own title, not a row of stage chips. */
+.crumb {
+  min-width: 0; display: flex; align-items: baseline; gap: .55rem;
+  border-left: 1px solid var(--rule-hard); padding-left: 1rem;
+}
+.crumb .part {
+  font-family: var(--mono); font-size: .62rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-3); white-space: nowrap;
+}
+.crumb .here {
+  font-weight: 600; font-size: .92rem; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.crumb .hn { color: var(--ink-3); font-family: var(--mono); }
+.crumb .hn::after { content: " · "; }
 .progress-label {
   margin-left: auto; font-family: var(--mono); font-size: .68rem;
-  color: var(--ink-3); letter-spacing: .06em;
+  color: var(--ink-3); letter-spacing: .06em; flex: none;
+}
+.nav-toggle {
+  display: none; flex: none; margin-left: auto;
+  font-family: var(--mono); font-size: .66rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-2);
+  background: var(--surface); border: 1px solid var(--rule-hard);
+  border-radius: 2px; padding: .3rem .6rem; cursor: pointer;
+}
+.nav-toggle:hover { color: var(--learn); border-color: var(--learn); }
+
+/* ======================================================================
+   the sidebar — the actual navigation
+   ====================================================================== */
+
+.rail {
+  position: sticky; top: 3.1rem; align-self: start;
+  max-height: calc(100vh - 3.1rem); overflow-y: auto;
+  border-right: 1px solid var(--rule);
+  padding: 2.6rem 1.2rem 3rem 0;
+}
+.sitenav { display: block; }
+.nav-part {
+  font-family: var(--mono); font-size: .6rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-3);
+  margin: 1.3rem 0 .4rem; padding-bottom: .25rem;
+  border-bottom: 1px solid var(--rule);
+}
+.nav-list { list-style: none; margin: 0; padding: 0; }
+.nav-home, .nav-appendix, .nav-item {
+  display: flex; gap: .55rem; align-items: baseline;
+  padding: .3rem .5rem .3rem .45rem; margin-left: -.45rem;
+  text-decoration: none; color: var(--ink-2);
+  font-size: .82rem; line-height: 1.35;
+  border-left: 2px solid transparent; border-radius: 0 2px 2px 0;
+}
+.nav-home { margin-bottom: .2rem; font-weight: 600; color: var(--ink); }
+.nav-appendix { margin-top: 1.3rem; }
+.nav-home .n, .nav-appendix .n, .nav-item .n {
+  font-family: var(--mono); font-size: .66rem; color: var(--ink-3);
+  flex: none; min-width: 1.2rem;
+}
+.nav-item:hover, .nav-home:hover, .nav-appendix:hover {
+  background: var(--learn-soft); color: var(--learn);
+}
+.nav-item.current, .nav-home.current, .nav-appendix.current {
+  background: var(--learn-soft); color: var(--learn); font-weight: 600;
+  border-left-color: var(--learn);
+}
+.nav-item.current .n, .nav-home.current .n { color: var(--learn); }
+/* site.js marks finished modules; the tick sits after the title */
+.nav-item.done .t::after {
+  content: " ✓"; color: var(--learn); font-weight: 600;
 }
 
-.strip { display: flex; gap: 2px; margin-top: .5rem; align-items: stretch; }
+/* ======================================================================
+   the pipeline strip — a figure about state, not a menu
+   ====================================================================== */
+
+.stripbox { margin: 0 0 2.2rem; }
+.stripbox figcaption {
+  font-family: var(--mono); font-size: .62rem; letter-spacing: .06em;
+  color: var(--ink-3); margin-bottom: .4rem;
+}
+.strip { display: flex; gap: 2px; align-items: stretch; }
 .stage {
   flex: 1 1 0; min-width: 0; position: relative;
   border: 1px solid var(--rule-hard);
@@ -144,25 +223,11 @@ body {
    the whole page sideways. overflow-x: clip is the backstop — inner blocks
    that are meant to scroll still scroll, the page itself never does. */
 .layout {
-  display: grid; grid-template-columns: 5.5rem minmax(0, 1fr);
-  overflow-x: clip;
+  display: grid; grid-template-columns: 15.5rem minmax(0, 1fr);
+  overflow-x: clip; gap: 0;
 }
 
-/* The offset gutter is decoration. It must never decide how tall the page is,
-   so its rows are taken out of flow and anything past the end is clipped. */
-.gutter {
-  position: relative; overflow: hidden;
-  border-right: 1px solid var(--rule);
-  user-select: none; -webkit-user-select: none;
-}
-.gutter .marks {
-  position: absolute; top: 3.2rem; right: .9rem; left: 0;
-  font-family: var(--mono); font-size: .62rem; color: var(--ink-3);
-  text-align: right;
-}
-.gutter .marks div { line-height: 1.62; }
-
-.col { padding: 2.6rem 0 4rem 1.6rem; min-width: 0; }
+.col { padding: 2.6rem 0 4rem 2rem; min-width: 0; }
 
 /* ======================================================================
    headings and prose
@@ -511,28 +576,53 @@ caption {
    reading list
    ====================================================================== */
 
-.reading td:first-child { white-space: normal; }
-.reading .mods { font-family: var(--mono); font-size: .78rem; }
+/* A table of prose, not of numbers: every column wraps and reads left to right,
+   so the whole thing fits the column instead of scrolling sideways. */
+.reading { max-width: none; }
+.reading th, .reading td {
+  white-space: normal; text-align: left; vertical-align: top;
+}
+.reading .mods { font-family: var(--mono); font-size: .78rem; white-space: nowrap; }
 .reading .mods a { text-decoration: none; }
 
 /* ======================================================================
    small screens
    ====================================================================== */
 
-@media (max-width: 860px) {
+@media (max-width: 980px) {
   body { font-size: 16px; }
   .layout { grid-template-columns: minmax(0, 1fr); }
-  .gutter { display: none; }
   .col { padding-left: 0; padding-top: 2rem; }
   .stage { font-size: 0; padding: .5rem .25rem; letter-spacing: 0; }
   .stage .n { font-size: .58rem; }
   .lane2 .branch { font-size: .55rem; }
   .wrap { padding: 0 1rem; }
-  .masthead-inner { padding: .5rem 1rem .6rem; }
+  .masthead-inner { padding: .5rem 1rem; gap: .7rem; }
   .hero h1 { font-size: 1.9rem; }
+
+  /* the rail folds into a disclosure the menu button opens */
+  .crumb { padding-left: .7rem; }
+  .crumb .part { display: none; }
+  .progress-label { display: none; }
+  .nav-toggle { display: block; }
+  .rail {
+    position: static; max-height: none; overflow: visible;
+    border-right: none; border-bottom: 1px solid var(--rule-hard);
+    padding: 0 0 1rem; margin-bottom: 1.5rem;
+    display: none;
+  }
+  .rail.open { display: block; }
+  .nav-part { margin-top: 1rem; }
+}
+
+/* On a phone the title has no room, so a numbered page shows its number alone:
+   "06" still says where you are, where five letters and an ellipsis do not. */
+@media (max-width: 640px) {
+  .crumb.numbered .ht { display: none; }
+  .crumb.numbered .hn::after { content: none; }
 }
 
 @media print {
-  .masthead, .modnav, .copy, .done-toggle { display: none; }
+  .masthead, .modnav, .copy, .done-toggle, .rail { display: none; }
   body { background: #fff; }
 }

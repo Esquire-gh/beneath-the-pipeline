@@ -285,20 +285,72 @@ FOOT = """<script src="{assets}site.js"></script>
 """
 
 
-def masthead(mod, *, depth: int, show_strip: bool = True) -> str:
-    assets = "assets/" if depth == 0 else "../assets/"
+def sitenav(mod, *, depth: int, page: str = "") -> str:
+    """The site's real navigation: every page, by its title, grouped by part.
+
+    The strip says which pipeline stages you have built. This says where you
+    are and where you can go — two different jobs, which one control was
+    doing badly.
+    """
+    base = "" if depth else "modules/"
+    home = "index.html" if depth == 0 else "../index.html"
+    rl = "reading-list.html" if depth == 0 else "../reading-list.html"
+
+    out = ['<nav class="sitenav" aria-label="the modules">']
+    out.append(
+        f'<a class="nav-home{" current" if page == "index" and mod.num == 0 else ""}" '
+        f'href="{home}"><span class="n">00</span>'
+        '<span class="t">The pipeline, working</span></a>')
+
+    for part in (1, 2, 3):
+        out.append(f'<p class="nav-part">{escape(PART_TITLES[part])}</p>')
+        out.append('<ul class="nav-list">')
+        for m in MODULES:
+            if m.part != part or m.num == 0:
+                continue
+            cur = " current" if (m.num == mod.num and not page) else ""
+            aria = ' aria-current="page"' if cur else ""
+            out.append(
+                f'<li><a class="nav-item{cur}" href="{base}{m.slug}.html" '
+                f'data-module="{m.slug}"{aria}>'
+                f'<span class="n">{m.nn}</span>'
+                f'<span class="t">{escape(m.title)}</span></a></li>')
+        out.append("</ul>")
+
+    out.append(
+        f'<a class="nav-appendix{" current" if page == "reading-list" else ""}" '
+        f'href="{rl}"><span class="n">··</span>'
+        '<span class="t">The reading list</span></a>')
+    out.append("</nav>")
+    return "".join(out)
+
+
+def masthead(mod, *, depth: int, page: str = "") -> str:
+    """A slim bar: where you are, named. The page's own title is the header."""
     home = "index.html" if depth == 0 else "../index.html"
     part = PART_TITLES[mod.part]
+    if page == "reading-list":
+        num, here, part = "", "The reading list", "appendix"
+    elif mod.num == 0:
+        num, here = "", "The pipeline, working"
+    else:
+        num, here = mod.nn, mod.title
+    # The number is kept separate so a phone can show it alone: "06" still says
+    # where you are, where a title cut off after five letters does not.
+    numbered = " numbered" if num else ""
+    hn = f'<span class="hn">{num}</span>' if num else ""
     counter = (f'<span class="progress-label">{mod.nn} / 15</span>'
-               if mod.num else
+               if mod.num and not page else
                '<span class="progress-label" data-progress-count>0 / 15 complete</span>')
-    strip = strip_html(mod, depth=depth) if show_strip else ""
     return (
         '<header class="masthead"><div class="masthead-inner">'
-        f'<div class="brandrow">'
-        f'<a class="brand" href="{home}"><b>Beneath the Pipeline</b> '
-        f'&nbsp;/&nbsp; {escape(part.lower())}</a>{counter}</div>'
-        f'{strip}</div></header>'
+        f'<a class="brand" href="{home}"><b>Beneath the Pipeline</b></a>'
+        f'<span class="crumb{numbered}"><span class="part">{escape(part.lower())}</span>'
+        f'<span class="here">{hn}<span class="ht">{escape(here)}</span></span></span>'
+        f'{counter}'
+        '<button class="nav-toggle" type="button" aria-expanded="false" '
+        'aria-controls="sitenav-panel">menu</button>'
+        '</div></header>'
     )
 
 
@@ -332,16 +384,25 @@ def done_toggle(mod) -> str:
 
 
 def render_page(mod, body: str, *, depth: int, show_strip=True,
-                show_nav=True, show_toggle=True) -> str:
+                show_nav=True, show_toggle=True, page: str = "") -> str:
     assets = "assets/" if depth == 0 else "../assets/"
     title = ("Beneath the Pipeline" if mod.num == 0
              else f"{mod.nn} · {mod.title} — Beneath the Pipeline")
+    # The strip belongs to the page, not to the chrome: it reports which
+    # pipeline stages you have built, which is a figure, not a menu.
+    strip = ""
+    if show_strip and mod.num:
+        strip = ('<figure class="stripbox"><figcaption>the pipeline · '
+                 'filled means you built it, magenta means a later module '
+                 'broke it</figcaption>'
+                 + strip_html(mod, depth=depth) + '</figure>')
     parts = [
         HEAD.format(title=escape(title), desc=escape(mod.desc), assets=assets),
-        masthead(mod, depth=depth, show_strip=show_strip),
+        masthead(mod, depth=depth, page=page),
         '<div class="wrap"><div class="layout">',
-        f'<div class="gutter" aria-hidden="true">{gutter_html()}</div>',
+        f'<div class="rail" id="sitenav-panel">{sitenav(mod, depth=depth, page=page)}</div>',
         '<main class="col">',
+        strip,
         body,
     ]
     if show_toggle and mod.num:
@@ -386,7 +447,8 @@ def build(check_only: bool = False) -> int:
         problems += probs
         depth = 0 if mod.num == 0 else 1
         html = render_page(mod, body, depth=depth,
-                           show_toggle=mod.num != 0)
+                           show_toggle=mod.num != 0,
+                           page="index" if mod.num == 0 else "")
         dest = (SITE / "index.html") if mod.num == 0 else (
             SITE / "modules" / f"{mod.slug}.html")
         if not check_only:
@@ -400,15 +462,15 @@ def build(check_only: bool = False) -> int:
         body, probs = substitute(rl.read_text(), M, where="reading-list.html")
         problems += probs
         shell = BY_NUM[0]
-        html = render_page(shell, body, depth=1, show_strip=False,
-                           show_nav=False, show_toggle=False)
+        # It sits beside index.html, not in modules/, so it is a depth-0 page:
+        # the sidebar's links have to be written from the site root.
+        html = render_page(shell, body, depth=0, show_strip=False,
+                           show_nav=False, show_toggle=False,
+                           page="reading-list")
         html = html.replace("<title>Beneath the Pipeline</title>",
                             "<title>The reading list — Beneath the Pipeline</title>")
         if not check_only:
-            (SITE / "reading-list.html").write_text(
-                html.replace('href="../assets/', 'href="assets/')
-                    .replace('src="../assets/', 'src="assets/')
-                    .replace('href="../index.html"', 'href="index.html"'))
+            (SITE / "reading-list.html").write_text(html)
             written += 1
     else:
         missing_content.append("reading-list")
