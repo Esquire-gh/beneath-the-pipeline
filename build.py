@@ -8,7 +8,7 @@ What it does:
 
   1. reads page bodies from content/
   2. substitutes {{ }} tokens from exercises/NN-slug/measurements.json
-  3. wraps each body in the shared shell — masthead, pipeline strip, nav
+  3. wraps each body in the shared shell — masthead, sidebar, nav
   4. writes site/index.html, site/modules/*.html, site/reading-list.html
 
 The point of step 2: no number on this site is typed by hand. If a page wants
@@ -33,7 +33,7 @@ sys.path.insert(0, str(REPO))
 
 import charts                                        # noqa: E402
 from charts import MissingMeasurement, dig           # noqa: E402
-from modules import MODULES, BY_NUM, PART_TITLES, STAGES, strip_state  # noqa: E402
+from modules import MODULES, BY_NUM, PART_TITLES  # noqa: E402
 
 CONTENT = REPO / "content"
 SITE = REPO / "site"
@@ -227,46 +227,6 @@ def substitute(text: str, M: dict, *, where: str) -> tuple[str, list[str]]:
 # shell
 # --------------------------------------------------------------------------
 
-GUTTER_ROWS = 900
-
-
-def gutter_html() -> str:
-    """Byte offsets down the margin. Purely decorative, and wrapped so it can
-    be taken out of flow — otherwise a short page inherits the gutter's height
-    and scrolls for thousands of pixels past its own content."""
-    marks = "".join(f"<div>{i * 16:04x}</div>" for i in range(GUTTER_ROWS))
-    return f'<div class="marks">{marks}</div>' 
-
-
-def strip_html(mod, *, depth: int) -> str:
-    """The signature element: the Part 0 pipeline, drawn as a strip.
-
-    Outlined means not reached. Filled means you built it. Filled with a
-    magenta rule means a later module broke it and you fixed it.
-    """
-    base = "" if depth else "modules/"
-    parts = ['<nav class="strip" aria-label="the pipeline">']
-    for cell in strip_state(mod):
-        cls = ("stage " + cell["state"]).strip()
-        href = f'{base}{cell["href"]}' if cell["href"] else "#"
-        parts.append(
-            f'<a class="{cls}" href="{href}" title="{escape(cell["title"])}">'
-            f'<span class="n">{cell["nums"]}</span>{cell["stage"]}</a>')
-    parts.append("</nav>")
-
-    m14 = BY_NUM[14]
-    lane_cls = "branch"
-    if mod.num == 14:
-        lane_cls += " here"
-    elif mod.num > 14:
-        lane_cls += " done"
-    parts.append(
-        f'<div class="lane2"><span class="spacer"></span>'
-        f'<a class="{lane_cls}" href="{base}{m14.slug}.html" '
-        f'title="module 14 — the structured path">14 · structured</a></div>')
-    return "".join(parts)
-
-
 HEAD = """<!doctype html>
 <html lang="en">
 <head>
@@ -383,26 +343,17 @@ def done_toggle(mod) -> str:
             f'<span class="label">mark this module complete</span></button>')
 
 
-def render_page(mod, body: str, *, depth: int, show_strip=True,
+def render_page(mod, body: str, *, depth: int,
                 show_nav=True, show_toggle=True, page: str = "") -> str:
     assets = "assets/" if depth == 0 else "../assets/"
     title = ("Beneath the Pipeline" if mod.num == 0
              else f"{mod.nn} · {mod.title} — Beneath the Pipeline")
-    # The strip belongs to the page, not to the chrome: it reports which
-    # pipeline stages you have built, which is a figure, not a menu.
-    strip = ""
-    if show_strip and mod.num:
-        strip = ('<figure class="stripbox"><figcaption>the pipeline · '
-                 'filled means you built it, magenta means a later module '
-                 'broke it</figcaption>'
-                 + strip_html(mod, depth=depth) + '</figure>')
     parts = [
         HEAD.format(title=escape(title), desc=escape(mod.desc), assets=assets),
         masthead(mod, depth=depth, page=page),
         '<div class="wrap"><div class="layout">',
         f'<div class="rail" id="sitenav-panel">{sitenav(mod, depth=depth, page=page)}</div>',
         '<main class="col">',
-        strip,
         body,
     ]
     if show_toggle and mod.num:
@@ -456,7 +407,7 @@ def build(check_only: bool = False) -> int:
             dest.write_text(html)
             written += 1
 
-    # the reading list — same shell, no strip, no progress toggle
+    # the reading list — same shell, no prev/next, no progress toggle
     rl = CONTENT / "reading-list.html"
     if rl.exists():
         body, probs = substitute(rl.read_text(), M, where="reading-list.html")
@@ -464,7 +415,7 @@ def build(check_only: bool = False) -> int:
         shell = BY_NUM[0]
         # It sits beside index.html, not in modules/, so it is a depth-0 page:
         # the sidebar's links have to be written from the site root.
-        html = render_page(shell, body, depth=0, show_strip=False,
+        html = render_page(shell, body, depth=0,
                            show_nav=False, show_toggle=False,
                            page="reading-list")
         html = html.replace("<title>Beneath the Pipeline</title>",

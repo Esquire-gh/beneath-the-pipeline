@@ -61,7 +61,7 @@ body {
 }
 
 /* ======================================================================
-   masthead + the pipeline strip
+   masthead
    ====================================================================== */
 
 .masthead {
@@ -82,7 +82,7 @@ body {
 .brand b { color: var(--ink); font-weight: 600; }
 .brand:hover b { color: var(--learn); }
 
-/* Where you are, named — the page's own title, not a row of stage chips. */
+/* Where you are, named: the page's own title. */
 .crumb {
   min-width: 0; display: flex; align-items: baseline; gap: .55rem;
   border-left: 1px solid var(--rule-hard); padding-left: 1rem;
@@ -152,65 +152,6 @@ body {
 /* site.js marks finished modules; the tick sits after the title */
 .nav-item.done .t::after {
   content: " ✓"; color: var(--learn); font-weight: 600;
-}
-
-/* ======================================================================
-   the pipeline strip — a figure about state, not a menu
-   ====================================================================== */
-
-.stripbox { margin: 0 0 2.2rem; }
-.stripbox figcaption {
-  font-family: var(--mono); font-size: .62rem; letter-spacing: .06em;
-  color: var(--ink-3); margin-bottom: .4rem;
-}
-.strip { display: flex; gap: 2px; align-items: stretch; }
-.stage {
-  flex: 1 1 0; min-width: 0; position: relative;
-  border: 1px solid var(--rule-hard);
-  background: var(--surface);
-  padding: .34rem .5rem .3rem;
-  text-decoration: none; color: var(--ink-2);
-  font-family: var(--mono); font-size: .66rem; letter-spacing: .1em;
-  text-transform: uppercase; text-align: left;
-  transition: background .12s ease, color .12s ease, border-color .12s ease;
-}
-.stage .n {
-  display: block; font-size: .58rem; color: var(--ink-3); letter-spacing: .08em;
-}
-.stage:hover { background: var(--learn-soft); }
-
-/* outlined -> filled -> reinforced, in that order, forever.
-   Part II fills a stage in; Part III reinforces one that is already filled,
-   so by module 15 the whole strip is solid twice over. `stressed` is the
-   stage this page is breaking right now — same solid fill, with the marker
-   underneath that `here` uses in Part II. */
-.stage.done       { background: var(--learn); border-color: var(--learn); color: #fff; }
-.stage.done .n    { color: #c3c9ee; }
-.stage.here       { background: var(--learn-soft); border-color: var(--learn);
-                    color: var(--learn); box-shadow: inset 0 -3px 0 var(--learn); }
-.stage.here .n    { color: var(--learn); }
-.stage.reinforced { background: var(--learn); border-color: var(--break);
-                    color: #fff; box-shadow: inset 0 0 0 2px var(--break); }
-.stage.reinforced .n { color: var(--break-soft); }
-.stage.stressed   { background: var(--learn); border-color: var(--break);
-                    color: #fff;
-                    box-shadow: inset 0 0 0 2px var(--break),
-                                inset 0 -4px 0 var(--break); }
-.stage.stressed .n { color: var(--break-soft); }
-
-/* module 14 hangs a second lane under retrieve() */
-.lane2 { display: flex; gap: 2px; margin-top: 2px; }
-.lane2 .spacer { flex: 5 1 0; }
-.lane2 .branch {
-  flex: 1 1 0; border: 1px dashed var(--rule-hard); border-top: none;
-  font-family: var(--mono); font-size: .6rem; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--ink-3); padding: .15rem .5rem;
-  text-decoration: none;
-}
-.lane2 .branch.here,
-.lane2 .branch.done {
-  border-style: solid; border-color: var(--break);
-  background: var(--break-soft); color: var(--break);
 }
 
 /* ======================================================================
@@ -593,9 +534,6 @@ caption {
   body { font-size: 16px; }
   .layout { grid-template-columns: minmax(0, 1fr); }
   .col { padding-left: 0; padding-top: 2rem; }
-  .stage { font-size: 0; padding: .5rem .25rem; letter-spacing: 0; }
-  .stage .n { font-size: .58rem; }
-  .lane2 .branch { font-size: .55rem; }
   .wrap { padding: 0 1rem; }
   .masthead-inner { padding: .5rem 1rem; gap: .7rem; }
   .hero h1 { font-size: 1.9rem; }
